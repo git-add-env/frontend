@@ -7,7 +7,8 @@ export default function InfoCard() {
         <p className="text-sm font-medium text-secondary">Common UI</p>
         <h2 className="text-2xl font-semibold">Welcome to the shared card</h2>
         <p className="text-sm text-muted-foreground">
-          This simple card is placed under `components/common` and can be reused in any page.
+          This simple card is placed under `components/common` and can be reused
+          in any page.
         </p>
       </div>
       <div className="space-y-3 text-sm">
