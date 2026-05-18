@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button"
 import InfoCard from "@/components/common/InfoCard"
+import MeetingCard from "@/components/common/MeetingCard";
 
 export default function Page() {
   return (
@@ -18,7 +19,9 @@ export default function Page() {
         </div>
 
         <InfoCard />
+        <MeetingCard/>
       </div>
     </div>
+    
   )
 }
