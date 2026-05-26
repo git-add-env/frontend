@@ -1,8 +1,13 @@
 "use client"
 
 import Link from "next/link"
+import { signOut, useSession } from "next-auth/react"
 import { usePathname } from "next/navigation"
 
+import { Button } from "@/components/ui/button"
+import LoginDialog from "@/components/common/LoginDialog"
+import OnboardingDialog from "@/components/common/OnboardingDialog"
+import { useSyncAuthUser } from "@/hooks/use-sync-auth-user"
 import { cn } from "@/lib/utils"
 
 const navigationItems = [
@@ -15,14 +20,14 @@ const navigationItems = [
 
 export default function Header() {
   const pathname = usePathname()
+  const { data: session, status } = useSession()
+
+  useSyncAuthUser()
 
   return (
     <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur">
       <div className="mx-auto flex min-h-16 w-full max-w-6xl flex-col gap-3 px-6 py-3 sm:flex-row sm:items-center sm:justify-between">
-        <Link
-          href="/landing"
-          className="w-fit text-lg font-semibold tracking-normal text-foreground"
-        >
+        <Link href="/landing" className="w-fit text-lg font-semibold tracking-normal text-foreground">
           모임찾기
         </Link>
 
@@ -46,6 +51,18 @@ export default function Header() {
             )
           })}
         </nav>
+
+        <div className="flex items-center gap-2">
+          {session?.onboardingRequired ? (
+            <OnboardingDialog />
+          ) : status === "authenticated" ? (
+            <Button size="sm" variant="outline" onClick={() => signOut()}>
+              로그아웃
+            </Button>
+          ) : (
+            <LoginDialog />
+          )}
+        </div>
       </div>
     </header>
   )
