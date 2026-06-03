@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import Image from "next/image"
 import { CalendarDays, ChevronLeft, ChevronRight, UsersRound } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -155,12 +156,15 @@ export default function MeetingRecommendationCarousel({
             data-meeting-card
             className="flex w-[260px] shrink-0 snap-start flex-col overflow-hidden rounded-lg border border-border bg-card text-card-foreground shadow-sm md:w-[280px]"
           >
-            <img
-              src={meeting.imageUrl}
-              alt=""
-              className="aspect-[4/3] w-full object-cover"
-              loading="lazy"
-            />
+            <div className="relative aspect-[4/3] w-full">
+              <Image
+                src={meeting.imageUrl}
+                alt=""
+                fill
+                sizes="(min-width: 768px) 280px, 260px"
+                className="object-cover"
+              />
+            </div>
             <div className="flex min-h-44 flex-1 flex-col justify-between p-4">
               <div className="space-y-3">
                 <div className="flex items-center justify-between gap-3">
