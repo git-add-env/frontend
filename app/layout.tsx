@@ -7,6 +7,7 @@ import { QueryProvider } from "@/components/providers/query-provider"
 import { ToastProvider } from "@/components/providers/toast-provider"
 import { ThemeProvider } from "@/components/theme-provider"
 import { cn } from "@/lib/utils"
+import { Footer } from "@/components/common/Footer"
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" })
 
@@ -34,6 +35,7 @@ export default function RootLayout({
                 <div className="flex min-h-svh flex-col">
                   <Header />
                   <main className="flex-1">{children}</main>
+                  <Footer />
                 </div>
               </ToastProvider>
             </ThemeProvider>
