@@ -14,3 +14,14 @@ export function formatDeadline(iso: string): string {
   const days = Math.ceil(hours / 24)
   return `D-${days}`
 }
+
+// 일정 날짜를 "2026.05.28 (수)" 형태로 변환.
+export function formatMeetingDate(date: string): string {
+  const d = new Date(`${date}T00:00:00`)
+  if (Number.isNaN(d.getTime())) return date
+  const week = ["일", "월", "화", "수", "목", "금", "토"]
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, "0")
+  const day = String(d.getDate()).padStart(2, "0")
+  return `${y}.${m}.${day} (${week[d.getDay()]})`
+}
