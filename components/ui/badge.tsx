@@ -204,7 +204,7 @@ function JobCountBadge({
   )
 }
 
-// 카테고리별 색상 (data/gatherings.json: 프로젝트/해커톤/공모전)
+// 카테고리별 색상 (프로젝트/해커톤/공모전)
 const CATEGORY_BADGE_STYLES: Record<string, string> = {
   프로젝트: "bg-indigo-500/10 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-400",
   해커톤: "bg-orange-500/10 text-orange-600 dark:bg-orange-500/20 dark:text-orange-400",

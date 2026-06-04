@@ -14,11 +14,11 @@ import {
 import { errorMessage } from "@/lib/api/error"
 
 type ResourceCardProps = {
-  gatheringId: number
+  meetingId: number
   isOwner: boolean
 }
 
-export function ResourceCard({ gatheringId, isOwner }: ResourceCardProps) {
+export function ResourceCard({ meetingId, isOwner }: ResourceCardProps) {
   const [resources, setResources] = useState<Resource[] | null>(null)
   const [adding, setAdding] = useState(false)
   const [title, setTitle] = useState("")
@@ -26,15 +26,15 @@ export function ResourceCard({ gatheringId, isOwner }: ResourceCardProps) {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    fetchResources(gatheringId)
+    fetchResources(meetingId)
       .then((res) => setResources(res.resources))
       .catch(() => setError("자료를 불러오지 못했습니다."))
-  }, [gatheringId])
+  }, [meetingId])
 
   async function add() {
     setError(null)
     try {
-      const created = await createResource(gatheringId, { title, url })
+      const created = await createResource(meetingId, { title, url })
       setResources((prev) => [...(prev ?? []), created])
       setTitle("")
       setUrl("")
@@ -46,7 +46,7 @@ export function ResourceCard({ gatheringId, isOwner }: ResourceCardProps) {
 
   async function remove(resourceId: number) {
     try {
-      await deleteResource(gatheringId, resourceId)
+      await deleteResource(meetingId, resourceId)
       setResources((prev) => prev?.filter((r) => r.id !== resourceId) ?? null)
     } catch {
       setError("자료 삭제에 실패했습니다.")

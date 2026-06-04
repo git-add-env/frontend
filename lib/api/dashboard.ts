@@ -22,33 +22,33 @@ export type ScheduleInput = {
   isMeeting?: boolean
 }
 
-export function fetchSchedules(gatheringId: number) {
+export function fetchSchedules(meetingId: number) {
   return apiClient<{ schedules: Schedule[] }>(
-    `/api/meetings/${gatheringId}/schedules`,
+    `/api/meetings/${meetingId}/schedules`,
   )
 }
 
-export function createSchedule(gatheringId: number, input: ScheduleInput) {
-  return apiClient<Schedule>(`/api/meetings/${gatheringId}/schedules`, {
+export function createSchedule(meetingId: number, input: ScheduleInput) {
+  return apiClient<Schedule>(`/api/meetings/${meetingId}/schedules`, {
     method: "POST",
     body: JSON.stringify(input),
   })
 }
 
 export function updateSchedule(
-  gatheringId: number,
+  meetingId: number,
   scheduleId: number,
   input: Partial<ScheduleInput>,
 ) {
   return apiClient<Schedule>(
-    `/api/meetings/${gatheringId}/schedules/${scheduleId}`,
+    `/api/meetings/${meetingId}/schedules/${scheduleId}`,
     { method: "PATCH", body: JSON.stringify(input) },
   )
 }
 
-export function deleteSchedule(gatheringId: number, scheduleId: number) {
+export function deleteSchedule(meetingId: number, scheduleId: number) {
   return apiClient<void>(
-    `/api/meetings/${gatheringId}/schedules/${scheduleId}`,
+    `/api/meetings/${meetingId}/schedules/${scheduleId}`,
     { method: "DELETE" },
   )
 }
@@ -63,33 +63,33 @@ export type Notice = {
   updatedAt: string
 }
 
-export function fetchNotices(gatheringId: number) {
-  return apiClient<{ notices: Notice[] }>(`/api/meetings/${gatheringId}/notices`)
+export function fetchNotices(meetingId: number) {
+  return apiClient<{ notices: Notice[] }>(`/api/meetings/${meetingId}/notices`)
 }
 
 export function createNotice(
-  gatheringId: number,
+  meetingId: number,
   input: { title: string; content: string },
 ) {
-  return apiClient<Notice>(`/api/meetings/${gatheringId}/notices`, {
+  return apiClient<Notice>(`/api/meetings/${meetingId}/notices`, {
     method: "POST",
     body: JSON.stringify(input),
   })
 }
 
 export function updateNotice(
-  gatheringId: number,
+  meetingId: number,
   noticeId: number,
   input: Partial<{ title: string; content: string }>,
 ) {
-  return apiClient<Notice>(`/api/meetings/${gatheringId}/notices/${noticeId}`, {
+  return apiClient<Notice>(`/api/meetings/${meetingId}/notices/${noticeId}`, {
     method: "PATCH",
     body: JSON.stringify(input),
   })
 }
 
-export function deleteNotice(gatheringId: number, noticeId: number) {
-  return apiClient<void>(`/api/meetings/${gatheringId}/notices/${noticeId}`, {
+export function deleteNotice(meetingId: number, noticeId: number) {
+  return apiClient<void>(`/api/meetings/${meetingId}/notices/${noticeId}`, {
     method: "DELETE",
   })
 }
@@ -103,25 +103,25 @@ export type Resource = {
   createdAt: string
 }
 
-export function fetchResources(gatheringId: number) {
+export function fetchResources(meetingId: number) {
   return apiClient<{ resources: Resource[] }>(
-    `/api/meetings/${gatheringId}/resources`,
+    `/api/meetings/${meetingId}/resources`,
   )
 }
 
 export function createResource(
-  gatheringId: number,
+  meetingId: number,
   input: { title: string; url: string },
 ) {
-  return apiClient<Resource>(`/api/meetings/${gatheringId}/resources`, {
+  return apiClient<Resource>(`/api/meetings/${meetingId}/resources`, {
     method: "POST",
     body: JSON.stringify(input),
   })
 }
 
-export function deleteResource(gatheringId: number, resourceId: number) {
+export function deleteResource(meetingId: number, resourceId: number) {
   return apiClient<void>(
-    `/api/meetings/${gatheringId}/resources/${resourceId}`,
+    `/api/meetings/${meetingId}/resources/${resourceId}`,
     { method: "DELETE" },
   )
 }
@@ -134,14 +134,14 @@ export type MeetingRoom = {
   url: string
 }
 
-export function startMeeting(gatheringId: number) {
-  return apiClient<MeetingRoom>(`/api/meetings/${gatheringId}/meetings`, {
+export function startMeeting(meetingId: number) {
+  return apiClient<MeetingRoom>(`/api/meetings/${meetingId}/meetings`, {
     method: "POST",
   })
 }
 
-export function joinMeeting(gatheringId: number) {
-  return apiClient<MeetingRoom>(`/api/meetings/${gatheringId}/meetings/join`)
+export function joinMeeting(meetingId: number) {
+  return apiClient<MeetingRoom>(`/api/meetings/${meetingId}/meetings/join`)
 }
 
 // ---- 멤버 프로필 (DB-API-016) ----

@@ -3,7 +3,7 @@
 import { XIcon } from "lucide-react"
 import { useEffect, useState } from "react"
 
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { ProfileAvatar } from "@/components/common/ProfileAvatar"
 import {
   Dialog,
   DialogClose,
@@ -58,18 +58,12 @@ function MemberProfileBody({ userId }: { userId: number }) {
       ) : profile ? (
       <div className="flex flex-col items-center gap-3 text-center">
         {/* 1. 프로필 이미지 (없거나 로드 실패 시 이니셜 폴백) */}
-        <Avatar className="size-24">
-          {profile.profileImage && (
-            <AvatarImage
-              src={profile.profileImage}
-              alt={profile.nickname}
-              className="grayscale"
-            />
-          )}
-          <AvatarFallback className="text-2xl">
-            {profile.nickname.charAt(0)}
-          </AvatarFallback>
-        </Avatar>
+        <ProfileAvatar
+          profileImage={profile.profileImage}
+          nickname={profile.nickname}
+          className="size-24"
+          fallbackClassName="text-2xl"
+        />
         <p className="mt-2 text-base font-semibold">{profile.nickname}</p>
 
         {/* 2. 소개글 */}

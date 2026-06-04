@@ -15,11 +15,11 @@ import { createNotice, deleteNotice, fetchNotices, type Notice } from "@/lib/api
 import { errorMessage } from "@/lib/api/error"
 
 type NoticeCardProps = {
-  gatheringId: number
+  meetingId: number
   isOwner: boolean
 }
 
-export function NoticeCard({ gatheringId, isOwner }: NoticeCardProps) {
+export function NoticeCard({ meetingId, isOwner }: NoticeCardProps) {
   const [notices, setNotices] = useState<Notice[] | null>(null)
   const [adding, setAdding] = useState(false)
   const [viewAll, setViewAll] = useState(false)
@@ -28,15 +28,15 @@ export function NoticeCard({ gatheringId, isOwner }: NoticeCardProps) {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    fetchNotices(gatheringId)
+    fetchNotices(meetingId)
       .then((res) => setNotices(res.notices))
       .catch(() => setError("공지를 불러오지 못했습니다."))
-  }, [gatheringId])
+  }, [meetingId])
 
   async function add() {
     setError(null)
     try {
-      const created = await createNotice(gatheringId, { title, content })
+      const created = await createNotice(meetingId, { title, content })
       setNotices((prev) => [created, ...(prev ?? [])])
       setTitle("")
       setContent("")
@@ -48,7 +48,7 @@ export function NoticeCard({ gatheringId, isOwner }: NoticeCardProps) {
 
   async function remove(noticeId: number) {
     try {
-      await deleteNotice(gatheringId, noticeId)
+      await deleteNotice(meetingId, noticeId)
       setNotices((prev) => prev?.filter((n) => n.id !== noticeId) ?? null)
     } catch {
       setError("공지 삭제에 실패했습니다.")

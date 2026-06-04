@@ -2,6 +2,7 @@
 
 import { useMemo, useRef, useState } from "react"
 
+import { ProfileAvatar } from "@/components/common/ProfileAvatar"
 import { TechStackBadges } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -129,22 +130,12 @@ export function ProfileCard({ profile, onChange }: ProfileCardProps) {
       )}
 
       <div className="mb-4 flex items-center gap-4">
-        <div className="flex size-24 items-center justify-center overflow-hidden rounded-full bg-accent text-3xl font-medium">
-          {profile.profileImage ? (
-            // mock 환경에서는 실제 이미지가 없으므로 깨질 수 있어 onError 시 이니셜로 폴백.
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={profile.profileImage}
-              alt="프로필 이미지"
-              className="size-full object-cover"
-              onError={(e) => {
-                e.currentTarget.style.display = "none"
-              }}
-            />
-          ) : (
-            profile.nickname.charAt(0)
-          )}
-        </div>
+        <ProfileAvatar
+          profileImage={profile.profileImage}
+          nickname={profile.nickname}
+          className="size-24"
+          fallbackClassName="text-3xl"
+        />
         {editing && (
           <div className="flex flex-col gap-1">
             <input

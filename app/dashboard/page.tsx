@@ -141,7 +141,7 @@ export default function DashboardPage() {
             {activeTab === "overview" && (
               <OverviewTab
                 key={selectedGroupId}
-                gatheringId={selectedGroupId}
+                meetingId={selectedGroupId}
                 isOwner={isOwner}
                 status={selectedGroup?.status ?? ""}
               />
@@ -149,12 +149,12 @@ export default function DashboardPage() {
             {activeTab === "schedules" && (
               <SchedulesTab
                 key={selectedGroupId}
-                gatheringId={selectedGroupId}
+                meetingId={selectedGroupId}
                 isOwner={isOwner}
               />
             )}
             {activeTab === "members" && (
-              <MembersTab key={selectedGroupId} gatheringId={selectedGroupId} />
+              <MembersTab key={selectedGroupId} meetingId={selectedGroupId} />
             )}
           </>
         )}
