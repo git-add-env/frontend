@@ -14,6 +14,7 @@ import { MemberCountBar } from "@/components/common/MemberCountBar"
 import { BookMarkBtn } from "@/components/common/BookMarkBtn"
 import { VideoConference } from "@/components/dashboard/VideoConference"
 import { UserAvatar } from "@/components/common/UserAvatar"
+import { TimePicker } from "@/components/common/TimePicker"
 
 export default function Page() {
   // 달력에서 선택한 날짜 상태
@@ -47,6 +48,7 @@ export default function Page() {
                 className="w-56 rounded-md border px-3 py-2 text-center text-sm"
               />
               <div><Calendars selected={selectedDate} onSelect={setSelectedDate} /></div>
+              <TimePicker />
               <BookMarkBtn />
               <VideoConference />
               <UserAvatar />
