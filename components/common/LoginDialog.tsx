@@ -3,6 +3,7 @@
 import type * as React from "react"
 import { useState } from "react"
 import { signIn } from "next-auth/react"
+import { useRouter } from "next/navigation"
 
 import { Button } from "@/components/ui/button"
 import OnboardingDialog from "@/components/common/OnboardingDialog"
@@ -49,8 +50,11 @@ function GitHubIcon(props: React.SVGProps<SVGSVGElement>) {
 }
 
 export default function LoginDialog() {
+  const router = useRouter()
   const [loginOpen, setLoginOpen] = useState(false)
   const [onboardingPreviewOpen, setOnboardingPreviewOpen] = useState(false)
+  const [testLoginLoading, setTestLoginLoading] = useState(false)
+  const testLoginEnabled = process.env.NODE_ENV !== "production"
 
   function openOnboardingPreview() {
     setLoginOpen(false)
@@ -66,52 +70,88 @@ export default function LoginDialog() {
     }
   }
 
+  async function handleTestLogin() {
+    const toastId = notify.loading("테스트 계정으로 로그인 중입니다.")
+    setTestLoginLoading(true)
+
+    try {
+      const result = await signIn("test-login", {
+        redirect: false,
+      })
+
+      if (result?.error) throw new Error("테스트 로그인에 실패했습니다.")
+
+      setLoginOpen(false)
+      router.refresh()
+      notify.success("테스트 계정으로 로그인되었습니다.", { id: toastId })
+    } catch (error) {
+      notify.error(error instanceof Error ? error.message : "테스트 로그인에 실패했습니다.", {
+        id: toastId,
+      })
+    } finally {
+      setTestLoginLoading(false)
+    }
+  }
+
   return (
     <>
-      <Dialog open={loginOpen} onOpenChange={setLoginOpen}>
-        <DialogTrigger asChild>
-          <Button size="sm" variant="outline">
-            로그인
-          </Button>
-        </DialogTrigger>
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle>로그인</DialogTitle>
-            <DialogDescription>소셜 계정으로 모임찾기를 시작하세요.</DialogDescription>
-          </DialogHeader>
+      <div className="flex items-center gap-2">
+        <Dialog open={loginOpen} onOpenChange={setLoginOpen}>
+          <DialogTrigger asChild>
+            <Button size="sm" variant="outline">
+              로그인
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-sm">
+            <DialogHeader>
+              <DialogTitle>로그인</DialogTitle>
+              <DialogDescription>소셜 계정으로 모임찾기를 시작하세요.</DialogDescription>
+            </DialogHeader>
 
-          <div className="grid gap-3">
-            <Button
-              variant="outline"
-              className="h-11 justify-start gap-3 px-4"
-              onClick={() => handleSocialLogin("google")}
-            >
-              <span className="flex size-6 items-center justify-center rounded-full bg-white shadow-xs ring-1 ring-border">
-                <GoogleIcon className="size-4" />
-              </span>
-              Google로 로그인
-            </Button>
-            <Button
-              variant="outline"
-              className="h-11 justify-start gap-3 px-4"
-              onClick={() => handleSocialLogin("github")}
-            >
-              <span className="flex size-6 items-center justify-center rounded-full bg-foreground text-background">
-                <GitHubIcon className="size-4" />
-              </span>
-              GitHub로 로그인
-            </Button>
-            <Button
-              type="button"
-              variant="secondary"
-              className="mt-1 h-10"
-              onClick={openOnboardingPreview}
-            >
-              온보딩 미리보기
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+            <div className="grid gap-3">
+              <Button
+                variant="outline"
+                className="h-11 justify-start gap-3 px-4"
+                onClick={() => handleSocialLogin("google")}
+              >
+                <span className="flex size-6 items-center justify-center rounded-full bg-white shadow-xs ring-1 ring-border">
+                  <GoogleIcon className="size-4" />
+                </span>
+                Google로 로그인
+              </Button>
+              <Button
+                variant="outline"
+                className="h-11 justify-start gap-3 px-4"
+                onClick={() => handleSocialLogin("github")}
+              >
+                <span className="flex size-6 items-center justify-center rounded-full bg-foreground text-background">
+                  <GitHubIcon className="size-4" />
+                </span>
+                GitHub로 로그인
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                className="mt-1 h-10"
+                onClick={openOnboardingPreview}
+              >
+                온보딩 미리보기
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {testLoginEnabled ? (
+          <Button
+            size="sm"
+            variant="secondary"
+            onClick={handleTestLogin}
+            disabled={testLoginLoading}
+          >
+            {testLoginLoading ? "로그인 중" : "테스트 로그인"}
+          </Button>
+        ) : null}
+      </div>
 
       <OnboardingDialog
         open={onboardingPreviewOpen}
