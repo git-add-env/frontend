@@ -1,0 +1,62 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+language: "ko-KR"
+early_access: false
+
+reviews:
+  profile: "chill"
+  request_changes_workflow: false
+  high_level_summary: true
+  poem: false
+  review_status: true
+  collapse_walkthrough: true
+
+  auto_review:
+    enabled: true
+    drafts: false
+    base_branches:
+      - "develop"
+
+  path_filters:
+    - "!node_modules/**"
+    - "!.next/**"
+    - "!coverage/**"
+    - "!dist/**"
+    - "!build/**"
+    - "!tsconfig.tsbuildinfo"
+    - "!package-lock.json"
+
+  path_instructions:
+    - path: "**/*.{ts,tsx}"
+      instructions: |
+        - 프로젝트 규칙은 `AGENTS.md`와 `docs/PROJECT_GUIDE.md`를 기준으로 검토한다.
+        - 문자열은 쌍따옴표를 사용하고 세미콜론은 사용하지 않는다.
+        - 컴포넌트는 named export를 사용하고, props 타입은 `type ComponentNameProps`로 선언했는지 확인한다.
+        - `"use client"`가 꼭 필요한 파일에만 붙어 있는지 확인한다.
+        - 클라이언트 컴포넌트에서 백엔드 API를 직접 `fetch`하지 않고 `apiClient` 또는 React Query hook을 사용하는지 확인한다.
+        - 사용하지 않는 import, 변수, 함수, console이 남아 있으면 지적한다.
+
+    - path: "app/api/**"
+      instructions: |
+        - 서버 route handler에서는 입력값 검증, 인증 처리, 에러 응답 형식이 일관적인지 확인한다.
+        - 백엔드 API 호출이 필요하면 `serverApiClient` 또는 기존 서버 API helper 패턴을 우선 사용했는지 확인한다.
+
+    - path: "components/**"
+      instructions: |
+        - shadcn/ui와 `components/ui`의 기존 컴포넌트를 우선 사용했는지 확인한다.
+        - 버튼, 입력, 다이얼로그에는 적절한 label, title, aria 속성이 있는지 확인한다.
+        - 모바일과 데스크톱에서 레이아웃 깨짐, 텍스트 겹침, 접근성 문제가 생기지 않는지 확인한다.
+
+    - path: "docs/**"
+      instructions: |
+        - 문서가 현재 프로젝트 구조와 실제 명령어를 정확히 반영하는지 확인한다.
+        - 팀 컨벤션과 충돌하거나 오래된 내용이 있으면 지적한다.
+
+knowledge_base:
+  code_guidelines:
+    enabled: true
+    filePatterns:
+      - "docs/PROJECT_GUIDE.md"
+      - ".claude/PROJECT.md"
+
+chat:
+  auto_reply: true
