@@ -8,17 +8,17 @@ import { formatMeetingDate } from "@/lib/date"
 import { findNextMeeting } from "@/lib/schedule"
 
 type NextMeetingCardProps = {
-  gatheringId: number
+  meetingId: number
 }
 
-export function NextMeetingCard({ gatheringId }: NextMeetingCardProps) {
+export function NextMeetingCard({ meetingId }: NextMeetingCardProps) {
   const [schedules, setSchedules] = useState<Schedule[] | null>(null)
 
   useEffect(() => {
-    fetchSchedules(gatheringId)
+    fetchSchedules(meetingId)
       .then((res) => setSchedules(res.schedules))
       .catch(() => setSchedules([]))
-  }, [gatheringId])
+  }, [meetingId])
 
   const next = schedules ? findNextMeeting(schedules) : null
 

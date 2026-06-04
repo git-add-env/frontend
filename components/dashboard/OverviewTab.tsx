@@ -12,12 +12,12 @@ import { ResourceCard } from "./ResourceCard"
 import { VideoConference } from "./VideoConference"
 
 type OverviewTabProps = {
-  gatheringId: number
+  meetingId: number
   isOwner: boolean
   status: string
 }
 
-export function OverviewTab({ gatheringId, isOwner, status }: OverviewTabProps) {
+export function OverviewTab({ meetingId, isOwner, status }: OverviewTabProps) {
   const [meetingBusy, setMeetingBusy] = useState(false)
   const [meetingError, setMeetingError] = useState<string | null>(null)
 
@@ -26,9 +26,9 @@ export function OverviewTab({ gatheringId, isOwner, status }: OverviewTabProps) 
     setMeetingError(null)
     try {
       if (isOwner) {
-        await startMeeting(gatheringId)
+        await startMeeting(meetingId)
       } else {
-        await joinMeeting(gatheringId)
+        await joinMeeting(meetingId)
       }
     } catch (e) {
       if (e instanceof ApiFetchError && e.status === 404) {
@@ -74,14 +74,14 @@ export function OverviewTab({ gatheringId, isOwner, status }: OverviewTabProps) 
 
       <div className="grid gap-4 md:grid-cols-5">
         <div className="md:col-span-3">
-          <NoticeCard gatheringId={gatheringId} isOwner={isOwner} />
+          <NoticeCard meetingId={meetingId} isOwner={isOwner} />
         </div>
         <div className="md:col-span-2">
-          <NextMeetingCard gatheringId={gatheringId} />
+          <NextMeetingCard meetingId={meetingId} />
         </div>
       </div>
 
-      <ResourceCard gatheringId={gatheringId} isOwner={isOwner} />
+      <ResourceCard meetingId={meetingId} isOwner={isOwner} />
     </div>
   )
 }

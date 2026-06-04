@@ -20,11 +20,11 @@ import { findNextMeeting } from "@/lib/schedule"
 import { cn } from "@/lib/utils"
 
 type SchedulesTabProps = {
-  gatheringId: number
+  meetingId: number
   isOwner: boolean
 }
 
-export function SchedulesTab({ gatheringId, isOwner }: SchedulesTabProps) {
+export function SchedulesTab({ meetingId, isOwner }: SchedulesTabProps) {
   const [schedules, setSchedules] = useState<Schedule[] | null>(null)
   const [adding, setAdding] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -38,21 +38,21 @@ export function SchedulesTab({ gatheringId, isOwner }: SchedulesTabProps) {
   const [dateOpen, setDateOpen] = useState(false)
 
   function load() {
-    fetchSchedules(gatheringId)
+    fetchSchedules(meetingId)
       .then((res) => setSchedules(res.schedules))
       .catch(() => setError("일정을 불러오지 못했습니다."))
   }
 
   useEffect(() => {
-    fetchSchedules(gatheringId)
+    fetchSchedules(meetingId)
       .then((res) => setSchedules(res.schedules))
       .catch(() => setError("일정을 불러오지 못했습니다."))
-  }, [gatheringId])
+  }, [meetingId])
 
   async function add() {
     setError(null)
     try {
-      const created = await createSchedule(gatheringId, {
+      const created = await createSchedule(meetingId, {
         title,
         date,
         time,
@@ -77,7 +77,7 @@ export function SchedulesTab({ gatheringId, isOwner }: SchedulesTabProps) {
 
   async function remove(scheduleId: number) {
     try {
-      await deleteSchedule(gatheringId, scheduleId)
+      await deleteSchedule(meetingId, scheduleId)
       setSchedules((prev) => prev?.filter((s) => s.id !== scheduleId) ?? null)
     } catch {
       setError("일정 삭제에 실패했습니다.")
