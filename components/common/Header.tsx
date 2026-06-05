@@ -13,7 +13,6 @@ import { notify } from "@/lib/notify"
 import { cn } from "@/lib/utils"
 
 const navigationItems = [
-  { label: "랜딩페이지", href: "/landing" },
   { label: "모임찾기", href: "/meetings" },
   { label: "상세페이지", href: "/meetings/detail" },
   { label: "대시보드", href: "/dashboard" },
@@ -42,8 +41,8 @@ export default function Header() {
   return (
     <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur">
       <div className="mx-auto flex min-h-16 w-full max-w-6xl flex-col gap-3 px-6 py-3 sm:flex-row sm:items-center sm:justify-between">
-        <Link href="/landing" className="w-fit text-lg font-semibold tracking-normal text-foreground">
-          모임찾기
+        <Link href="/landing" className="w-fit text-lg font-bold tracking-normal text-foreground">
+          모여<span className="text-[#1abcfe]">ON</span>
         </Link>
 
         <nav className="flex flex-wrap items-center gap-1 text-sm">
