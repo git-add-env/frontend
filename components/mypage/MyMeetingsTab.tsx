@@ -1,6 +1,5 @@
 "use client"
 
-import { useRouter } from "next/navigation"
 import { useCallback, useEffect, useState } from "react"
 
 import { Button } from "@/components/ui/button"
@@ -29,7 +28,6 @@ type MyMeetingsTabProps = {
 }
 
 export function MyMeetingsTab({ status }: MyMeetingsTabProps) {
-  const router = useRouter()
   const [meetings, setMeetings] = useState<Meeting[] | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [confirm, setConfirm] = useState<ConfirmState>(null)
@@ -95,13 +93,7 @@ export function MyMeetingsTab({ status }: MyMeetingsTabProps) {
                     // 모임장 액션(수정/삭제)은 모집중일 때만. 활동중/완료는 진행·종료된 모임이라 숨김.
                     meeting.status === "RECRUITING" && (
                       <>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => router.push(`/meetings/${meeting.meetingId}/edit`)}
-                        >
-                          모임 정보 수정
-                        </Button>
+                        {/* TODO(MVP): 모임 정보 수정 페이지(/meetings/[id]/edit) 미구현으로 404 발생 → 임시 비활성화 */}
                         <Button
                           size="sm"
                           variant="destructive"
