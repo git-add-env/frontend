@@ -1,31 +1,32 @@
 "use client"
 
 import { format } from "date-fns"
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { Calendar, Trash2 } from "lucide-react"
 
 import { Calendars } from "@/components/common/Calendars"
 import { TimePicker } from "@/components/common/TimePicker"
 import { Button } from "@/components/ui/button"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { ApiFetchError } from "@/lib/api/api-fetch"
 import {
-  createSchedule,
-  deleteSchedule,
-  fetchSchedules,
-  type Schedule,
-} from "@/lib/api/dashboard"
+  useCreateSchedule,
+  useDeleteSchedule,
+  useSchedules,
+} from "@/hooks/dashboard/use-schedules"
+import { ApiFetchError } from "@/lib/api/api-fetch"
 import { errorMessage } from "@/lib/api/error"
 import { findNextMeeting } from "@/lib/schedule"
 import { cn } from "@/lib/utils"
 
 type SchedulesTabProps = {
   meetingId: number
-  isOwner: boolean
+  isLeader: boolean
 }
 
-export function SchedulesTab({ meetingId, isOwner }: SchedulesTabProps) {
-  const [schedules, setSchedules] = useState<Schedule[] | null>(null)
+export function SchedulesTab({ meetingId, isLeader }: SchedulesTabProps) {
+  const { data: schedules, isError } = useSchedules(meetingId)
+  const createSchedule = useCreateSchedule(meetingId)
+  const deleteSchedule = useDeleteSchedule(meetingId)
   const [adding, setAdding] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -37,33 +38,16 @@ export function SchedulesTab({ meetingId, isOwner }: SchedulesTabProps) {
   const [isMeeting, setIsMeeting] = useState(false)
   const [dateOpen, setDateOpen] = useState(false)
 
-  function load() {
-    fetchSchedules(meetingId)
-      .then((res) => setSchedules(res.schedules))
-      .catch(() => setError("일정을 불러오지 못했습니다."))
-  }
-
-  useEffect(() => {
-    fetchSchedules(meetingId)
-      .then((res) => setSchedules(res.schedules))
-      .catch(() => setError("일정을 불러오지 못했습니다."))
-  }, [meetingId])
-
   async function add() {
     setError(null)
     try {
-      const created = await createSchedule(meetingId, {
+      await createSchedule.mutateAsync({
         title,
         date,
         time,
         description: description || null,
         isMeeting,
       })
-      setSchedules((prev) =>
-        [...(prev ?? []), created].sort((a, b) =>
-          `${a.date}${a.time}`.localeCompare(`${b.date}${b.time}`),
-        ),
-      )
       setTitle("")
       setDate("")
       setTime("")
@@ -75,14 +59,10 @@ export function SchedulesTab({ meetingId, isOwner }: SchedulesTabProps) {
     }
   }
 
-  async function remove(scheduleId: number) {
-    try {
-      await deleteSchedule(meetingId, scheduleId)
-      setSchedules((prev) => prev?.filter((s) => s.id !== scheduleId) ?? null)
-    } catch {
-      setError("일정 삭제에 실패했습니다.")
-      load()
-    }
+  function remove(scheduleId: number) {
+    deleteSchedule.mutate(scheduleId, {
+      onError: () => setError("일정 삭제에 실패했습니다."),
+    })
   }
 
   const next = schedules ? findNextMeeting(schedules) : null
@@ -103,7 +83,7 @@ export function SchedulesTab({ meetingId, isOwner }: SchedulesTabProps) {
       <div className="rounded-2xl border border-border bg-card p-6">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-base font-semibold">예정 일정</h2>
-          {isOwner && (
+          {isLeader && (
             <Button size="sm" variant="outline" onClick={() => setAdding((v) => !v)}>
               {adding ? "취소" : "+ 일정 추가"}
             </Button>
@@ -167,7 +147,9 @@ export function SchedulesTab({ meetingId, isOwner }: SchedulesTabProps) {
 
         {error && <p className="mb-2 text-xs text-destructive">{error}</p>}
 
-        {!schedules ? (
+        {isError ? (
+          <p className="text-sm text-muted-foreground">일정을 불러오지 못했습니다.</p>
+        ) : !schedules ? (
           <p className="text-sm text-muted-foreground">불러오는 중...</p>
         ) : schedules.length === 0 ? (
           <p className="text-sm text-muted-foreground">등록된 일정이 없습니다.</p>
@@ -192,7 +174,7 @@ export function SchedulesTab({ meetingId, isOwner }: SchedulesTabProps) {
                     {schedule.description ? ` · ${schedule.description}` : ""}
                   </p>
                 </div>
-                {isOwner && (
+                {isLeader && (
                   <button
                     type="button"
                     onClick={() => remove(schedule.id)}

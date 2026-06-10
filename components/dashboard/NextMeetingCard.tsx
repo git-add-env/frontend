@@ -1,9 +1,8 @@
 "use client"
 
-import { useEffect, useState } from "react"
 import { Calendar, Clock, Video } from "lucide-react"
 
-import { fetchSchedules, type Schedule } from "@/lib/api/dashboard"
+import { useSchedules } from "@/hooks/dashboard/use-schedules"
 import { formatMeetingDate } from "@/lib/date"
 import { findNextMeeting } from "@/lib/schedule"
 
@@ -12,13 +11,7 @@ type NextMeetingCardProps = {
 }
 
 export function NextMeetingCard({ meetingId }: NextMeetingCardProps) {
-  const [schedules, setSchedules] = useState<Schedule[] | null>(null)
-
-  useEffect(() => {
-    fetchSchedules(meetingId)
-      .then((res) => setSchedules(res.schedules))
-      .catch(() => setSchedules([]))
-  }, [meetingId])
+  const { data: schedules, isError } = useSchedules(meetingId)
 
   const next = schedules ? findNextMeeting(schedules) : null
 
@@ -28,7 +21,7 @@ export function NextMeetingCard({ meetingId }: NextMeetingCardProps) {
         <Calendar className="size-4" />
         다음 회의 일정
       </h2>
-      {!schedules ? (
+      {!schedules && !isError ? (
         <p className="text-sm text-muted-foreground">불러오는 중...</p>
       ) : next ? (
         <div className="flex flex-col gap-4">

@@ -3,12 +3,15 @@ import CredentialsProvider from "next-auth/providers/credentials"
 import GitHubProvider from "next-auth/providers/github"
 import GoogleProvider from "next-auth/providers/google"
 
-import { exchangeSocialLogin, type AppUser, type SocialProvider } from "@/lib/auth/backend"
+import { extractBackendAuthCookies } from "@/lib/auth/backend-cookies"
+import { exchangeSocialLoginWithMeta, type AppUser, type SocialProvider } from "@/lib/auth/backend"
 
 type TestLoginUser = User & {
   accessToken: string
   appUser: AppUser
   onboardingRequired: boolean
+  backendAuthCookieHeader?: string
+  backendAuthCookieNames?: string[]
 }
 
 const TEST_LOGIN_PAYLOAD = {
@@ -49,16 +52,20 @@ export const authOptions: NextAuthOptions = {
       name: "Test Login",
       credentials: {},
       async authorize() {
-        const result = await exchangeSocialLogin(TEST_LOGIN_PAYLOAD)
+        const result = await exchangeSocialLoginWithMeta(TEST_LOGIN_PAYLOAD)
+        const backendAuthCookies = extractBackendAuthCookies(result.response.headers.get("set-cookie"))
+        const loginResult = result.data
 
         return {
-          id: String(result.user.id),
-          name: result.user.name ?? result.user.nickname ?? "테스트유저1",
-          email: result.user.email,
-          image: result.user.profileImage ?? null,
-          accessToken: result.accessToken,
-          appUser: result.user,
-          onboardingRequired: result.authStatus !== "LOGIN_SUCCESS",
+          id: String(loginResult.user.id),
+          name: loginResult.user.name ?? loginResult.user.nickname ?? "테스트유저1",
+          email: loginResult.user.email,
+          image: loginResult.user.profileImage ?? null,
+          accessToken: loginResult.accessToken,
+          appUser: loginResult.user,
+          onboardingRequired: loginResult.authStatus !== "LOGIN_SUCCESS",
+          backendAuthCookieHeader: backendAuthCookies.cookieHeader,
+          backendAuthCookieNames: backendAuthCookies.cookieNames,
         }
       },
     }),
@@ -67,8 +74,11 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, account, profile, trigger, session, user }) {
       if (trigger === "update" && session?.accessToken) {
         token.accessToken = session.accessToken
-        token.onboardingRequired = session.onboardingRequired ?? false
-        token.appUser = session.user as AppUser
+        token.onboardingRequired = session.onboardingRequired ?? token.onboardingRequired ?? false
+
+        if (session.user) {
+          token.appUser = session.user as AppUser
+        }
       }
 
       if (account?.provider === "test-login" && user && isTestLoginUser(user)) {
@@ -76,6 +86,8 @@ export const authOptions: NextAuthOptions = {
         token.appUser = user.appUser
         token.onboardingRequired = user.onboardingRequired
         token.email = user.appUser.email
+        token.backendAuthCookieHeader = user.backendAuthCookieHeader
+        token.backendAuthCookieNames = user.backendAuthCookieNames
         return token
       }
 
@@ -91,25 +103,32 @@ export const authOptions: NextAuthOptions = {
       }
 
       try {
-        const result = await exchangeSocialLogin({
+        const result = await exchangeSocialLoginWithMeta({
           provider: account.provider as SocialProvider,
           providerId: getProviderAccountId(account),
           email,
           name: profile.name,
           image: "picture" in profile ? String(profile.picture ?? "") : token.picture,
         })
+        const backendAuthCookies = extractBackendAuthCookies(result.response.headers.get("set-cookie"))
+        const loginResult = result.data
 
-        if (result.authStatus === "LOGIN_SUCCESS") {
-          token.accessToken = result.accessToken
-          token.appUser = result.user
+        if (backendAuthCookies.cookieHeader) {
+          token.backendAuthCookieHeader = backendAuthCookies.cookieHeader
+          token.backendAuthCookieNames = backendAuthCookies.cookieNames
+        }
+
+        if (loginResult.authStatus === "LOGIN_SUCCESS") {
+          token.accessToken = loginResult.accessToken
+          token.appUser = loginResult.user
           token.onboardingRequired = false
           return token
         }
 
         token.onboardingRequired = true
-        token.accessToken = result.accessToken
-        token.appUser = result.user
-        token.email = result.user.email
+        token.accessToken = loginResult.accessToken
+        token.appUser = loginResult.user
+        token.email = loginResult.user.email
         return token
       } catch (error) {
         console.error("[auth] backend social login failed", error)
