@@ -1,16 +1,12 @@
 import { apiClient } from "@/lib/api/api-client"
 import type { AppUser } from "@/lib/auth/backend"
+import { requestAccessTokenRefresh } from "@/lib/auth/refresh"
 
 const AUTH_USER_PATH = "/api/users/me"
-const REFRESH_PATH = "/api/auth/refresh"
 const LOGOUT_PATH = "/api/auth/logout"
 
 type MeResponse = {
   user: AppUser
-}
-
-type RefreshResponse = {
-  accessToken: string
 }
 
 export function getAuthUser() {
@@ -18,11 +14,7 @@ export function getAuthUser() {
 }
 
 export function refreshAccessToken() {
-  return apiClient<RefreshResponse>(REFRESH_PATH, {
-    method: "POST",
-    auth: false,
-    credentials: "include",
-  })
+  return requestAccessTokenRefresh()
 }
 
 export function logoutBackend() {

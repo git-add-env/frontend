@@ -1,8 +1,29 @@
 "use client"
 
-import { SessionProvider } from "next-auth/react"
+import { useEffect, type ReactNode } from "react"
+import { SessionProvider, useSession } from "next-auth/react"
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
-  // NextAuth 세션 컨텍스트를 앱 전체에 제공합니다. 화면에서는 useSession/signIn/signOut을 바로 사용할 수 있습니다.
-  return <SessionProvider>{children}</SessionProvider>
+import { onAccessTokenRefreshed } from "@/lib/auth/refresh"
+
+function AccessTokenRefreshListener() {
+  const { update } = useSession()
+
+  useEffect(() => {
+    return onAccessTokenRefreshed((event) => {
+      void update({
+        accessToken: event.detail.accessToken,
+      })
+    })
+  }, [update])
+
+  return null
+}
+
+export function AuthProvider({ children }: { children: ReactNode }) {
+  return (
+    <SessionProvider>
+      <AccessTokenRefreshListener />
+      {children}
+    </SessionProvider>
+  )
 }
