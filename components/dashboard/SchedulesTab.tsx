@@ -21,10 +21,10 @@ import { cn } from "@/lib/utils"
 
 type SchedulesTabProps = {
   meetingId: number
-  isOwner: boolean
+  isLeader: boolean
 }
 
-export function SchedulesTab({ meetingId, isOwner }: SchedulesTabProps) {
+export function SchedulesTab({ meetingId, isLeader }: SchedulesTabProps) {
   const [schedules, setSchedules] = useState<Schedule[] | null>(null)
   const [adding, setAdding] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -103,7 +103,7 @@ export function SchedulesTab({ meetingId, isOwner }: SchedulesTabProps) {
       <div className="rounded-2xl border border-border bg-card p-6">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-base font-semibold">예정 일정</h2>
-          {isOwner && (
+          {isLeader && (
             <Button size="sm" variant="outline" onClick={() => setAdding((v) => !v)}>
               {adding ? "취소" : "+ 일정 추가"}
             </Button>
@@ -192,7 +192,7 @@ export function SchedulesTab({ meetingId, isOwner }: SchedulesTabProps) {
                     {schedule.description ? ` · ${schedule.description}` : ""}
                   </p>
                 </div>
-                {isOwner && (
+                {isLeader && (
                   <button
                     type="button"
                     onClick={() => remove(schedule.id)}

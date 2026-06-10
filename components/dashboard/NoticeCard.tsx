@@ -16,10 +16,10 @@ import { errorMessage } from "@/lib/api/error"
 
 type NoticeCardProps = {
   meetingId: number
-  isOwner: boolean
+  isLeader: boolean
 }
 
-export function NoticeCard({ meetingId, isOwner }: NoticeCardProps) {
+export function NoticeCard({ meetingId, isLeader }: NoticeCardProps) {
   const [notices, setNotices] = useState<Notice[] | null>(null)
   const [adding, setAdding] = useState(false)
   const [viewAll, setViewAll] = useState(false)
@@ -63,7 +63,7 @@ export function NoticeCard({ meetingId, isOwner }: NoticeCardProps) {
           <Button size="xs" variant="ghost" onClick={() => setViewAll(true)}>
             더보기 <ChevronRight />
           </Button>
-          {isOwner && (
+          {isLeader && (
             <Button size="xs" variant="ghost" onClick={() => setAdding(true)}>
               <SquarePen /> 작성
             </Button>
@@ -71,7 +71,7 @@ export function NoticeCard({ meetingId, isOwner }: NoticeCardProps) {
         </div>
       </div>
 
-      {isOwner && (
+      {isLeader && (
         <Dialog open={adding} onOpenChange={setAdding}>
           <DialogContent>
             <DialogHeader>
@@ -123,7 +123,7 @@ export function NoticeCard({ meetingId, isOwner }: NoticeCardProps) {
               <li key={notice.id} className="rounded-lg border border-border p-3">
                 <div className="flex items-start justify-between gap-2">
                   <p className="text-sm font-medium">{notice.title}</p>
-                  {isOwner && (
+                  {isLeader && (
                     <button
                       type="button"
                       onClick={() => remove(notice.id)}
@@ -173,7 +173,7 @@ export function NoticeCard({ meetingId, isOwner }: NoticeCardProps) {
                   >
                     <div className="flex items-start justify-between gap-2">
                       <p className="text-sm font-medium">{notice.title}</p>
-                      {isOwner && (
+                      {isLeader && (
                         <button
                           type="button"
                           onClick={() => remove(notice.id)}

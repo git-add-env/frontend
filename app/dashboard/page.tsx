@@ -40,8 +40,7 @@ export default function DashboardPage() {
   }, [])
 
   const selectedGroup = groups?.find((g) => g.meetingId === selectedGroupId) ?? null
-  // TODO: 백엔드 MeetingSummary에 isLeader 추가되면 selectedGroup?.isLeader로 교체. 현재 임시로 모임장 취급.
-  const isOwner = true
+  const isLeader = selectedGroup?.isLeader ?? false
 
   return (
     <div className="dashboard-borders mx-auto flex w-full max-w-[1280px] gap-6 px-6 py-8">
@@ -79,8 +78,7 @@ export default function DashboardPage() {
                   isActive && "border-muted-foreground font-medium text-foreground",
                 )}
               >
-                {/* TODO: 백엔드 isLeader 추가 시 group.isLeader && 로 교체. 현재 목록 응답에 없어 임시로 항상 표시. */}
-                <Crown className="size-3.5 shrink-0 text-yellow-500" />
+                {group.isLeader && <Crown className="size-3.5 shrink-0 text-yellow-500" />}
                 {/* 긴 이름은 한 줄 말줄임(…), 전체 이름은 버튼 title 속성으로 호버 시 노출 */}
                 <span className="min-w-0 flex-1 truncate">{group.title}</span>
               </button>
@@ -107,7 +105,7 @@ export default function DashboardPage() {
                   활동중
                 </Badge>
               )}
-              {isOwner && <HostBadge />}
+              {isLeader && <HostBadge />}
             </div>
           )}
           <h1 className="text-2xl font-semibold tracking-normal">
@@ -142,7 +140,7 @@ export default function DashboardPage() {
               <OverviewTab
                 key={selectedGroupId}
                 meetingId={selectedGroupId}
-                isOwner={isOwner}
+                isLeader={isLeader}
                 status={selectedGroup?.status ?? ""}
               />
             )}
@@ -150,7 +148,7 @@ export default function DashboardPage() {
               <SchedulesTab
                 key={selectedGroupId}
                 meetingId={selectedGroupId}
-                isOwner={isOwner}
+                isLeader={isLeader}
               />
             )}
             {activeTab === "members" && (

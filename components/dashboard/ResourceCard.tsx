@@ -15,10 +15,10 @@ import { errorMessage } from "@/lib/api/error"
 
 type ResourceCardProps = {
   meetingId: number
-  isOwner: boolean
+  isLeader: boolean
 }
 
-export function ResourceCard({ meetingId, isOwner }: ResourceCardProps) {
+export function ResourceCard({ meetingId, isLeader }: ResourceCardProps) {
   const [resources, setResources] = useState<Resource[] | null>(null)
   const [adding, setAdding] = useState(false)
   const [title, setTitle] = useState("")
@@ -57,7 +57,7 @@ export function ResourceCard({ meetingId, isOwner }: ResourceCardProps) {
     <div className="rounded-2xl border border-border bg-card p-6">
       <div className="mb-3 flex items-center justify-between">
         <h2 className="text-base font-semibold">자료실</h2>
-        {isOwner && (
+        {isLeader && (
           <Button size="xs" variant="outline" onClick={() => setAdding((v) => !v)}>
             {adding ? "취소" : "링크 추가"}
           </Button>
@@ -105,7 +105,7 @@ export function ResourceCard({ meetingId, isOwner }: ResourceCardProps) {
               >
                 {resource.title}
               </a>
-              {isOwner && (
+              {isLeader && (
                 <button
                   type="button"
                   onClick={() => remove(resource.id)}

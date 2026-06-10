@@ -13,11 +13,11 @@ import { VideoConference } from "./VideoConference"
 
 type OverviewTabProps = {
   meetingId: number
-  isOwner: boolean
+  isLeader: boolean
   status: string
 }
 
-export function OverviewTab({ meetingId, isOwner, status }: OverviewTabProps) {
+export function OverviewTab({ meetingId, isLeader, status }: OverviewTabProps) {
   const [meetingBusy, setMeetingBusy] = useState(false)
   const [meetingError, setMeetingError] = useState<string | null>(null)
 
@@ -25,7 +25,7 @@ export function OverviewTab({ meetingId, isOwner, status }: OverviewTabProps) {
     setMeetingBusy(true)
     setMeetingError(null)
     try {
-      if (isOwner) {
+      if (isLeader) {
         await startMeeting(meetingId)
       } else {
         await joinMeeting(meetingId)
@@ -54,13 +54,13 @@ export function OverviewTab({ meetingId, isOwner, status }: OverviewTabProps) {
             <div>
               <p className="text-sm text-muted-foreground">화상 회의</p>
               <p className="text-base font-semibold">
-                {isOwner ? "지금 회의를 시작해보세요" : "진행 중인 회의에 참여하세요"}
+                {isLeader ? "지금 회의를 시작해보세요" : "진행 중인 회의에 참여하세요"}
               </p>
             </div>
           </div>
           <VideoConference
             status={status}
-            isOwner={isOwner}
+            isLeader={isLeader}
             busy={meetingBusy}
             onClick={onMeeting}
           />
@@ -74,14 +74,14 @@ export function OverviewTab({ meetingId, isOwner, status }: OverviewTabProps) {
 
       <div className="grid gap-4 md:grid-cols-5">
         <div className="md:col-span-3">
-          <NoticeCard meetingId={meetingId} isOwner={isOwner} />
+          <NoticeCard meetingId={meetingId} isLeader={isLeader} />
         </div>
         <div className="md:col-span-2">
           <NextMeetingCard meetingId={meetingId} />
         </div>
       </div>
 
-      <ResourceCard meetingId={meetingId} isOwner={isOwner} />
+      <ResourceCard meetingId={meetingId} isLeader={isLeader} />
     </div>
   )
 }
