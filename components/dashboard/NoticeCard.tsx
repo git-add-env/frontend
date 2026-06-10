@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { ChevronRight, Megaphone, SquarePen, Trash2 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -10,8 +10,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { useCreateNotice, useDeleteNotice, useNotices } from "@/hooks/dashboard/use-notices"
 import { ApiFetchError } from "@/lib/api/api-fetch"
-import { createNotice, deleteNotice, fetchNotices, type Notice } from "@/lib/api/dashboard"
 import { errorMessage } from "@/lib/api/error"
 
 type NoticeCardProps = {
@@ -20,24 +20,19 @@ type NoticeCardProps = {
 }
 
 export function NoticeCard({ meetingId, isLeader }: NoticeCardProps) {
-  const [notices, setNotices] = useState<Notice[] | null>(null)
+  const { data: notices, isError } = useNotices(meetingId)
+  const createNotice = useCreateNotice(meetingId)
+  const deleteNotice = useDeleteNotice(meetingId)
   const [adding, setAdding] = useState(false)
   const [viewAll, setViewAll] = useState(false)
   const [title, setTitle] = useState("")
   const [content, setContent] = useState("")
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    fetchNotices(meetingId)
-      .then((res) => setNotices(res.notices))
-      .catch(() => setError("공지를 불러오지 못했습니다."))
-  }, [meetingId])
-
   async function add() {
     setError(null)
     try {
-      const created = await createNotice(meetingId, { title, content })
-      setNotices((prev) => [created, ...(prev ?? [])])
+      await createNotice.mutateAsync({ title, content })
       setTitle("")
       setContent("")
       setAdding(false)
@@ -46,13 +41,10 @@ export function NoticeCard({ meetingId, isLeader }: NoticeCardProps) {
     }
   }
 
-  async function remove(noticeId: number) {
-    try {
-      await deleteNotice(meetingId, noticeId)
-      setNotices((prev) => prev?.filter((n) => n.id !== noticeId) ?? null)
-    } catch {
-      setError("공지 삭제에 실패했습니다.")
-    }
+  function remove(noticeId: number) {
+    deleteNotice.mutate(noticeId, {
+      onError: () => setError("공지 삭제에 실패했습니다."),
+    })
   }
 
   return (
@@ -113,7 +105,9 @@ export function NoticeCard({ meetingId, isLeader }: NoticeCardProps) {
 
       {/* 공지 2개 이하여도 3개일 때 높이를 유지하도록 최소 높이 확보 (공지 1개 ≈ 66px, gap 포함 3개 ≈ 14rem) */}
       <div className="min-h-[14rem]">
-        {!notices ? (
+        {isError ? (
+          <p className="text-sm text-muted-foreground">공지를 불러오지 못했습니다.</p>
+        ) : !notices ? (
           <p className="text-sm text-muted-foreground">불러오는 중...</p>
         ) : notices.length === 0 ? (
           <p className="text-sm text-muted-foreground">등록된 공지사항이 없습니다.</p>

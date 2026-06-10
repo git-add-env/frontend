@@ -3,8 +3,8 @@
 import { useState } from "react"
 import { Video } from "lucide-react"
 
+import { useJoinMeeting, useStartMeeting } from "@/hooks/dashboard/use-meeting-room"
 import { ApiFetchError } from "@/lib/api/api-fetch"
-import { joinMeeting, startMeeting } from "@/lib/api/dashboard"
 
 import { NextMeetingCard } from "./NextMeetingCard"
 import { NoticeCard } from "./NoticeCard"
@@ -18,17 +18,18 @@ type OverviewTabProps = {
 }
 
 export function OverviewTab({ meetingId, isLeader, status }: OverviewTabProps) {
-  const [meetingBusy, setMeetingBusy] = useState(false)
+  const startMeeting = useStartMeeting(meetingId)
+  const joinMeeting = useJoinMeeting(meetingId)
+  const meetingBusy = startMeeting.isPending || joinMeeting.isPending
   const [meetingError, setMeetingError] = useState<string | null>(null)
 
   async function onMeeting() {
-    setMeetingBusy(true)
     setMeetingError(null)
     try {
       if (isLeader) {
-        await startMeeting(meetingId)
+        await startMeeting.mutateAsync()
       } else {
-        await joinMeeting(meetingId)
+        await joinMeeting.mutateAsync()
       }
     } catch (e) {
       if (e instanceof ApiFetchError && e.status === 404) {
@@ -38,8 +39,6 @@ export function OverviewTab({ meetingId, isLeader, status }: OverviewTabProps) {
       } else {
         setMeetingError("회의 연결에 실패했습니다.")
       }
-    } finally {
-      setMeetingBusy(false)
     }
   }
 

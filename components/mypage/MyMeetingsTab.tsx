@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useState } from "react"
+import { useState } from "react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -10,14 +10,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { ApiFetchError } from "@/lib/api/api-fetch"
 import {
-  cancelMembership,
-  completeMeeting,
-  deleteMeeting,
-  fetchMyMeetings,
-  type Meeting,
-} from "@/lib/api/mypage"
+  useCancelMembership,
+  useCompleteMeeting,
+  useDeleteMeeting,
+  useMyMeetings,
+} from "@/hooks/mypage/use-my-meetings"
+import { ApiFetchError } from "@/lib/api/api-fetch"
 import { errorMessage } from "@/lib/api/error"
 
 import { EmptyOrError } from "./EmptyOrError"
@@ -36,46 +35,35 @@ type MyMeetingsTabProps = {
 }
 
 export function MyMeetingsTab({ status }: MyMeetingsTabProps) {
-  const [meetings, setMeetings] = useState<Meeting[] | null>(null)
-  const [error, setError] = useState<string | null>(null)
+  const { data: meetings, isError } = useMyMeetings(status)
   const [confirm, setConfirm] = useState<ConfirmState>(null)
   const [confirmError, setConfirmError] = useState<string | null>(null)
-  const [busy, setBusy] = useState(false)
 
-  const load = useCallback(() => {
-    fetchMyMeetings(status)
-      .then((res) => setMeetings(res.meetings))
-      .catch(() => setError("모임을 불러오지 못했습니다."))
-  }, [status])
-
-  useEffect(() => {
-    load()
-  }, [load])
+  const cancelMembership = useCancelMembership()
+  const completeMeeting = useCompleteMeeting()
+  const deleteMeeting = useDeleteMeeting()
+  const busy = cancelMembership.isPending || completeMeeting.isPending || deleteMeeting.isPending
 
   async function runConfirm() {
     if (!confirm) return
-    setBusy(true)
     setConfirmError(null)
+    const mutation =
+      confirm.action === "cancel"
+        ? cancelMembership
+        : confirm.action === "complete"
+          ? completeMeeting
+          : deleteMeeting
     try {
-      if (confirm.action === "cancel") {
-        await cancelMembership(confirm.meetingId)
-      } else if (confirm.action === "complete") {
-        await completeMeeting(confirm.meetingId)
-      } else {
-        await deleteMeeting(confirm.meetingId)
-      }
+      await mutation.mutateAsync(confirm.meetingId)
       setConfirm(null)
-      load()
     } catch (e) {
       setConfirmError(
         e instanceof ApiFetchError ? errorMessage(e) : "요청에 실패했습니다.",
       )
-    } finally {
-      setBusy(false)
     }
   }
 
-  if (error) return <EmptyOrError message={error} />
+  if (isError) return <EmptyOrError message="모임을 불러오지 못했습니다." />
   if (!meetings) return <EmptyOrError message="로딩 중..." />
   if (meetings.length === 0)
     return (

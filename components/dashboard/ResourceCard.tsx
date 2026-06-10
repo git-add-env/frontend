@@ -1,16 +1,15 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { Trash2 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
-import { ApiFetchError } from "@/lib/api/api-fetch"
 import {
-  createResource,
-  deleteResource,
-  fetchResources,
-  type Resource,
-} from "@/lib/api/dashboard"
+  useCreateResource,
+  useDeleteResource,
+  useResources,
+} from "@/hooks/dashboard/use-resources"
+import { ApiFetchError } from "@/lib/api/api-fetch"
 import { errorMessage } from "@/lib/api/error"
 
 type ResourceCardProps = {
@@ -19,23 +18,18 @@ type ResourceCardProps = {
 }
 
 export function ResourceCard({ meetingId, isLeader }: ResourceCardProps) {
-  const [resources, setResources] = useState<Resource[] | null>(null)
+  const { data: resources, isError } = useResources(meetingId)
+  const createResource = useCreateResource(meetingId)
+  const deleteResource = useDeleteResource(meetingId)
   const [adding, setAdding] = useState(false)
   const [title, setTitle] = useState("")
   const [url, setUrl] = useState("")
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    fetchResources(meetingId)
-      .then((res) => setResources(res.resources))
-      .catch(() => setError("자료를 불러오지 못했습니다."))
-  }, [meetingId])
-
   async function add() {
     setError(null)
     try {
-      const created = await createResource(meetingId, { title, url })
-      setResources((prev) => [...(prev ?? []), created])
+      await createResource.mutateAsync({ title, url })
       setTitle("")
       setUrl("")
       setAdding(false)
@@ -44,13 +38,10 @@ export function ResourceCard({ meetingId, isLeader }: ResourceCardProps) {
     }
   }
 
-  async function remove(resourceId: number) {
-    try {
-      await deleteResource(meetingId, resourceId)
-      setResources((prev) => prev?.filter((r) => r.id !== resourceId) ?? null)
-    } catch {
-      setError("자료 삭제에 실패했습니다.")
-    }
+  function remove(resourceId: number) {
+    deleteResource.mutate(resourceId, {
+      onError: () => setError("자료 삭제에 실패했습니다."),
+    })
   }
 
   return (
@@ -86,7 +77,9 @@ export function ResourceCard({ meetingId, isLeader }: ResourceCardProps) {
 
       {error && <p className="mb-2 text-xs text-destructive">{error}</p>}
 
-      {!resources ? (
+      {isError ? (
+        <p className="text-sm text-muted-foreground">자료를 불러오지 못했습니다.</p>
+      ) : !resources ? (
         <p className="text-sm text-muted-foreground">불러오는 중...</p>
       ) : resources.length === 0 ? (
         <p className="text-sm text-muted-foreground">등록된 자료가 없습니다.</p>

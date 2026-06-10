@@ -1,14 +1,14 @@
 "use client"
 
 import { Crown } from "lucide-react"
-import { useEffect, useState } from "react"
+import { useMemo, useState } from "react"
 
 import { MembersTab } from "@/components/dashboard/MembersTab"
 import { OverviewTab } from "@/components/dashboard/OverviewTab"
 import { SchedulesTab } from "@/components/dashboard/SchedulesTab"
 import { Badge, CategoryBadge, HostBadge } from "@/components/ui/badge"
 import { CATEGORY_LABEL } from "@/constants/category"
-import { fetchMyMeetings, type Meeting } from "@/lib/api/mypage"
+import { useMyMeetings } from "@/hooks/mypage/use-my-meetings"
 import { cn } from "@/lib/utils"
 
 type TabKey = "overview" | "schedules" | "members"
@@ -20,26 +20,21 @@ const tabs: { key: TabKey; label: string }[] = [
 ]
 
 export default function DashboardPage() {
-  const [groups, setGroups] = useState<Meeting[] | null>(null)
-  const [groupsError, setGroupsError] = useState<string | null>(null)
+  // 대시보드는 참여 중인 모임(모집중 + 활동중)을 함께 보여준다.
+  // 백엔드 status 필터가 한 번에 하나라 두 번 조회 후 합친다. (완료는 제외)
+  const recruiting = useMyMeetings("recruiting")
+  const active = useMyMeetings("active")
+  const groups = useMemo(
+    () => (recruiting.data && active.data ? [...recruiting.data, ...active.data] : null),
+    [recruiting.data, active.data],
+  )
+  const groupsError = recruiting.isError || active.isError
   const [selectedGroupId, setSelectedGroupId] = useState<number | null>(null)
   const [activeTab, setActiveTab] = useState<TabKey>("overview")
 
-  useEffect(() => {
-    // 대시보드는 참여 중인 모임(모집중 + 활동중)을 함께 보여준다.
-    // 백엔드 status 필터가 한 번에 하나라 두 번 호출 후 합친다. (완료는 제외)
-    Promise.all([fetchMyMeetings("recruiting"), fetchMyMeetings("active")])
-      .then(([recruiting, active]) => {
-        const merged = [...recruiting.meetings, ...active.meetings]
-        setGroups(merged)
-        if (merged.length > 0) {
-          setSelectedGroupId(merged[0].meetingId)
-        }
-      })
-      .catch(() => setGroupsError("참여중인 모임을 불러오지 못했습니다."))
-  }, [])
-
-  const selectedGroup = groups?.find((g) => g.meetingId === selectedGroupId) ?? null
+  // 사용자가 아직 선택하지 않았으면(null) 첫 모임을 기본 선택으로 사용.
+  const effectiveGroupId = selectedGroupId ?? groups?.[0]?.meetingId ?? null
+  const selectedGroup = groups?.find((g) => g.meetingId === effectiveGroupId) ?? null
   const isLeader = selectedGroup?.isLeader ?? false
 
   return (
@@ -54,7 +49,9 @@ export default function DashboardPage() {
           </p>
 
           {groupsError && (
-            <p className="px-3 text-xs text-destructive">{groupsError}</p>
+            <p className="px-3 text-xs text-destructive">
+              참여중인 모임을 불러오지 못했습니다.
+            </p>
           )}
           {!groups && !groupsError && (
             <p className="px-3 text-xs text-muted-foreground">불러오는 중...</p>
@@ -66,7 +63,7 @@ export default function DashboardPage() {
           )}
 
           {groups?.map((group) => {
-            const isActive = group.meetingId === selectedGroupId
+            const isActive = group.meetingId === effectiveGroupId
             return (
               <button
                 key={group.meetingId}
@@ -132,27 +129,27 @@ export default function DashboardPage() {
           })}
         </div>
 
-        {selectedGroupId === null ? (
+        {effectiveGroupId === null ? (
           <p className="text-sm text-muted-foreground">먼저 모임을 선택해주세요.</p>
         ) : (
           <>
             {activeTab === "overview" && (
               <OverviewTab
-                key={selectedGroupId}
-                meetingId={selectedGroupId}
+                key={effectiveGroupId}
+                meetingId={effectiveGroupId}
                 isLeader={isLeader}
                 status={selectedGroup?.status ?? ""}
               />
             )}
             {activeTab === "schedules" && (
               <SchedulesTab
-                key={selectedGroupId}
-                meetingId={selectedGroupId}
+                key={effectiveGroupId}
+                meetingId={effectiveGroupId}
                 isLeader={isLeader}
               />
             )}
             {activeTab === "members" && (
-              <MembersTab key={selectedGroupId} meetingId={selectedGroupId} />
+              <MembersTab key={effectiveGroupId} meetingId={effectiveGroupId} />
             )}
           </>
         )}

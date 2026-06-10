@@ -10,15 +10,16 @@ import {
   ONBOARDING_JOB_OPTIONS,
   ONBOARDING_TECH_STACK_OPTIONS,
 } from "@/constants/onboarding"
-import { patchMyProfile, uploadProfileImage, type Profile } from "@/lib/api/mypage"
+import { useUpdateProfile } from "@/hooks/mypage/use-profile"
+import { uploadProfileImage, type Profile } from "@/lib/api/mypage"
 import { cn } from "@/lib/utils"
 
 type ProfileCardProps = {
   profile: Profile
-  onChange: (profile: Profile) => void
 }
 
-export function ProfileCard({ profile, onChange }: ProfileCardProps) {
+export function ProfileCard({ profile }: ProfileCardProps) {
+  const updateProfile = useUpdateProfile()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [editing, setEditing] = useState(false)
   const [nickname, setNickname] = useState(profile.nickname)
@@ -59,14 +60,13 @@ export function ProfileCard({ profile, onChange }: ProfileCardProps) {
     setSubmitting(true)
     setError(null)
     try {
-      const next = await patchMyProfile({
+      await updateProfile.mutateAsync({
         nickname,
         introduction,
         job: job || undefined,
         career: career || undefined,
         techStacks,
       })
-      onChange(next)
       setEditing(false)
     } catch (e) {
       setError(e instanceof Error ? e.message : "수정에 실패했습니다.")
@@ -94,8 +94,7 @@ export function ProfileCard({ profile, onChange }: ProfileCardProps) {
     setError(null)
     try {
       const imageUrl = await uploadProfileImage(file)
-      const next = await patchMyProfile({ profileImage: imageUrl })
-      onChange(next)
+      await updateProfile.mutateAsync({ profileImage: imageUrl })
     } catch (e) {
       setError(e instanceof Error ? e.message : "이미지 업로드에 실패했습니다.")
     } finally {
