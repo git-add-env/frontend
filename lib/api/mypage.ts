@@ -33,7 +33,7 @@ export type MeetingPosition = {
 
 // 백엔드 MeetingSummary 응답 그대로. status: "RECRUITING" | "ACTIVE" | "COMPLETED",
 // category: "PROJECT" | "HACKATHON" | "CONTEST" (영어 enum).
-// 주의: 목록 응답엔 isOwner/isLeader가 없음 → 모임장/참여자 구분 불가 (백엔드 추가 대기).
+// isLeader: 현재 로그인 유저가 이 모임의 모임장인지 여부.
 export type Meeting = {
   meetingId: number
   thumbnailUrl: string | null
@@ -42,6 +42,7 @@ export type Meeting = {
   techStacks: string[]
   isBookmarked: boolean
   isDeadlineToday: boolean
+  isLeader: boolean
   deadline: string
   recruitSummary: { currentCount: number; totalCount: number }
   positions: MeetingPosition[]
@@ -121,5 +122,20 @@ export type DeleteMeetingResult =
 export function deleteMeeting(meetingId: number) {
   return apiClient<DeleteMeetingResult>(`/api/meetings/${meetingId}`, {
     method: "DELETE",
+  })
+}
+
+// MP-API-011 모임장 모임 종료 (활동중 → 완료). 요청 바디 없음.
+// 종료 시 멤버 전원에게 알림 발송, notifiedCount로 알림 받은 수 반환.
+export type CompleteMeetingResult = {
+  meetingId: number
+  status: "COMPLETED"
+  completedAt: string
+  notifiedCount: number
+}
+
+export function completeMeeting(meetingId: number) {
+  return apiClient<CompleteMeetingResult>(`/api/meetings/${meetingId}/complete`, {
+    method: "POST",
   })
 }

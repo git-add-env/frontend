@@ -28,8 +28,7 @@ export function MeetingCard({ meeting, footer, onClick }: MeetingCardProps) {
     >
       <div className="mb-2 flex items-center gap-2">
         <CategoryBadge category={CATEGORY_LABEL[meeting.category] ?? meeting.category} />
-        {/* TODO: 백엔드 isLeader 추가 시 meeting.isLeader && 로 교체 (현재 목록 응답에 없어 항상 표시) */}
-        <HostBadge />
+        {meeting.isLeader && <HostBadge />}
         <Badge variant={STATUS_BADGE_VARIANT[meeting.status] ?? "muted"} className="ml-auto">
           {STATUS_LABEL[meeting.status] ?? meeting.status}
         </Badge>

@@ -11,16 +11,24 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { ApiFetchError } from "@/lib/api/api-fetch"
-import { cancelMembership, deleteMeeting, fetchMyMeetings, type Meeting } from "@/lib/api/mypage"
+import {
+  cancelMembership,
+  completeMeeting,
+  deleteMeeting,
+  fetchMyMeetings,
+  type Meeting,
+} from "@/lib/api/mypage"
 import { errorMessage } from "@/lib/api/error"
 
 import { EmptyOrError } from "./EmptyOrError"
 import { MeetingCard } from "./MeetingCard"
 
+type ConfirmAction = "cancel" | "delete" | "complete"
+
 type ConfirmState = {
   meetingId: number
   title: string
-  action: "cancel" | "delete"
+  action: ConfirmAction
 } | null
 
 type MyMeetingsTabProps = {
@@ -51,6 +59,8 @@ export function MyMeetingsTab({ status }: MyMeetingsTabProps) {
     try {
       if (confirm.action === "cancel") {
         await cancelMembership(confirm.meetingId)
+      } else if (confirm.action === "complete") {
+        await completeMeeting(confirm.meetingId)
       } else {
         await deleteMeeting(confirm.meetingId)
       }
@@ -80,20 +90,17 @@ export function MyMeetingsTab({ status }: MyMeetingsTabProps) {
     <>
       <div className="grid gap-3 sm:grid-cols-2">
         {meetings.map((meeting) => {
-          // TODO: 백엔드 MeetingSummary에 isLeader 추가되면 meeting.isLeader로 교체.
-          // (상세 DTO는 isLeader/isParticipant 사용) 현재 목록 응답엔 없어 임시로 모두 모임장 취급.
-          const isLeader = true
           return (
             <MeetingCard
               key={meeting.meetingId}
               meeting={meeting}
               footer={
                 <div className="mt-3 flex flex-wrap justify-end gap-2">
-                  {isLeader ? (
-                    // 모임장 액션(수정/삭제)은 모집중일 때만. 활동중/완료는 진행·종료된 모임이라 숨김.
-                    meeting.status === "RECRUITING" && (
-                      <>
-                        {/* TODO(MVP): 모임 정보 수정 페이지(/meetings/[id]/edit) 미구현으로 404 발생 → 임시 비활성화 */}
+                  {meeting.isLeader ? (
+                    <>
+                      {/* 모집중: 삭제 / 활동중: 종료. 완료된 모임엔 모임장 액션 없음. */}
+                      {meeting.status === "RECRUITING" && (
+                        // TODO(MVP): 모임 정보 수정 페이지(/meetings/[id]/edit) 미구현으로 404 발생 → 임시 비활성화
                         <Button
                           size="sm"
                           variant="destructive"
@@ -107,8 +114,23 @@ export function MyMeetingsTab({ status }: MyMeetingsTabProps) {
                         >
                           삭제
                         </Button>
-                      </>
-                    )
+                      )}
+                      {meeting.status === "ACTIVE" && (
+                        <Button
+                          size="sm"
+                          variant="default"
+                          onClick={() =>
+                            setConfirm({
+                              meetingId: meeting.meetingId,
+                              title: meeting.title,
+                              action: "complete",
+                            })
+                          }
+                        >
+                          종료
+                        </Button>
+                      )}
+                    </>
                   ) : (
                     meeting.status === "RECRUITING" && (
                       <Button
@@ -145,12 +167,18 @@ export function MyMeetingsTab({ status }: MyMeetingsTabProps) {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {confirm?.action === "delete" ? "모임 삭제" : "참여 취소"}
+              {confirm?.action === "delete"
+                ? "모임 삭제"
+                : confirm?.action === "complete"
+                  ? "모임 종료"
+                  : "참여 취소"}
             </DialogTitle>
             <DialogDescription>
               {confirm?.action === "delete"
                 ? `'${confirm?.title}' 모임을 삭제하시겠어요? 참여 멤버가 있으면 취소 알림이 전송됩니다.`
-                : `'${confirm?.title}' 모임 참여를 취소하시겠어요?`}
+                : confirm?.action === "complete"
+                  ? `'${confirm?.title}' 모임을 종료하시겠어요? 완료된 모임으로 이동하며 멤버에게 종료 알림이 전송됩니다.`
+                  : `'${confirm?.title}' 모임 참여를 취소하시겠어요?`}
             </DialogDescription>
           </DialogHeader>
           {confirmError && (
@@ -174,7 +202,13 @@ export function MyMeetingsTab({ status }: MyMeetingsTabProps) {
               onClick={runConfirm}
               disabled={busy}
             >
-              {busy ? "처리 중..." : confirm?.action === "delete" ? "삭제" : "참여 취소"}
+              {busy
+                ? "처리 중..."
+                : confirm?.action === "delete"
+                  ? "삭제"
+                  : confirm?.action === "complete"
+                    ? "종료"
+                    : "참여 취소"}
             </Button>
           </div>
         </DialogContent>
