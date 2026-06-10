@@ -2,7 +2,7 @@
 
 import { format } from "date-fns"
 import { useState } from "react"
-import { Calendar, Trash2 } from "lucide-react"
+import { Calendar, ChevronDown, Trash2 } from "lucide-react"
 
 import { Calendars } from "@/components/common/Calendars"
 import { TimePicker } from "@/components/common/TimePicker"
@@ -14,8 +14,9 @@ import {
   useSchedules,
 } from "@/hooks/dashboard/use-schedules"
 import { ApiFetchError } from "@/lib/api/api-fetch"
+import type { Schedule } from "@/lib/api/dashboard"
 import { errorMessage } from "@/lib/api/error"
-import { findNextMeeting } from "@/lib/schedule"
+import { findNextMeeting, splitSchedules } from "@/lib/schedule"
 import { cn } from "@/lib/utils"
 
 type SchedulesTabProps = {
@@ -29,6 +30,7 @@ export function SchedulesTab({ meetingId, isLeader }: SchedulesTabProps) {
   const deleteSchedule = useDeleteSchedule(meetingId)
   const [adding, setAdding] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [pastOpen, setPastOpen] = useState(false)
 
   // 입력 폼.
   const [title, setTitle] = useState("")
@@ -66,6 +68,10 @@ export function SchedulesTab({ meetingId, isLeader }: SchedulesTabProps) {
   }
 
   const next = schedules ? findNextMeeting(schedules) : null
+  // 지난 일정이 "예정 일정"에 섞여 보이던 문제 → 현재 시각 기준으로 분리해 표시.
+  const { upcoming, past } = schedules
+    ? splitSchedules(schedules)
+    : { upcoming: [], past: [] }
 
   return (
     <div className="flex flex-col gap-4">
@@ -151,44 +157,97 @@ export function SchedulesTab({ meetingId, isLeader }: SchedulesTabProps) {
           <p className="text-sm text-muted-foreground">일정을 불러오지 못했습니다.</p>
         ) : !schedules ? (
           <p className="text-sm text-muted-foreground">불러오는 중...</p>
-        ) : schedules.length === 0 ? (
-          <p className="text-sm text-muted-foreground">등록된 일정이 없습니다.</p>
+        ) : upcoming.length === 0 ? (
+          <p className="text-sm text-muted-foreground">예정된 일정이 없습니다.</p>
         ) : (
           <ul className="flex flex-col gap-2">
-            {schedules.map((schedule) => (
-              <li
+            {upcoming.map((schedule) => (
+              <ScheduleItem
                 key={schedule.id}
-                className="flex items-start justify-between gap-2 rounded-lg border border-border p-3"
-              >
-                <div>
-                  <div className="flex items-center gap-2">
-                    <p className="text-sm font-medium">{schedule.title}</p>
-                    {schedule.isMeeting && (
-                      <span className="rounded-full bg-accent px-2 py-0.5 text-xs">
-                        화상 회의
-                      </span>
-                    )}
-                  </div>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    {schedule.date} {schedule.time}
-                    {schedule.description ? ` · ${schedule.description}` : ""}
-                  </p>
-                </div>
-                {isLeader && (
-                  <button
-                    type="button"
-                    onClick={() => remove(schedule.id)}
-                    className="text-muted-foreground transition-colors hover:text-destructive"
-                    aria-label="삭제"
-                  >
-                    <Trash2 className="size-4" />
-                  </button>
-                )}
-              </li>
+                schedule={schedule}
+                isLeader={isLeader}
+                onRemove={remove}
+              />
             ))}
           </ul>
         )}
       </div>
+
+      {past.length > 0 && (
+        <div className="rounded-2xl border border-border bg-card p-6">
+          <button
+            type="button"
+            onClick={() => setPastOpen((v) => !v)}
+            className="flex w-full items-center justify-between"
+            aria-expanded={pastOpen}
+          >
+            <h2 className="text-base font-semibold text-muted-foreground">
+              지난 일정 <span className="text-sm font-normal">{past.length}</span>
+            </h2>
+            <ChevronDown
+              className={cn(
+                "size-4 text-muted-foreground transition-transform",
+                pastOpen && "rotate-180",
+              )}
+            />
+          </button>
+
+          {pastOpen && (
+            <ul className="mt-3 flex flex-col gap-2">
+              {past.map((schedule) => (
+                <ScheduleItem
+                  key={schedule.id}
+                  schedule={schedule}
+                  isLeader={isLeader}
+                  onRemove={remove}
+                  muted
+                />
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
     </div>
+  )
+}
+
+type ScheduleItemProps = {
+  schedule: Schedule
+  isLeader: boolean
+  onRemove: (scheduleId: number) => void
+  muted?: boolean
+}
+
+function ScheduleItem({ schedule, isLeader, onRemove, muted }: ScheduleItemProps) {
+  return (
+    <li
+      className={cn(
+        "flex items-start justify-between gap-2 rounded-lg border border-border p-3",
+        muted && "bg-muted/30",
+      )}
+    >
+      <div>
+        <div className="flex items-center gap-2">
+          <p className="text-sm font-medium">{schedule.title}</p>
+          {schedule.isMeeting && (
+            <span className="rounded-full bg-accent px-2 py-0.5 text-xs">화상 회의</span>
+          )}
+        </div>
+        <p className="mt-1 text-xs text-muted-foreground">
+          {schedule.date} {schedule.time}
+          {schedule.description ? ` · ${schedule.description}` : ""}
+        </p>
+      </div>
+      {isLeader && (
+        <button
+          type="button"
+          onClick={() => onRemove(schedule.id)}
+          className="text-muted-foreground transition-colors hover:text-destructive"
+          aria-label="삭제"
+        >
+          <Trash2 className="size-4" />
+        </button>
+      )}
+    </li>
   )
 }
