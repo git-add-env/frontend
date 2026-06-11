@@ -88,7 +88,6 @@ export function MyMeetingsTab({ status }: MyMeetingsTabProps) {
                     <>
                       {/* 모집중: 삭제 / 활동중: 종료. 완료된 모임엔 모임장 액션 없음. */}
                       {meeting.status === "RECRUITING" && (
-                        // TODO(MVP): 모임 정보 수정 페이지(/meetings/[id]/edit) 미구현으로 404 발생 → 임시 비활성화
                         <Button
                           size="sm"
                           variant="destructive"
