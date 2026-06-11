@@ -1,5 +1,6 @@
 "use client"
 
+import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { Video } from "lucide-react"
 
@@ -18,6 +19,7 @@ type OverviewTabProps = {
 }
 
 export function OverviewTab({ meetingId, isOwner, status }: OverviewTabProps) {
+  const router = useRouter()
   const [meetingBusy, setMeetingBusy] = useState(false)
   const [meetingError, setMeetingError] = useState<string | null>(null)
 
@@ -25,11 +27,18 @@ export function OverviewTab({ meetingId, isOwner, status }: OverviewTabProps) {
     setMeetingBusy(true)
     setMeetingError(null)
     try {
-      if (isOwner) {
-        await startMeeting(meetingId)
-      } else {
-        await joinMeeting(meetingId)
-      }
+      const room = isOwner
+        ? await startMeeting(meetingId)
+        : await joinMeeting(meetingId)
+      const params = new URLSearchParams({
+        meetingId: String(meetingId),
+        roomId: room.roomId,
+      })
+      window.sessionStorage.setItem(
+        `meeting-room:${room.roomId}`,
+        JSON.stringify(room),
+      )
+      router.push(`/meetings/videoMeeting?${params.toString()}`)
     } catch (e) {
       if (e instanceof ApiFetchError && e.status === 404) {
         setMeetingError("진행 중인 회의가 없습니다.")
