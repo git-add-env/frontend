@@ -31,7 +31,7 @@ export default function MyPage() {
 
       {profileError && (
         <p className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">
-          {profileError}
+          프로필을 불러오지 못했습니다.
         </p>
       )}
 
