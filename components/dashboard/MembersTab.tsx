@@ -1,27 +1,21 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useState } from "react"
 
 import { MemberProfileDialog } from "@/components/common/MemberProfileDialog"
 import { ProfileAvatar } from "@/components/common/ProfileAvatar"
-import { fetchMeetingMembers, type MeetingMember } from "@/lib/api/meetings"
+import { useMeetingMembers } from "@/hooks/dashboard/use-members"
 
 type MembersTabProps = {
   meetingId: number
 }
 
 export function MembersTab({ meetingId }: MembersTabProps) {
-  const [members, setMembers] = useState<MeetingMember[] | null>(null)
-  const [error, setError] = useState<string | null>(null)
+  const { data: members, isError } = useMeetingMembers(meetingId)
   const [profileUserId, setProfileUserId] = useState<number | null>(null)
 
-  useEffect(() => {
-    fetchMeetingMembers(meetingId)
-      .then((res) => setMembers(res.members))
-      .catch(() => setError("멤버 목록을 불러오지 못했습니다."))
-  }, [meetingId])
-
-  if (error) return <p className="text-sm text-destructive">{error}</p>
+  if (isError)
+    return <p className="text-sm text-destructive">멤버 목록을 불러오지 못했습니다.</p>
   if (!members) return <p className="text-sm text-muted-foreground">불러오는 중...</p>
 
   const leader = members.find((m) => m.isLeader)

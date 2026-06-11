@@ -1,12 +1,12 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useState } from "react"
 
 import { BookmarkedTab } from "@/components/mypage/BookmarkedTab"
 import { CompletedTab } from "@/components/mypage/CompletedTab"
 import { MyMeetingsTab } from "@/components/mypage/MyMeetingsTab"
 import { ProfileCard } from "@/components/mypage/ProfileCard"
-import { fetchMyProfile, type Profile } from "@/lib/api/mypage"
+import { useMyProfile } from "@/hooks/mypage/use-profile"
 import { cn } from "@/lib/utils"
 
 type TabKey = "recruiting" | "active" | "bookmarked" | "completed"
@@ -19,15 +19,8 @@ const tabs: { key: TabKey; label: string }[] = [
 ]
 
 export default function MyPage() {
-  const [profile, setProfile] = useState<Profile | null>(null)
-  const [profileError, setProfileError] = useState<string | null>(null)
+  const { data: profile, isError: profileError } = useMyProfile()
   const [activeTab, setActiveTab] = useState<TabKey>("recruiting")
-
-  useEffect(() => {
-    fetchMyProfile()
-      .then(setProfile)
-      .catch(() => setProfileError("프로필을 불러오지 못했습니다."))
-  }, [])
 
   return (
     <section className="mx-auto flex w-full max-w-[1280px] flex-col gap-6 px-6 py-10">
@@ -38,11 +31,11 @@ export default function MyPage() {
 
       {profileError && (
         <p className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">
-          {profileError}
+          프로필을 불러오지 못했습니다.
         </p>
       )}
 
-      {profile && <ProfileCard profile={profile} onChange={setProfile} />}
+      {profile && <ProfileCard profile={profile} />}
 
       <div className="flex gap-1 border-b border-border">
         {tabs.map((tab) => {

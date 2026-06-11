@@ -2,7 +2,6 @@ import * as React from "react"
 import { cva, type VariantProps } from "class-variance-authority"
 import { Slot } from "radix-ui"
 import { Bell, Crown, Users } from "lucide-react"
-
 import { cn } from "@/lib/utils"
 
 const badgeVariants = cva(

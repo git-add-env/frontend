@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r '.tool_input.file_path // .tool_response.filePath // empty' | { read -r f; case \"$f\" in *.ts|*.tsx) out=$(npx eslint \"$f\" 2>&1); code=$?; if [ -n \"$out\" ]; then if [ \"$code\" -ne 0 ]; then jq -n --arg o \"$out\" '{decision:\"block\",reason:(\"ESLint 오류 — 수정해주세요:\\n\"+$o)}'; else jq -n --arg o \"$out\" '{hookSpecificOutput:{hookEventName:\"PostToolUse\",additionalContext:(\"ESLint 경고:\\n\"+$o)}}'; fi; fi;; esac; }",
+            "statusMessage": "ESLint 검사 중..."
+          },
+          {
+            "type": "command",
+            "command": "jq -r '.tool_input.file_path // .tool_response.filePath // empty' | { read -r f; case \"$f\" in *.ts|*.tsx) out=$(npx tsc --noEmit 2>&1); if [ -n \"$out\" ]; then jq -n --arg o \"$out\" '{decision:\"block\",reason:(\"TypeScript 타입 오류 — 수정해주세요:\\n\"+$o)}'; fi;; esac; }",
+            "statusMessage": "타입 검사 중..."
+          }
+        ]
+      }
+    ]
+  }
+}

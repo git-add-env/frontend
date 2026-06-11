@@ -1,41 +1,35 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { Trash2 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
-import { ApiFetchError } from "@/lib/api/api-fetch"
 import {
-  createResource,
-  deleteResource,
-  fetchResources,
-  type Resource,
-} from "@/lib/api/dashboard"
+  useCreateResource,
+  useDeleteResource,
+  useResources,
+} from "@/hooks/dashboard/use-resources"
+import { ApiFetchError } from "@/lib/api/api-fetch"
 import { errorMessage } from "@/lib/api/error"
 
 type ResourceCardProps = {
   meetingId: number
-  isOwner: boolean
+  isLeader: boolean
 }
 
-export function ResourceCard({ meetingId, isOwner }: ResourceCardProps) {
-  const [resources, setResources] = useState<Resource[] | null>(null)
+export function ResourceCard({ meetingId, isLeader }: ResourceCardProps) {
+  const { data: resources, isError } = useResources(meetingId)
+  const createResource = useCreateResource(meetingId)
+  const deleteResource = useDeleteResource(meetingId)
   const [adding, setAdding] = useState(false)
   const [title, setTitle] = useState("")
   const [url, setUrl] = useState("")
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    fetchResources(meetingId)
-      .then((res) => setResources(res.resources))
-      .catch(() => setError("자료를 불러오지 못했습니다."))
-  }, [meetingId])
-
   async function add() {
     setError(null)
     try {
-      const created = await createResource(meetingId, { title, url })
-      setResources((prev) => [...(prev ?? []), created])
+      await createResource.mutateAsync({ title, url })
       setTitle("")
       setUrl("")
       setAdding(false)
@@ -44,20 +38,17 @@ export function ResourceCard({ meetingId, isOwner }: ResourceCardProps) {
     }
   }
 
-  async function remove(resourceId: number) {
-    try {
-      await deleteResource(meetingId, resourceId)
-      setResources((prev) => prev?.filter((r) => r.id !== resourceId) ?? null)
-    } catch {
-      setError("자료 삭제에 실패했습니다.")
-    }
+  function remove(resourceId: number) {
+    deleteResource.mutate(resourceId, {
+      onError: () => setError("자료 삭제에 실패했습니다."),
+    })
   }
 
   return (
     <div className="rounded-2xl border border-border bg-card p-6">
       <div className="mb-3 flex items-center justify-between">
         <h2 className="text-base font-semibold">자료실</h2>
-        {isOwner && (
+        {isLeader && (
           <Button size="xs" variant="outline" onClick={() => setAdding((v) => !v)}>
             {adding ? "취소" : "링크 추가"}
           </Button>
@@ -86,7 +77,9 @@ export function ResourceCard({ meetingId, isOwner }: ResourceCardProps) {
 
       {error && <p className="mb-2 text-xs text-destructive">{error}</p>}
 
-      {!resources ? (
+      {isError ? (
+        <p className="text-sm text-muted-foreground">자료를 불러오지 못했습니다.</p>
+      ) : !resources ? (
         <p className="text-sm text-muted-foreground">불러오는 중...</p>
       ) : resources.length === 0 ? (
         <p className="text-sm text-muted-foreground">등록된 자료가 없습니다.</p>
@@ -105,7 +98,7 @@ export function ResourceCard({ meetingId, isOwner }: ResourceCardProps) {
               >
                 {resource.title}
               </a>
-              {isOwner && (
+              {isLeader && (
                 <button
                   type="button"
                   onClick={() => remove(resource.id)}
