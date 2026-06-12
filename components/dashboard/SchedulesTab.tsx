@@ -5,6 +5,7 @@ import { useState } from "react"
 import { Calendar, ChevronDown, Trash2 } from "lucide-react"
 
 import { Calendars } from "@/components/common/Calendars"
+import { ConfirmDialog } from "@/components/common/ConfirmDialog"
 import { TimePicker } from "@/components/common/TimePicker"
 import { Button } from "@/components/ui/button"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
@@ -31,6 +32,8 @@ export function SchedulesTab({ meetingId, isLeader }: SchedulesTabProps) {
   const [adding, setAdding] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [pastOpen, setPastOpen] = useState(false)
+  const [pendingId, setPendingId] = useState<number | null>(null)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
 
   // 입력 폼.
   const [title, setTitle] = useState("")
@@ -61,9 +64,12 @@ export function SchedulesTab({ meetingId, isLeader }: SchedulesTabProps) {
     }
   }
 
-  function remove(scheduleId: number) {
-    deleteSchedule.mutate(scheduleId, {
-      onError: () => setError("일정 삭제에 실패했습니다."),
+  // 휴지통 클릭 → 확인 다이얼로그를 띄우고, 확인 시 실제 삭제한다.
+  function confirmRemove() {
+    if (pendingId === null) return
+    deleteSchedule.mutate(pendingId, {
+      onSuccess: () => setPendingId(null),
+      onError: () => setDeleteError("일정 삭제에 실패했습니다."),
     })
   }
 
@@ -72,6 +78,9 @@ export function SchedulesTab({ meetingId, isLeader }: SchedulesTabProps) {
   const { upcoming, past } = schedules
     ? splitSchedules(schedules)
     : { upcoming: [], past: [] }
+  const pendingTitle = schedules?.find((s) => s.id === pendingId)?.title ?? null
+  // 제목·날짜·시간이 모두 채워져야 등록 가능. (설명은 선택)
+  const canSubmit = title.trim() !== "" && date !== "" && time !== ""
 
   return (
     <div className="flex flex-col gap-4">
@@ -143,9 +152,22 @@ export function SchedulesTab({ meetingId, isLeader }: SchedulesTabProps) {
               />
               화상 회의 일정
             </label>
+            {!canSubmit && (
+              <p className="text-xs text-muted-foreground">
+                {!title.trim()
+                  ? "일정 제목을 입력해주세요."
+                  : !date
+                    ? "날짜를 선택해주세요."
+                    : "시간을 선택해주세요."}
+              </p>
+            )}
             <div className="flex justify-end">
-              <Button size="sm" onClick={add}>
-                등록
+              <Button
+                size="sm"
+                onClick={add}
+                disabled={!canSubmit || createSchedule.isPending}
+              >
+                {createSchedule.isPending ? "등록 중..." : "등록"}
               </Button>
             </div>
           </div>
@@ -166,7 +188,7 @@ export function SchedulesTab({ meetingId, isLeader }: SchedulesTabProps) {
                 key={schedule.id}
                 schedule={schedule}
                 isLeader={isLeader}
-                onRemove={remove}
+                onRemove={setPendingId}
               />
             ))}
           </ul>
@@ -199,7 +221,7 @@ export function SchedulesTab({ meetingId, isLeader }: SchedulesTabProps) {
                   key={schedule.id}
                   schedule={schedule}
                   isLeader={isLeader}
-                  onRemove={remove}
+                  onRemove={setPendingId}
                   muted
                 />
               ))}
@@ -207,6 +229,21 @@ export function SchedulesTab({ meetingId, isLeader }: SchedulesTabProps) {
           )}
         </div>
       )}
+
+      <ConfirmDialog
+        open={pendingId !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setPendingId(null)
+            setDeleteError(null)
+          }
+        }}
+        title="일정 삭제"
+        description={`${pendingTitle ? `'${pendingTitle}' ` : ""}일정을 삭제하시겠어요? 삭제하면 되돌릴 수 없습니다.`}
+        loading={deleteSchedule.isPending}
+        error={deleteError}
+        onConfirm={confirmRemove}
+      />
     </div>
   )
 }
@@ -226,14 +263,14 @@ function ScheduleItem({ schedule, isLeader, onRemove, muted }: ScheduleItemProps
         muted && "bg-muted/30",
       )}
     >
-      <div>
-        <div className="flex items-center gap-2">
-          <p className="text-sm font-medium">{schedule.title}</p>
+      <div className="min-w-0">
+        <div className="flex min-w-0 items-center gap-2">
+          <p className="min-w-0 truncate text-sm font-medium">{schedule.title}</p>
           {schedule.isMeeting && (
-            <span className="rounded-full bg-accent px-2 py-0.5 text-xs">화상 회의</span>
+            <span className="shrink-0 rounded-full bg-accent px-2 py-0.5 text-xs">화상 회의</span>
           )}
         </div>
-        <p className="mt-1 text-xs text-muted-foreground">
+        <p className="mt-1 break-words text-xs text-muted-foreground">
           {schedule.date} {schedule.time}
           {schedule.description ? ` · ${schedule.description}` : ""}
         </p>
@@ -242,7 +279,7 @@ function ScheduleItem({ schedule, isLeader, onRemove, muted }: ScheduleItemProps
         <button
           type="button"
           onClick={() => onRemove(schedule.id)}
-          className="text-muted-foreground transition-colors hover:text-destructive"
+          className="shrink-0 text-muted-foreground transition-colors hover:text-destructive"
           aria-label="삭제"
         >
           <Trash2 className="size-4" />
