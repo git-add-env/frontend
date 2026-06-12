@@ -94,7 +94,7 @@ export function ResourceCard({ meetingId, isLeader }: ResourceCardProps) {
                 href={resource.url}
                 target="_blank"
                 rel="noreferrer"
-                className="text-sm text-primary hover:underline"
+                className="min-w-0 truncate text-sm text-primary hover:underline"
               >
                 {resource.title}
               </a>
@@ -102,7 +102,7 @@ export function ResourceCard({ meetingId, isLeader }: ResourceCardProps) {
                 <button
                   type="button"
                   onClick={() => remove(resource.id)}
-                  className="text-muted-foreground transition-colors hover:text-destructive"
+                  className="shrink-0 text-muted-foreground transition-colors hover:text-destructive"
                   aria-label="삭제"
                 >
                   <Trash2 className="size-4" />

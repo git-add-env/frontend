@@ -116,19 +116,19 @@ export function NoticeCard({ meetingId, isLeader }: NoticeCardProps) {
             {notices.slice(0, 3).map((notice) => (
               <li key={notice.id} className="rounded-lg border border-border p-3">
                 <div className="flex items-start justify-between gap-2">
-                  <p className="text-sm font-medium">{notice.title}</p>
+                  <p className="min-w-0 truncate text-sm font-medium">{notice.title}</p>
                   {isLeader && (
                     <button
                       type="button"
                       onClick={() => remove(notice.id)}
-                      className="text-muted-foreground transition-colors hover:text-destructive"
+                      className="shrink-0 text-muted-foreground transition-colors hover:text-destructive"
                       aria-label="삭제"
                     >
                       <Trash2 className="size-4" />
                     </button>
                   )}
                 </div>
-                <p className="mt-1 whitespace-pre-wrap text-xs text-muted-foreground">
+                <p className="mt-1 line-clamp-2 whitespace-pre-wrap break-words text-xs text-muted-foreground">
                   {notice.content}
                 </p>
               </li>
@@ -166,19 +166,19 @@ export function NoticeCard({ meetingId, isLeader }: NoticeCardProps) {
                     className="rounded-lg border border-border p-3"
                   >
                     <div className="flex items-start justify-between gap-2">
-                      <p className="text-sm font-medium">{notice.title}</p>
+                      <p className="min-w-0 break-words text-sm font-medium">{notice.title}</p>
                       {isLeader && (
                         <button
                           type="button"
                           onClick={() => remove(notice.id)}
-                          className="text-muted-foreground transition-colors hover:text-destructive"
+                          className="shrink-0 text-muted-foreground transition-colors hover:text-destructive"
                           aria-label="삭제"
                         >
                           <Trash2 className="size-4" />
                         </button>
                       )}
                     </div>
-                    <p className="mt-1 whitespace-pre-wrap text-xs text-muted-foreground">
+                    <p className="mt-1 whitespace-pre-wrap break-words text-xs text-muted-foreground">
                       {notice.content}
                     </p>
                   </li>

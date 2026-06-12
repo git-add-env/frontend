@@ -226,14 +226,14 @@ function ScheduleItem({ schedule, isLeader, onRemove, muted }: ScheduleItemProps
         muted && "bg-muted/30",
       )}
     >
-      <div>
-        <div className="flex items-center gap-2">
-          <p className="text-sm font-medium">{schedule.title}</p>
+      <div className="min-w-0">
+        <div className="flex min-w-0 items-center gap-2">
+          <p className="min-w-0 truncate text-sm font-medium">{schedule.title}</p>
           {schedule.isMeeting && (
-            <span className="rounded-full bg-accent px-2 py-0.5 text-xs">화상 회의</span>
+            <span className="shrink-0 rounded-full bg-accent px-2 py-0.5 text-xs">화상 회의</span>
           )}
         </div>
-        <p className="mt-1 text-xs text-muted-foreground">
+        <p className="mt-1 break-words text-xs text-muted-foreground">
           {schedule.date} {schedule.time}
           {schedule.description ? ` · ${schedule.description}` : ""}
         </p>
@@ -242,7 +242,7 @@ function ScheduleItem({ schedule, isLeader, onRemove, muted }: ScheduleItemProps
         <button
           type="button"
           onClick={() => onRemove(schedule.id)}
-          className="text-muted-foreground transition-colors hover:text-destructive"
+          className="shrink-0 text-muted-foreground transition-colors hover:text-destructive"
           aria-label="삭제"
         >
           <Trash2 className="size-4" />
