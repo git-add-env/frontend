@@ -47,6 +47,16 @@ export function NoticeCard({ meetingId, isLeader }: NoticeCardProps) {
     })
   }
 
+  // 다이얼로그를 닫을 때(취소·X·바깥클릭·ESC) 입력값과 에러를 초기화한다.
+  function changeAdding(open: boolean) {
+    setAdding(open)
+    if (!open) {
+      setTitle("")
+      setContent("")
+      setError(null)
+    }
+  }
+
   return (
     <div className="h-full rounded-2xl border border-border bg-card p-6">
       <div className="mb-3 flex items-center justify-between">
@@ -64,7 +74,7 @@ export function NoticeCard({ meetingId, isLeader }: NoticeCardProps) {
       </div>
 
       {isLeader && (
-        <Dialog open={adding} onOpenChange={setAdding}>
+        <Dialog open={adding} onOpenChange={changeAdding}>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>작성</DialogTitle>
@@ -87,7 +97,7 @@ export function NoticeCard({ meetingId, isLeader }: NoticeCardProps) {
               />
               {error && <p className="text-xs text-destructive">{error}</p>}
               <div className="flex justify-end gap-2">
-                <Button size="sm" variant="outline" onClick={() => setAdding(false)}>
+                <Button size="sm" variant="outline" onClick={() => changeAdding(false)}>
                   취소
                 </Button>
                 <Button size="sm" onClick={add}>
