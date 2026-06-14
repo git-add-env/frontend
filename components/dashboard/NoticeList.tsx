@@ -106,6 +106,7 @@ export function NoticeList({ meetingId, isLeader, onSelect }: NoticeListProps) {
                 value={title}
                 maxLength={50}
                 onChange={(e) => setTitle(e.target.value)}
+                aria-label="공지 제목"
                 placeholder="제목 (최대 50자)"
                 className="h-9 rounded-md border bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
               />
@@ -113,6 +114,7 @@ export function NoticeList({ meetingId, isLeader, onSelect }: NoticeListProps) {
                 value={content}
                 maxLength={500}
                 onChange={(e) => setContent(e.target.value)}
+                aria-label="공지 내용"
                 placeholder="내용 (최대 500자)"
                 rows={5}
                 className="rounded-md border bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"

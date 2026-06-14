@@ -135,13 +135,13 @@ export type MeetingRoom = {
 }
 
 export function startMeeting(meetingId: number) {
-  return apiClient<MeetingRoom>(`/api/meetings/${meetingId}/meetings`, {
+  return apiClient<MeetingRoom>(`/api/meetings/${meetingId}/conferences`, {
     method: "POST",
   })
 }
 
 export function joinMeeting(meetingId: number) {
-  return apiClient<MeetingRoom>(`/api/meetings/${meetingId}/meetings/join`)
+  return apiClient<MeetingRoom>(`/api/meetings/${meetingId}/conferences/join`)
 }
 
 // ---- 멤버 프로필 (DB-API-016) ----

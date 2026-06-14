@@ -80,6 +80,11 @@ export function VideoConferenceBanner({
             )}
           </div>
         </div>
+        {/*
+          TODO: 멤버 참여 활성화 — meetingActive 미전달로 현재 멤버는 참여 불가.
+          회의 진행 상태 조회 API(GET /api/meetings/{id}/conferences) 배포 후
+          meetingActive를 연결할 것. (백엔드 API 추가 요청 필요)
+        */}
         <VideoConference
           status={status}
           isLeader={isLeader}
