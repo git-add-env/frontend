@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { ChevronRight, Megaphone, SquarePen, Trash2 } from "lucide-react"
 
+import { ConfirmDialog } from "@/components/common/ConfirmDialog"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -28,6 +29,8 @@ export function NoticeCard({ meetingId, isLeader }: NoticeCardProps) {
   const [title, setTitle] = useState("")
   const [content, setContent] = useState("")
   const [error, setError] = useState<string | null>(null)
+  const [pendingId, setPendingId] = useState<number | null>(null)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
 
   async function add() {
     setError(null)
@@ -41,10 +44,25 @@ export function NoticeCard({ meetingId, isLeader }: NoticeCardProps) {
     }
   }
 
-  function remove(noticeId: number) {
-    deleteNotice.mutate(noticeId, {
-      onError: () => setError("공지 삭제에 실패했습니다."),
+  // 휴지통 클릭 → 확인 다이얼로그를 띄우고, 확인 시 실제 삭제한다.
+  function confirmRemove() {
+    if (pendingId === null) return
+    deleteNotice.mutate(pendingId, {
+      onSuccess: () => setPendingId(null),
+      onError: () => setDeleteError("공지 삭제에 실패했습니다."),
     })
+  }
+
+  const pendingTitle = notices?.find((n) => n.id === pendingId)?.title ?? null
+
+  // 다이얼로그를 닫을 때(취소·X·바깥클릭·ESC) 입력값과 에러를 초기화한다.
+  function changeAdding(open: boolean) {
+    setAdding(open)
+    if (!open) {
+      setTitle("")
+      setContent("")
+      setError(null)
+    }
   }
 
   return (
@@ -64,7 +82,7 @@ export function NoticeCard({ meetingId, isLeader }: NoticeCardProps) {
       </div>
 
       {isLeader && (
-        <Dialog open={adding} onOpenChange={setAdding}>
+        <Dialog open={adding} onOpenChange={changeAdding}>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>작성</DialogTitle>
@@ -87,7 +105,7 @@ export function NoticeCard({ meetingId, isLeader }: NoticeCardProps) {
               />
               {error && <p className="text-xs text-destructive">{error}</p>}
               <div className="flex justify-end gap-2">
-                <Button size="sm" variant="outline" onClick={() => setAdding(false)}>
+                <Button size="sm" variant="outline" onClick={() => changeAdding(false)}>
                   취소
                 </Button>
                 <Button size="sm" onClick={add}>
@@ -116,19 +134,19 @@ export function NoticeCard({ meetingId, isLeader }: NoticeCardProps) {
             {notices.slice(0, 3).map((notice) => (
               <li key={notice.id} className="rounded-lg border border-border p-3">
                 <div className="flex items-start justify-between gap-2">
-                  <p className="text-sm font-medium">{notice.title}</p>
+                  <p className="min-w-0 truncate text-sm font-medium">{notice.title}</p>
                   {isLeader && (
                     <button
                       type="button"
-                      onClick={() => remove(notice.id)}
-                      className="text-muted-foreground transition-colors hover:text-destructive"
+                      onClick={() => setPendingId(notice.id)}
+                      className="shrink-0 text-muted-foreground transition-colors hover:text-destructive"
                       aria-label="삭제"
                     >
                       <Trash2 className="size-4" />
                     </button>
                   )}
                 </div>
-                <p className="mt-1 whitespace-pre-wrap text-xs text-muted-foreground">
+                <p className="mt-1 line-clamp-2 whitespace-pre-wrap break-words text-xs text-muted-foreground">
                   {notice.content}
                 </p>
               </li>
@@ -166,19 +184,19 @@ export function NoticeCard({ meetingId, isLeader }: NoticeCardProps) {
                     className="rounded-lg border border-border p-3"
                   >
                     <div className="flex items-start justify-between gap-2">
-                      <p className="text-sm font-medium">{notice.title}</p>
+                      <p className="min-w-0 break-words text-sm font-medium">{notice.title}</p>
                       {isLeader && (
                         <button
                           type="button"
-                          onClick={() => remove(notice.id)}
-                          className="text-muted-foreground transition-colors hover:text-destructive"
+                          onClick={() => setPendingId(notice.id)}
+                          className="shrink-0 text-muted-foreground transition-colors hover:text-destructive"
                           aria-label="삭제"
                         >
                           <Trash2 className="size-4" />
                         </button>
                       )}
                     </div>
-                    <p className="mt-1 whitespace-pre-wrap text-xs text-muted-foreground">
+                    <p className="mt-1 whitespace-pre-wrap break-words text-xs text-muted-foreground">
                       {notice.content}
                     </p>
                   </li>
@@ -188,6 +206,21 @@ export function NoticeCard({ meetingId, isLeader }: NoticeCardProps) {
           </div>
         </DialogContent>
       </Dialog>
+
+      <ConfirmDialog
+        open={pendingId !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setPendingId(null)
+            setDeleteError(null)
+          }
+        }}
+        title="공지 삭제"
+        description={`${pendingTitle ? `'${pendingTitle}' ` : ""}공지를 삭제하시겠어요? 삭제하면 되돌릴 수 없습니다.`}
+        loading={deleteNotice.isPending}
+        error={deleteError}
+        onConfirm={confirmRemove}
+      />
     </div>
   )
 }

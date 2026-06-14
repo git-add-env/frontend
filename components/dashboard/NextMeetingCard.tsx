@@ -21,7 +21,11 @@ export function NextMeetingCard({ meetingId }: NextMeetingCardProps) {
         <Calendar className="size-4" />
         다음 회의 일정
       </h2>
-      {!schedules && !isError ? (
+      {isError ? (
+        <p className="text-sm text-muted-foreground">
+          다음 회의 일정을 불러오지 못했습니다.
+        </p>
+      ) : !schedules ? (
         <p className="text-sm text-muted-foreground">불러오는 중...</p>
       ) : next ? (
         <div className="flex flex-col gap-4">

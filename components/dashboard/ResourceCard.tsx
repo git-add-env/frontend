@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { Trash2 } from "lucide-react"
 
+import { ConfirmDialog } from "@/components/common/ConfirmDialog"
 import { Button } from "@/components/ui/button"
 import {
   useCreateResource,
@@ -25,6 +26,8 @@ export function ResourceCard({ meetingId, isLeader }: ResourceCardProps) {
   const [title, setTitle] = useState("")
   const [url, setUrl] = useState("")
   const [error, setError] = useState<string | null>(null)
+  const [pendingId, setPendingId] = useState<number | null>(null)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
 
   async function add() {
     setError(null)
@@ -38,11 +41,19 @@ export function ResourceCard({ meetingId, isLeader }: ResourceCardProps) {
     }
   }
 
-  function remove(resourceId: number) {
-    deleteResource.mutate(resourceId, {
-      onError: () => setError("자료 삭제에 실패했습니다."),
+  // 휴지통 클릭 → 확인 다이얼로그를 띄우고, 확인 시 실제 삭제한다.
+  function confirmRemove() {
+    if (pendingId === null) return
+    deleteResource.mutate(pendingId, {
+      onSuccess: () => setPendingId(null),
+      onError: () => setDeleteError("자료 삭제에 실패했습니다."),
     })
   }
+
+  const pendingTitle = resources?.find((r) => r.id === pendingId)?.title ?? null
+  // http(s)로 시작하는 주소만 허용 (javascript: 등 위험 스킴 차단).
+  const isValidUrl = /^https?:\/\//i.test(url.trim())
+  const canSubmit = title.trim() !== "" && isValidUrl
 
   return (
     <div className="rounded-2xl border border-border bg-card p-6">
@@ -69,10 +80,20 @@ export function ResourceCard({ meetingId, isLeader }: ResourceCardProps) {
             placeholder="https://..."
             className="h-9 flex-1 rounded-md border bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
           />
-          <Button size="sm" onClick={add}>
-            추가
+          <Button
+            size="sm"
+            onClick={add}
+            disabled={!canSubmit || createResource.isPending}
+          >
+            {createResource.isPending ? "추가 중..." : "추가"}
           </Button>
         </div>
+      )}
+
+      {adding && url.trim() !== "" && !isValidUrl && (
+        <p className="mb-2 text-xs text-destructive">
+          http:// 또는 https:// 로 시작하는 주소를 입력해주세요.
+        </p>
       )}
 
       {error && <p className="mb-2 text-xs text-destructive">{error}</p>}
@@ -94,15 +115,15 @@ export function ResourceCard({ meetingId, isLeader }: ResourceCardProps) {
                 href={resource.url}
                 target="_blank"
                 rel="noreferrer"
-                className="text-sm text-primary hover:underline"
+                className="min-w-0 truncate text-sm text-primary hover:underline"
               >
                 {resource.title}
               </a>
               {isLeader && (
                 <button
                   type="button"
-                  onClick={() => remove(resource.id)}
-                  className="text-muted-foreground transition-colors hover:text-destructive"
+                  onClick={() => setPendingId(resource.id)}
+                  className="shrink-0 text-muted-foreground transition-colors hover:text-destructive"
                   aria-label="삭제"
                 >
                   <Trash2 className="size-4" />
@@ -112,6 +133,21 @@ export function ResourceCard({ meetingId, isLeader }: ResourceCardProps) {
           ))}
         </ul>
       )}
+
+      <ConfirmDialog
+        open={pendingId !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setPendingId(null)
+            setDeleteError(null)
+          }
+        }}
+        title="자료 삭제"
+        description={`${pendingTitle ? `'${pendingTitle}' ` : ""}자료를 삭제하시겠어요? 삭제하면 되돌릴 수 없습니다.`}
+        loading={deleteResource.isPending}
+        error={deleteError}
+        onConfirm={confirmRemove}
+      />
     </div>
   )
 }
