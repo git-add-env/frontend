@@ -1,13 +1,13 @@
 import { MeetingDetail } from "@/components/meeting/MeetingDetail"
 
 type MeetingDetailPageProps = {
-  searchParams: Promise<{
-    meetingId?: string
+  params: Promise<{
+    meetingId: string
   }>
 }
 
-export default async function MeetingDetailPage({ searchParams }: MeetingDetailPageProps) {
-  const { meetingId } = await searchParams
+export default async function MeetingDetailPage({ params }: MeetingDetailPageProps) {
+  const { meetingId } = await params
   const parsedMeetingId = parseMeetingId(meetingId)
 
   return (
@@ -19,11 +19,7 @@ export default async function MeetingDetailPage({ searchParams }: MeetingDetailP
   )
 }
 
-function parseMeetingId(value: string | undefined) {
-  if (!value) {
-    return undefined
-  }
-
+function parseMeetingId(value: string) {
   const meetingId = Number(value)
 
   return Number.isFinite(meetingId) ? meetingId : undefined
