@@ -1,6 +1,9 @@
 {
 	"servers": {
-		
+		"figma": {
+		"url": "https://mcp.figma.com/mcp",  // ← MCP 서버 URL로 통일
+		"type": "http"
+		}
 	},
 	"inputs": []
 }

@@ -1,6 +1,6 @@
 // 모임 멤버 조회 헬퍼.
 
-import { apiClient } from "./api-client"
+import { apiClient, type ApiClientOptions } from "./api-client"
 
 export type MeetingPosition = {
   id: number
@@ -40,6 +40,24 @@ export type MeetingListParams = {
   sort?: string
 }
 
+export type MeetingDetail = MeetingSummary & {
+  description?: string | null
+  introduction?: string | null
+  content?: string | null
+  startDate?: string | null
+  expectedDuration?: string | null
+  duration?: string | null
+  meetingSchedule?: string | null
+  meetingType?: string | null
+  region?: string | null
+}
+
+type MeetingDetailResponse =
+  | MeetingDetail
+  | { meeting: MeetingDetail }
+  | { meetingDetail: MeetingDetail }
+  | { detail: MeetingDetail }
+
 // GET /api/meetings/{id}/members 응답(MemberSummary) 그대로.
 export type MeetingMember = {
   id: number
@@ -76,6 +94,61 @@ export function fetchMeetings({
   })
 }
 
-export function fetchMeetingMembers(meetingId: number) {
-  return apiClient<{ members: MeetingMember[] }>(`/api/meetings/${meetingId}/members`)
+export async function fetchMeetingDetail(meetingId: number) {
+  try {
+    const data = await apiClient<MeetingDetailResponse>(`/api/meetings/${meetingId}`, {
+      auth: false,
+    })
+
+    return unwrapMeetingDetail(data)
+  } catch (error) {
+    const fallback = await fetchMeetingSummaryById(meetingId)
+
+    if (fallback) {
+      return fallback
+    }
+
+    throw error
+  }
+}
+
+function unwrapMeetingDetail(data: MeetingDetailResponse) {
+  if ("meeting" in data) {
+    return data.meeting
+  }
+
+  if ("meetingDetail" in data) {
+    return data.meetingDetail
+  }
+
+  if ("detail" in data) {
+    return data.detail
+  }
+
+  return data
+}
+
+export function fetchMeetingMembers(meetingId: number, options?: ApiClientOptions) {
+  return apiClient<{ members: MeetingMember[] }>(`/api/meetings/${meetingId}/members`, options)
+}
+
+async function fetchMeetingSummaryById(meetingId: number) {
+  let cursor: number | null | undefined
+  const visitedCursors = new Set<number>()
+
+  while (true) {
+    const data = await fetchMeetings({ cursor, size: 100 })
+    const meeting = data.meetings.find((item) => item.meetingId === meetingId)
+
+    if (meeting) {
+      return meeting
+    }
+
+    if (!data.hasNext || data.nextCursor === null || visitedCursors.has(data.nextCursor)) {
+      return null
+    }
+
+    visitedCursors.add(data.nextCursor)
+    cursor = data.nextCursor
+  }
 }

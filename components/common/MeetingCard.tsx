@@ -1,6 +1,7 @@
 "use client"
 
 import Image from "next/image"
+import Link from "next/link"
 import { Users } from "lucide-react"
 
 import { PositionJobCountBadges } from "@/components/common/Badges"
@@ -34,6 +35,51 @@ type MeetingCardProps = {
   onBookmarkToggle?: (meetingId: string, bookmarked: boolean) => void
 }
 
+type MeetingCardImageProps = {
+  imageUrl: string
+  title: string
+  isBookmarked?: boolean
+  isClosingToday?: boolean
+  onBookmarkToggle?: (bookmarked: boolean) => void
+  showBookmark?: boolean
+  className?: string
+  sizes?: string
+}
+
+export function MeetingCardImage({
+  imageUrl,
+  title,
+  isBookmarked,
+  isClosingToday,
+  onBookmarkToggle,
+  showBookmark = true,
+  className,
+  sizes = "(min-width: 1280px) 384px, (min-width: 768px) 50vw, 100vw",
+}: MeetingCardImageProps) {
+  return (
+    <div className={className}>
+      <Image
+        src={imageUrl}
+        alt={title}
+        fill
+        unoptimized
+        sizes={sizes}
+        className="object-cover"
+      />
+      {isClosingToday ? (
+        <TodayDeadlineBadge className="absolute bottom-4 left-4" />
+      ) : null}
+      {showBookmark ? (
+        <BookMarkBtn
+          bookmarked={isBookmarked}
+          onToggle={onBookmarkToggle}
+          className="absolute right-4 top-4 size-9 bg-white/80 p-2 shadow-sm backdrop-blur-md hover:bg-white"
+        />
+      ) : null}
+    </div>
+  )
+}
+
 export default function MeetingCard({ meeting, onBookmarkToggle }: MeetingCardProps) {
   function handleBookmarkToggle(bookmarked: boolean) {
     onBookmarkToggle?.(meeting.id, bookmarked)
@@ -41,24 +87,14 @@ export default function MeetingCard({ meeting, onBookmarkToggle }: MeetingCardPr
 
   return (
     <Card className="min-h-[472px] gap-0 overflow-hidden rounded-xl border border-[#c3c6d7] bg-white py-0 shadow-none transition hover:-translate-y-0.5 hover:shadow-md">
-      <div className="relative h-48 w-full overflow-hidden bg-[#e6e8ea]">
-        <Image
-          src={meeting.imageUrl}
-          alt={meeting.title}
-          fill
-          unoptimized
-          sizes="(min-width: 1280px) 384px, (min-width: 768px) 50vw, 100vw"
-          className="object-cover"
-        />
-        {meeting.isClosingToday ? (
-          <TodayDeadlineBadge className="absolute bottom-4 left-4" />
-        ) : null}
-        <BookMarkBtn
-          bookmarked={meeting.isBookmarked}
-          onToggle={handleBookmarkToggle}
-          className="absolute right-4 top-4 size-9 bg-white/80 p-2 shadow-sm backdrop-blur-md hover:bg-white"
-        />
-      </div>
+      <MeetingCardImage
+        imageUrl={meeting.imageUrl}
+        title={meeting.title}
+        isBookmarked={meeting.isBookmarked}
+        isClosingToday={meeting.isClosingToday}
+        onBookmarkToggle={handleBookmarkToggle}
+        className="relative h-48 w-full overflow-hidden bg-[#e6e8ea]"
+      />
 
       <CardContent className="flex flex-1 flex-col gap-4 p-6">
         <div className="flex flex-col gap-1">
@@ -66,9 +102,11 @@ export default function MeetingCard({ meeting, onBookmarkToggle }: MeetingCardPr
             category={meeting.category}
             className="h-5 px-2.5 text-xs font-medium"
           />
-          <h3 className="line-clamp-2 min-h-7 pt-1 text-xl font-medium leading-7 text-[#191c1e]">
-            {meeting.title}
-          </h3>
+          <Link href={`/meetings/${meeting.id}`} className="block">
+            <h3 className="line-clamp-2 min-h-7 pt-1 text-xl font-medium leading-7 text-[#191c1e] transition hover:text-blue-500">
+              {meeting.title}
+            </h3>
+          </Link>
           {meeting.techStacks?.length ? (
             <TechStackBadges
               techStacks={meeting.techStacks}
