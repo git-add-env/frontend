@@ -37,7 +37,7 @@ export function ResourceCard({ meetingId, isLeader }: ResourceCardProps) {
       setUrl("")
       setAdding(false)
     } catch (e) {
-      setError(e instanceof ApiFetchError ? errorMessage(e) : "자료 추가에 실패했습니다.")
+      setError(e instanceof ApiFetchError ? errorMessage(e) : "링크 추가에 실패했습니다.")
     }
   }
 
@@ -46,7 +46,7 @@ export function ResourceCard({ meetingId, isLeader }: ResourceCardProps) {
     if (pendingId === null) return
     deleteResource.mutate(pendingId, {
       onSuccess: () => setPendingId(null),
-      onError: () => setDeleteError("자료 삭제에 실패했습니다."),
+      onError: () => setDeleteError("링크 삭제에 실패했습니다."),
     })
   }
 
@@ -58,7 +58,7 @@ export function ResourceCard({ meetingId, isLeader }: ResourceCardProps) {
   return (
     <div className="rounded-2xl border border-border bg-card p-6">
       <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-base font-semibold">자료실</h2>
+        <h2 className="text-base font-semibold">참고 링크</h2>
         {isLeader && (
           <Button size="xs" variant="outline" onClick={() => setAdding((v) => !v)}>
             {adding ? "취소" : "링크 추가"}
@@ -99,11 +99,11 @@ export function ResourceCard({ meetingId, isLeader }: ResourceCardProps) {
       {error && <p className="mb-2 text-xs text-destructive">{error}</p>}
 
       {isError ? (
-        <p className="text-sm text-muted-foreground">자료를 불러오지 못했습니다.</p>
+        <p className="text-sm text-muted-foreground">링크를 불러오지 못했습니다.</p>
       ) : !resources ? (
         <p className="text-sm text-muted-foreground">불러오는 중...</p>
       ) : resources.length === 0 ? (
-        <p className="text-sm text-muted-foreground">등록된 자료가 없습니다.</p>
+        <p className="text-sm text-muted-foreground">등록된 링크가 없습니다.</p>
       ) : (
         <ul className="flex flex-col gap-2">
           {resources.map((resource) => (
@@ -142,8 +142,8 @@ export function ResourceCard({ meetingId, isLeader }: ResourceCardProps) {
             setDeleteError(null)
           }
         }}
-        title="자료 삭제"
-        description={`${pendingTitle ? `'${pendingTitle}' ` : ""}자료를 삭제하시겠어요? 삭제하면 되돌릴 수 없습니다.`}
+        title="링크 삭제"
+        description={`${pendingTitle ? `'${pendingTitle}' ` : ""}링크를 삭제하시겠어요? 삭제하면 되돌릴 수 없습니다.`}
         loading={deleteResource.isPending}
         error={deleteError}
         onConfirm={confirmRemove}
