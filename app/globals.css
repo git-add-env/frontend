@@ -131,5 +131,7 @@
   }
   html {
     @apply font-sans;
+    /* 스크롤바 유무로 페이지 전환 시 가로 폭이 바뀌어 헤더가 튀는 것 방지 */
+    scrollbar-gutter: stable;
   }
 }
