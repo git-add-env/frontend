@@ -26,7 +26,7 @@ const TYPE_ICON: Record<NotificationType, typeof Bell> = {
 }
 
 // NT-001~005: 알림 팝오버 + SSE 실시간 수신 + 토스트 + 전체 읽음.
-export default function NotificationBell() {
+export function NotificationBell() {
   const queryClient = useQueryClient()
   const { data, isError } = useNotifications()
   const markRead = useMarkNotificationRead()
@@ -53,6 +53,12 @@ export default function NotificationBell() {
 
     async function connect() {
       if (closed) return
+
+      // 환경변수 미설정 시 연결 시도하지 않음 (localhost 폴백은 배포 오설정을 가려
+      // 잘못된 엔드포인트로 무한 재시도하게 만들므로 제거).
+      const baseUrl = process.env.NEXT_PUBLIC_BACKEND_API_URL
+      if (!baseUrl) return
+
       // 이전 연결·타이머 정리 후 새로 연결 (선제 재연결 시 깔끔히 교체).
       clearTimers()
       source?.close()
@@ -62,7 +68,6 @@ export default function NotificationBell() {
         const { token, expiresIn } = await issueSseToken()
         if (closed) return
 
-        const baseUrl = process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://localhost:8080"
         const es = new EventSource(`${baseUrl}/api/notifications/stream?token=${token}`)
         source = es
 
@@ -70,13 +75,16 @@ export default function NotificationBell() {
           try {
             const incoming = JSON.parse(event.data) as AppNotification
             // SSE(push)로 받은 알림을 React Query 캐시 맨 앞에 꽂는다.
+            let inserted = false
             queryClient.setQueryData<NotificationsData>(queryKeys.notifications, (old) => {
               const base = old ?? { notifications: [], unreadCount: 0 }
               if (base.notifications.some((n) => n.id === incoming.id)) return base
+              inserted = true
               const next = [incoming, ...base.notifications]
               return { ...base, notifications: next, unreadCount: next.filter((n) => !n.isRead).length }
             })
-            notify.info(incoming.message)
+            // 신규 삽입된 경우에만 토스트 (중복 SSE 이벤트 반복 노출 방지).
+            if (inserted) notify.info(incoming.message)
           } catch {
             /* 파싱 실패 무시 */
           }

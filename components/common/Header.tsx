@@ -7,7 +7,7 @@ import { User } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import LoginDialog from "@/components/common/LoginDialog"
-import NotificationBell from "@/components/common/NotificationBell"
+import { NotificationBell } from "@/components/common/NotificationBell"
 import OnboardingDialog from "@/components/common/OnboardingDialog"
 import { useSyncAuthUser } from "@/hooks/use-sync-auth-user"
 import { logoutBackend } from "@/lib/auth/user"
@@ -74,9 +74,6 @@ export default function Header() {
           <OnboardingDialog showTrigger={false} />
           {status === "authenticated" ? (
             <>
-              <Button size="sm" variant="outline" onClick={handleLogout}>
-                로그아웃
-              </Button>
               {/* 알림 벨 — 팝오버 + SSE 수신 */}
               <NotificationBell />
               {/* 프로필 → 마이페이지 */}
@@ -87,6 +84,9 @@ export default function Header() {
               >
                 <User className="size-[18px]" />
               </Link>
+              <Button size="sm" variant="outline" onClick={handleLogout}>
+                로그아웃
+              </Button>
             </>
           ) : (
             <LoginDialog />
