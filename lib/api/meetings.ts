@@ -52,11 +52,36 @@ export type MeetingDetail = MeetingSummary & {
   region?: string | null
 }
 
+export type MeetingUpsertPosition = {
+  name: string
+  recruitCount: number
+  description?: string | null
+}
+
+export type MeetingUpsertPayload = {
+  title: string
+  category: string
+  description: string
+  thumbnailUrl?: string | null
+  techStacks: string[]
+  deadline: string
+  startDate: string
+  expectedDuration: string
+  meetingSchedule: string
+  positions: MeetingUpsertPosition[]
+}
+
 type MeetingDetailResponse =
   | MeetingDetail
   | { meeting: MeetingDetail }
   | { meetingDetail: MeetingDetail }
   | { detail: MeetingDetail }
+
+type MeetingMutationResponse =
+  | { meetingId: number }
+  | { id: number }
+  | { meeting: { meetingId: number } }
+  | { meetingDetail: { meetingId: number } }
 
 // GET /api/meetings/{id}/members 응답(MemberSummary) 그대로.
 export type MeetingMember = {
@@ -130,6 +155,36 @@ function unwrapMeetingDetail(data: MeetingDetailResponse) {
 
 export function fetchMeetingMembers(meetingId: number, options?: ApiClientOptions) {
   return apiClient<{ members: MeetingMember[] }>(`/api/meetings/${meetingId}/members`, options)
+}
+
+export function createMeeting(payload: MeetingUpsertPayload) {
+  return apiClient<MeetingMutationResponse>("/api/meetings", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  })
+}
+
+export function updateMeeting(meetingId: number, payload: MeetingUpsertPayload) {
+  return apiClient<MeetingMutationResponse>(`/api/meetings/${meetingId}`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  })
+}
+
+export function getMeetingMutationId(data: MeetingMutationResponse) {
+  if ("meetingId" in data) {
+    return data.meetingId
+  }
+
+  if ("id" in data) {
+    return data.id
+  }
+
+  if ("meeting" in data) {
+    return data.meeting.meetingId
+  }
+
+  return data.meetingDetail.meetingId
 }
 
 async function fetchMeetingSummaryById(meetingId: number) {

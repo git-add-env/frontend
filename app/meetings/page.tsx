@@ -1,8 +1,9 @@
 "use client"
 
 import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react"
+import Link from "next/link"
 import { useInfiniteQuery } from "@tanstack/react-query"
-import { ChevronDown, LoaderCircle, Search } from "lucide-react"
+import { ChevronDown, LoaderCircle, Plus, Search } from "lucide-react"
 
 import MeetingCard, { type Meeting } from "@/components/common/MeetingCard"
 import { Button } from "@/components/ui/button"
@@ -216,6 +217,17 @@ export default function MeetingsPage() {
           {isFetchingNextPage || (isFetching && !isLoading) ? <LoadingState /> : null}
         </section>
       </div>
+
+      <Button
+        asChild
+        size="lg"
+        className="fixed bottom-6 right-6 z-40 h-14 rounded-full bg-blue-500 px-5 text-base text-white shadow-lg hover:bg-blue-600 sm:bottom-8 sm:right-8"
+      >
+        <Link href="/meetings/create" aria-label="모임 만들기">
+          <Plus className="size-5" aria-hidden="true" />
+          <span className="hidden sm:inline">모임 만들기</span>
+        </Link>
+      </Button>
     </main>
   )
 }
