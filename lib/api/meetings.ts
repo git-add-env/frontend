@@ -184,7 +184,11 @@ export function getMeetingMutationId(data: MeetingMutationResponse) {
     return data.meeting.meetingId
   }
 
-  return data.meetingDetail.meetingId
+  if ("meetingDetail" in data && typeof data.meetingDetail.meetingId === "number") {
+    return data.meetingDetail.meetingId
+  }
+
+  throw new Error("지원하지 않는 모임 생성/수정 응답 형식입니다.")
 }
 
 async function fetchMeetingSummaryById(meetingId: number) {

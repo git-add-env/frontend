@@ -266,6 +266,11 @@ function MeetingCreateForm({ initialForm, isEditMode, meetingId }: MeetingCreate
     key: K,
     value: PositionForm[K],
   ) {
+    if (key === "recruitCount" && !isValidRecruitCount(value as number)) {
+      setFieldError("포지션별 모집 인원은 1명 이상의 정수여야 합니다.")
+      return
+    }
+
     setFieldError(null)
     setForm((prev) => ({
       ...prev,
@@ -553,6 +558,7 @@ function MeetingCreateForm({ initialForm, isEditMode, meetingId }: MeetingCreate
                     <Input
                       type="number"
                       min={1}
+                      step={1}
                       value={position.recruitCount}
                       onChange={(event: ChangeEvent<HTMLInputElement>) =>
                         handlePositionChange(
@@ -924,8 +930,8 @@ function validatePayload(payload: MeetingUpsertPayload) {
   if (!payload.meetingSchedule) return "회의 일정을 입력해주세요."
   if (payload.techStacks.length === 0) return "기술 스택을 1개 이상 선택해주세요."
   if (payload.positions.length === 0) return "모집 포지션을 1개 이상 추가해주세요."
-  if (payload.positions.some((position) => position.recruitCount < 1)) {
-    return "포지션별 모집 인원은 1명 이상이어야 합니다."
+  if (payload.positions.some((position) => !isValidRecruitCount(position.recruitCount))) {
+    return "포지션별 모집 인원은 1명 이상의 정수여야 합니다."
   }
 
   return null
@@ -944,12 +950,18 @@ function getCompletion(form: MeetingFormState) {
     form.expectedDuration,
     form.meetingSchedule,
     form.positions.length > 0,
-    form.positions.every((position) => position.name && position.recruitCount > 0),
+    form.positions.every(
+      (position) => position.name && isValidRecruitCount(position.recruitCount),
+    ),
   ]
 
   const completedCount = checks.filter(Boolean).length
 
   return Math.round((completedCount / checks.length) * 100)
+}
+
+function isValidRecruitCount(value: number) {
+  return Number.isFinite(value) && Number.isInteger(value) && value >= 1
 }
 
 function mapMeetingDetailToForm(meeting: MeetingDetail): MeetingFormState {
