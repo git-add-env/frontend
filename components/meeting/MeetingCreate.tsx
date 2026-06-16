@@ -13,6 +13,7 @@ import { useRouter } from "next/navigation"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import {
   CalendarDays,
+  ChevronDown,
   FileText,
   ImagePlus,
   Info,
@@ -26,6 +27,7 @@ import {
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { MEETING_CATEGORY_OPTIONS } from "@/constants/meeting-form"
 import {
   ONBOARDING_JOB_OPTIONS,
@@ -165,6 +167,13 @@ function MeetingCreateForm({ initialForm, isEditMode, meetingId }: MeetingCreate
     () => form.positions.reduce((total, position) => total + position.recruitCount, 0),
     [form.positions],
   )
+  const filteredTechStackOptions = useMemo(() => {
+    const query = form.techStackInput.trim().toLowerCase()
+
+    return query
+      ? ONBOARDING_TECH_STACK_OPTIONS.filter((stack) => stack.toLowerCase().includes(query))
+      : ONBOARDING_TECH_STACK_OPTIONS
+  }, [form.techStackInput])
 
   const mutation = useMutation({
     mutationFn: (payload: MeetingUpsertPayload) =>
@@ -446,27 +455,18 @@ function MeetingCreateForm({ initialForm, isEditMode, meetingId }: MeetingCreate
                   </button>
                 ))}
               </div>
-              <Input
-                value={form.techStackInput}
-                onChange={(event: ChangeEvent<HTMLInputElement>) =>
-                  updateField("techStackInput", event.target.value)
+              <TechStackPicker
+                inputValue={form.techStackInput}
+                options={filteredTechStackOptions}
+                selectedOptions={form.techStacks}
+                onInputChange={(value) => updateField("techStackInput", value)}
+                onInputKeyDown={handleTechStackKeyDown}
+                onToggle={(stack) =>
+                  form.techStacks.includes(stack)
+                    ? handleRemoveTechStack(stack)
+                    : handleAddTechStack(stack)
                 }
-                onKeyDown={handleTechStackKeyDown}
-                placeholder="기술 스택 검색 (예: Node.js, Python)"
-                className="h-14 rounded-lg border-[#c3c6d7] bg-white text-base"
               />
-              <div className="flex flex-wrap gap-2">
-                {ONBOARDING_TECH_STACK_OPTIONS.map((stack) => (
-                  <button
-                    key={stack}
-                    type="button"
-                    onClick={() => handleAddTechStack(stack)}
-                    className="rounded-full border border-[#c3c6d7] px-3 py-1.5 text-sm text-[#565e74] transition hover:border-blue-400 hover:text-blue-500"
-                  >
-                    {stack}
-                  </button>
-                ))}
-              </div>
             </div>
           </Field>
 
@@ -541,19 +541,13 @@ function MeetingCreateForm({ initialForm, isEditMode, meetingId }: MeetingCreate
                 >
                   <Trash2 className="size-4" aria-hidden="true" />
                 </button>
-                <div className="grid gap-6 pr-8 md:grid-cols-4">
+                <div className="grid gap-6 pr-8 md:grid-cols-[minmax(220px,1.4fr)_96px_minmax(260px,2fr)]">
                   <Field label="포지션명" muted>
-                    <select
+                    <PositionSelect
                       value={position.name}
-                      onChange={(event) =>
-                        handlePositionChange(position.id, "name", event.target.value)
-                      }
-                      className="h-11 w-full rounded-lg border border-[#c3c6d7] bg-white px-4 text-base text-[#191c1e] outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20"
-                    >
-                      {ONBOARDING_JOB_OPTIONS.map((option) => (
-                        <option key={option}>{option}</option>
-                      ))}
-                    </select>
+                      options={ONBOARDING_JOB_OPTIONS}
+                      onChange={(value) => handlePositionChange(position.id, "name", value)}
+                    />
                   </Field>
                   <Field label="인원수" muted>
                     <Input
@@ -570,7 +564,7 @@ function MeetingCreateForm({ initialForm, isEditMode, meetingId }: MeetingCreate
                       className="h-11 rounded-lg border-[#c3c6d7] bg-white text-base"
                     />
                   </Field>
-                  <Field label="상세 설명" muted className="md:col-span-2">
+                  <Field label="상세 설명" muted>
                     <Input
                       value={position.description}
                       onChange={(event: ChangeEvent<HTMLInputElement>) =>
@@ -747,6 +741,138 @@ function PillControl({ value, options, onChange }: PillControlProps) {
         )
       })}
     </div>
+  )
+}
+
+type PositionSelectProps = {
+  value: string
+  options: readonly string[]
+  onChange: (value: string) => void
+}
+
+function PositionSelect({ value, options, onChange }: PositionSelectProps) {
+  const [open, setOpen] = useState(false)
+
+  function handleSelect(option: string) {
+    onChange(option)
+    setOpen(false)
+  }
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          className="flex h-11 w-full items-center justify-between gap-2 rounded-lg border border-[#c3c6d7] bg-white px-4 text-left text-base text-[#191c1e] outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20"
+        >
+          <span className="min-w-0 truncate">{value}</span>
+          <ChevronDown className="size-4 shrink-0 text-[#565e74]" aria-hidden="true" />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent
+        align="start"
+        className="w-[var(--radix-popover-trigger-width)] overflow-hidden rounded-lg border-[#c3c6d7] bg-white p-1"
+      >
+        <div className="max-h-[440px] overflow-y-auto overscroll-contain">
+          {options.map((option) => {
+            const isSelected = value === option
+
+            return (
+              <button
+                key={option}
+                type="button"
+                onClick={() => handleSelect(option)}
+                className={cn(
+                  "flex h-11 w-full items-center rounded-md px-3 text-left text-sm transition",
+                  isSelected
+                    ? "bg-blue-50 font-medium text-blue-500"
+                    : "text-[#434655] hover:bg-[#f7f9fb] hover:text-[#191c1e]",
+                )}
+              >
+                <span className="truncate">{option}</span>
+              </button>
+            )
+          })}
+        </div>
+      </PopoverContent>
+    </Popover>
+  )
+}
+
+type TechStackOptionListProps = {
+  inputValue: string
+  options: readonly string[]
+  selectedOptions: string[]
+  onInputChange: (value: string) => void
+  onInputKeyDown: (event: KeyboardEvent<HTMLInputElement>) => void
+  onToggle: (option: string) => void
+}
+
+function TechStackPicker({
+  inputValue,
+  options,
+  selectedOptions,
+  onInputChange,
+  onInputKeyDown,
+  onToggle,
+}: TechStackOptionListProps) {
+  const [open, setOpen] = useState(false)
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <div className="relative">
+          <Input
+            value={inputValue}
+            onChange={(event: ChangeEvent<HTMLInputElement>) => onInputChange(event.target.value)}
+            onFocus={() => setOpen(true)}
+            onClick={() => setOpen(true)}
+            onKeyDown={onInputKeyDown}
+            placeholder="기술 스택 검색 (예: Node.js, Python)"
+            className="h-14 rounded-lg border-[#c3c6d7] bg-white pr-11 text-base"
+          />
+          <ChevronDown
+            className="pointer-events-none absolute right-4 top-1/2 size-4 -translate-y-1/2 text-[#565e74]"
+            aria-hidden="true"
+          />
+        </div>
+      </PopoverTrigger>
+      <PopoverContent
+        align="start"
+        className="w-[var(--radix-popover-trigger-width)] overflow-hidden rounded-lg border-[#c3c6d7] bg-white p-1"
+        onOpenAutoFocus={(event) => event.preventDefault()}
+      >
+        {options.length === 0 ? (
+          <div className="rounded-md px-4 py-6 text-center text-sm text-[#737686]">
+            검색 결과가 없습니다.
+          </div>
+        ) : (
+          <div className="max-h-[440px] overflow-y-auto overscroll-contain">
+            {options.map((option) => {
+              const isSelected = selectedOptions.includes(option)
+
+              return (
+                <button
+                  key={option}
+                  type="button"
+                  onClick={() => onToggle(option)}
+                  aria-pressed={isSelected}
+                  className={cn(
+                    "flex h-11 w-full items-center justify-between gap-3 rounded-md px-3 text-left text-sm transition",
+                    isSelected
+                      ? "bg-blue-50 font-medium text-blue-500"
+                      : "text-[#434655] hover:bg-[#f7f9fb] hover:text-[#191c1e]",
+                  )}
+                >
+                  <span className="truncate">{option}</span>
+                  {isSelected ? <span className="shrink-0 text-xs">선택됨</span> : null}
+                </button>
+              )
+            })}
+          </div>
+        )}
+      </PopoverContent>
+    </Popover>
   )
 }
 
