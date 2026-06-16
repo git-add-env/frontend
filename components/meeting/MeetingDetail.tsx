@@ -362,7 +362,7 @@ export function MeetingDetail({ meetingId }: MeetingDetailProps) {
                 </div>
 
                 <Button className="h-14 w-full rounded-lg bg-blue-400 text-lg font-medium text-white hover:bg-blue-500">
-                  지원하기
+                  참여하기
                 </Button>
               </CardContent>
             </Card>
