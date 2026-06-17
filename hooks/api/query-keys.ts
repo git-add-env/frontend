@@ -19,6 +19,7 @@ export const queryKeys = {
     schedules: (meetingId: number) => ["meetings", meetingId, "schedules"] as const,
     notices: (meetingId: number) => ["meetings", meetingId, "notices"] as const,
     resources: (meetingId: number) => ["meetings", meetingId, "resources"] as const,
+    conference: (meetingId: number) => ["meetings", meetingId, "conference"] as const,
   },
   memberProfile: (userId: number) => ["users", userId, "profile"] as const,
   notifications: ["notifications"] as const,

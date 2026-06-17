@@ -134,6 +134,20 @@ export type MeetingRoom = {
   url: string
 }
 
+// 회의 진행 상태 (GET /conferences). "회의 없음"도 404가 아니라 200 + isActive:false.
+export type ConferenceStatus = {
+  conferenceId: number | null
+  isActive: boolean
+  roomId: string | null
+  participantCount: number
+  startedAt: string | null
+  startedBy: { userId: number; nickname: string } | null
+}
+
+export function fetchConferenceStatus(meetingId: number) {
+  return apiClient<ConferenceStatus>(`/api/meetings/${meetingId}/conferences`)
+}
+
 export function startMeeting(meetingId: number) {
   return apiClient<MeetingRoom>(`/api/meetings/${meetingId}/conferences`, {
     method: "POST",
