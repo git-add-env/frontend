@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { Video } from "lucide-react"
 
+import { useConferenceStatus } from "@/hooks/dashboard/use-conference-status"
 import { useJoinMeeting, useStartMeeting } from "@/hooks/dashboard/use-meeting-room"
 import { useSchedules } from "@/hooks/dashboard/use-schedules"
 import { ApiFetchError } from "@/lib/api/api-fetch"
@@ -27,6 +28,10 @@ export function VideoConferenceBanner({
   const joinMeeting = useJoinMeeting(meetingId)
   const meetingBusy = startMeeting.isPending || joinMeeting.isPending
   const [meetingError, setMeetingError] = useState<string | null>(null)
+
+  // 활동중일 때만 회의 진행 상태를 조회한다. 멤버는 isActive로 참여 가능 여부가 갈리고,
+  // 모임장도 진행 중이면 버튼 문구가 '시작하기'→'참여하기'로 바뀐다.
+  const { data: conference } = useConferenceStatus(meetingId, status === "ACTIVE")
 
   // 화상 회의로 표시된(isMeeting) 일정 중 가장 가까운 미래 회의를 배너에 안내한다.
   const { data: schedules } = useSchedules(meetingId)
@@ -80,14 +85,10 @@ export function VideoConferenceBanner({
             )}
           </div>
         </div>
-        {/*
-          TODO: 멤버 참여 활성화 — meetingActive 미전달로 현재 멤버는 참여 불가.
-          회의 진행 상태 조회 API(GET /api/meetings/{id}/conferences) 배포 후
-          meetingActive를 연결할 것. (백엔드 API 추가 요청 필요)
-        */}
         <VideoConference
           status={status}
           isLeader={isLeader}
+          meetingActive={conference?.isActive ?? false}
           busy={meetingBusy}
           onClick={onMeeting}
         />
