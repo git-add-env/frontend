@@ -49,11 +49,27 @@ function GitHubIcon(props: React.SVGProps<SVGSVGElement>) {
   )
 }
 
-export default function LoginDialog() {
+type LoginDialogProps = {
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
+  showTrigger?: boolean
+}
+
+export default function LoginDialog({
+  open,
+  onOpenChange,
+  showTrigger = true,
+}: LoginDialogProps) {
   const router = useRouter()
-  const [loginOpen, setLoginOpen] = useState(false)
+  const [internalLoginOpen, setInternalLoginOpen] = useState(false)
   const [onboardingPreviewOpen, setOnboardingPreviewOpen] = useState(false)
   const [testLoginLoading, setTestLoginLoading] = useState(false)
+  const loginOpen = open ?? internalLoginOpen
+
+  function setLoginOpen(nextOpen: boolean) {
+    onOpenChange?.(nextOpen)
+    setInternalLoginOpen(nextOpen)
+  }
 
   function openOnboardingPreview() {
     setLoginOpen(false)
@@ -96,11 +112,13 @@ export default function LoginDialog() {
     <>
       <div className="flex items-center gap-2">
         <Dialog open={loginOpen} onOpenChange={setLoginOpen}>
-          <DialogTrigger asChild>
-            <Button size="sm" variant="outline">
-              로그인
-            </Button>
-          </DialogTrigger>
+          {showTrigger ? (
+            <DialogTrigger asChild>
+              <Button size="sm" variant="outline">
+                로그인
+              </Button>
+            </DialogTrigger>
+          ) : null}
           <DialogContent className="max-w-sm">
             <DialogHeader>
               <DialogTitle>로그인</DialogTitle>
@@ -140,14 +158,16 @@ export default function LoginDialog() {
           </DialogContent>
         </Dialog>
 
-        <Button
-          size="sm"
-          variant="secondary"
-          onClick={handleTestLogin}
-          disabled={testLoginLoading}
-        >
-          {testLoginLoading ? "로그인 중" : "테스트 로그인"}
-        </Button>
+        {showTrigger ? (
+          <Button
+            size="sm"
+            variant="secondary"
+            onClick={handleTestLogin}
+            disabled={testLoginLoading}
+          >
+            {testLoginLoading ? "로그인 중" : "테스트 로그인"}
+          </Button>
+        ) : null}
       </div>
 
       <OnboardingDialog

@@ -41,6 +41,7 @@ export type MeetingListParams = {
 }
 
 export type MeetingDetail = MeetingSummary & {
+  isLeader?: boolean
   description?: string | null
   introduction?: string | null
   content?: string | null
@@ -69,6 +70,10 @@ export type MeetingUpsertPayload = {
   expectedDuration: string
   meetingSchedule: string
   positions: MeetingUpsertPosition[]
+}
+
+export type ApplyMeetingPayload = {
+  positionId: number
 }
 
 type MeetingDetailResponse =
@@ -119,10 +124,10 @@ export function fetchMeetings({
   })
 }
 
-export async function fetchMeetingDetail(meetingId: number) {
+export async function fetchMeetingDetail(meetingId: number, options?: ApiClientOptions) {
   try {
     const data = await apiClient<MeetingDetailResponse>(`/api/meetings/${meetingId}`, {
-      auth: false,
+      auth: options?.auth ?? false,
     })
 
     return unwrapMeetingDetail(data)
@@ -155,6 +160,13 @@ function unwrapMeetingDetail(data: MeetingDetailResponse) {
 
 export function fetchMeetingMembers(meetingId: number, options?: ApiClientOptions) {
   return apiClient<{ members: MeetingMember[] }>(`/api/meetings/${meetingId}/members`, options)
+}
+
+export function applyMeeting(meetingId: number, payload: ApplyMeetingPayload) {
+  return apiClient<void>(`/api/meetings/${meetingId}/apply`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  })
 }
 
 export function createMeeting(payload: MeetingUpsertPayload) {

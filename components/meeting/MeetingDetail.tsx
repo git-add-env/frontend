@@ -2,8 +2,10 @@
 
 import type { ReactNode } from "react"
 
-import { useMemo } from "react"
-import { useQuery } from "@tanstack/react-query"
+import { useMemo, useState } from "react"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import Link from "next/link"
+import { useSession } from "next-auth/react"
 import {
   BookOpenText,
   Calendar,
@@ -17,6 +19,7 @@ import {
 } from "lucide-react"
 
 import { BookMarkBtn } from "@/components/common/BookMarkBtn"
+import LoginDialog from "@/components/common/LoginDialog"
 import { MeetingCardImage } from "@/components/common/MeetingCard"
 import MeetingRecommendationCarousel from "@/components/common/MeetingRecommendationCarousel"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -28,15 +31,26 @@ import {
 } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { Progress } from "@/components/ui/progress"
 import { CATEGORY_LABEL } from "@/constants/category"
 import { queryKeys } from "@/hooks/api/query-keys"
+import { ApiFetchError } from "@/lib/api/api-fetch"
+import { errorMessage } from "@/lib/api/error"
 import {
+  applyMeeting,
   fetchMeetingDetail,
   fetchMeetingMembers,
   type MeetingDetail as MeetingDetailData,
   type MeetingMember,
 } from "@/lib/api/meetings"
+import { notify } from "@/lib/notify"
 import { cn } from "@/lib/utils"
 
 const FALLBACK_MEETING_IMAGE_URL = "https://images.unsplash.com/photo-1516321318423-f06f85e504b3"
@@ -50,6 +64,7 @@ type DetailPosition = {
   job: string
   current: number
   max: number
+  isClosed: boolean
   description: string
 }
 
@@ -74,6 +89,8 @@ type MeetingView = {
   description: string
   techStacks: string[]
   isBookmarked: boolean
+  isLeader: boolean
+  status?: string
   positions: DetailPosition[]
   members: DetailMember[]
 }
@@ -154,7 +171,7 @@ type RecruitmentStatusProps = {
 }
 
 function RecruitmentStatus({ position }: RecruitmentStatusProps) {
-  const isFull = position.current >= position.max
+  const isFull = isPositionFull(position)
 
   return (
     <div
@@ -169,6 +186,94 @@ function RecruitmentStatus({ position }: RecruitmentStatusProps) {
         {isFull ? " (마감)" : ""}
       </p>
     </div>
+  )
+}
+
+type JoinMeetingDialogProps = {
+  open: boolean
+  positions: DetailPosition[]
+  selectedPositionId: number | null
+  errorMessage: string | null
+  isPending: boolean
+  onOpenChange: (open: boolean) => void
+  onSelectPosition: (positionId: number) => void
+  onSubmit: () => void
+}
+
+function JoinMeetingDialog({
+  open,
+  positions,
+  selectedPositionId,
+  errorMessage,
+  isPending,
+  onOpenChange,
+  onSelectPosition,
+  onSubmit,
+}: JoinMeetingDialogProps) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>참여할 포지션 선택</DialogTitle>
+          <DialogDescription>
+            참여할 포지션을 선택한 뒤 모임 참여를 완료해주세요.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-2">
+          {positions.map((position) => {
+            const remainingCount = Math.max(position.max - position.current, 0)
+            const selected = selectedPositionId === position.id
+
+            return (
+              <label
+                key={position.id}
+                className={cn(
+                  "flex cursor-pointer items-start gap-3 rounded-lg border border-[#c3c6d7] p-4 transition-colors",
+                  selected && "border-blue-400 bg-blue-50",
+                )}
+              >
+                <input
+                  type="radio"
+                  name="meeting-position"
+                  value={position.id}
+                  checked={selected}
+                  onChange={() => onSelectPosition(position.id)}
+                  className="mt-1 size-4 accent-blue-500"
+                  disabled={isPending}
+                />
+                <span className="min-w-0 flex-1 space-y-1">
+                  <span className="flex flex-wrap items-center gap-2">
+                    <span className="text-sm font-medium text-[#191c1e]">{position.job}</span>
+                    <Badge variant="recruiting" className="h-auto rounded-full px-2 py-1 text-xs">
+                      {remainingCount}명 모집 중
+                    </Badge>
+                  </span>
+                  <span className="block text-sm leading-5 text-[#434655]">
+                    {position.description}
+                  </span>
+                </span>
+              </label>
+            )
+          })}
+        </div>
+
+        {errorMessage ? (
+          <p className="rounded-md border border-destructive/40 bg-destructive/5 p-2 text-xs text-destructive">
+            {errorMessage}
+          </p>
+        ) : null}
+
+        <div className="flex justify-end gap-2">
+          <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={isPending}>
+            닫기
+          </Button>
+          <Button onClick={onSubmit} disabled={isPending || selectedPositionId === null}>
+            {isPending ? "참여 중..." : "참여하기"}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
   )
 }
 
@@ -208,11 +313,20 @@ function MemberRow({ member }: MemberRowProps) {
 }
 
 export function MeetingDetail({ meetingId }: MeetingDetailProps) {
+  const queryClient = useQueryClient()
+  const { data: session, status: authStatus } = useSession()
+  const [joinDialogOpen, setJoinDialogOpen] = useState(false)
+  const [loginDialogOpen, setLoginDialogOpen] = useState(false)
+  const [selectedPositionId, setSelectedPositionId] = useState<number | null>(null)
+  const [joinErrorMessage, setJoinErrorMessage] = useState<string | null>(null)
   const canFetch = typeof meetingId === "number" && Number.isFinite(meetingId)
+  const detailAuth = authStatus === "authenticated"
   const detailQuery = useQuery({
-    queryKey: canFetch ? queryKeys.meetings.detail(meetingId) : ["meetings", "detail", "missing"],
-    queryFn: () => fetchMeetingDetail(meetingId as number),
-    enabled: canFetch,
+    queryKey: canFetch
+      ? [...queryKeys.meetings.detail(meetingId), authStatus]
+      : ["meetings", "detail", "missing", authStatus],
+    queryFn: () => fetchMeetingDetail(meetingId as number, { auth: detailAuth }),
+    enabled: canFetch && authStatus !== "loading",
   })
   const membersQuery = useQuery({
     queryKey: canFetch ? queryKeys.meetings.members(meetingId) : ["meetings", "members", "missing"],
@@ -226,6 +340,68 @@ export function MeetingDetail({ meetingId }: MeetingDetailProps) {
 
     return mapMeetingDetailToView(detailQuery.data, membersQuery.data?.members ?? [])
   }, [detailQuery.data, membersQuery.data?.members])
+  const openPositions = useMemo(() => {
+    return meeting?.positions.filter((position) => !isPositionFull(position)) ?? []
+  }, [meeting?.positions])
+  const canJoinByStatus = !meeting?.status || meeting.status === "RECRUITING"
+  const currentUserId = session?.user?.id
+  const isLeaderByMembers =
+    authStatus === "authenticated" &&
+    currentUserId !== undefined &&
+    meeting?.members.some(
+      (member) => member.isLeader && String(member.id) === String(currentUserId),
+    ) === true
+  const isCurrentUserLeader = meeting?.isLeader === true || isLeaderByMembers
+  const isCheckingLeader = authStatus === "authenticated" && membersQuery.isLoading
+  const joinMutation = useMutation({
+    mutationFn: (positionId: number) => applyMeeting(meetingId as number, { positionId }),
+    onSuccess: async () => {
+      notify.success("모임 참여가 완료되었습니다.")
+      setJoinDialogOpen(false)
+      setSelectedPositionId(null)
+      setJoinErrorMessage(null)
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: queryKeys.meetings.detail(meetingId as number) }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.meetings.members(meetingId as number) }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.meetings.mineAll }),
+      ])
+    },
+    onError: (error) => {
+      setJoinErrorMessage(
+        error instanceof ApiFetchError ? errorMessage(error) : "모임 참여에 실패했습니다.",
+      )
+    },
+  })
+
+  function handleJoinClick() {
+    if (authStatus !== "authenticated") {
+      notify.info("로그인이 필요한 서비스입니다.")
+      setLoginDialogOpen(true)
+      return
+    }
+
+    setJoinErrorMessage(null)
+    setSelectedPositionId(openPositions[0]?.id ?? null)
+    setJoinDialogOpen(true)
+  }
+
+  function handleJoinDialogOpenChange(open: boolean) {
+    setJoinDialogOpen(open)
+
+    if (!open) {
+      setSelectedPositionId(null)
+      setJoinErrorMessage(null)
+    }
+  }
+
+  function handleJoinSubmit() {
+    if (selectedPositionId === null) {
+      setJoinErrorMessage("참여할 포지션을 선택해주세요.")
+      return
+    }
+
+    joinMutation.mutate(selectedPositionId)
+  }
 
   if (!canFetch) {
     return (
@@ -361,9 +537,28 @@ export function MeetingDetail({ meetingId }: MeetingDetailProps) {
                   </div>
                 </div>
 
-                <Button className="h-14 w-full rounded-lg bg-blue-400 text-lg font-medium text-white hover:bg-blue-500">
-                  참여하기
-                </Button>
+                {isCurrentUserLeader ? (
+                  <Button
+                    asChild
+                    className="h-14 w-full rounded-lg bg-blue-400 text-lg font-medium text-white hover:bg-blue-500"
+                  >
+                    <Link href={`/meetings/${meetingId}/edit`}>수정하기</Link>
+                  </Button>
+                ) : (
+                  <Button
+                    className="h-14 w-full rounded-lg bg-blue-400 text-lg font-medium text-white hover:bg-blue-500"
+                    onClick={handleJoinClick}
+                    disabled={isCheckingLeader || openPositions.length === 0 || !canJoinByStatus}
+                  >
+                    {isCheckingLeader
+                      ? "권한 확인 중..."
+                      : !canJoinByStatus
+                        ? "모집 마감"
+                        : openPositions.length === 0
+                          ? "모집 완료"
+                          : "참여하기"}
+                  </Button>
+                )}
               </CardContent>
             </Card>
 
@@ -387,6 +582,22 @@ export function MeetingDetail({ meetingId }: MeetingDetailProps) {
       <section className="pt-8">
         <MeetingRecommendationCarousel />
       </section>
+
+      <JoinMeetingDialog
+        open={joinDialogOpen}
+        positions={openPositions}
+        selectedPositionId={selectedPositionId}
+        errorMessage={joinErrorMessage}
+        isPending={joinMutation.isPending}
+        onOpenChange={handleJoinDialogOpenChange}
+        onSelectPosition={setSelectedPositionId}
+        onSubmit={handleJoinSubmit}
+      />
+      <LoginDialog
+        open={loginDialogOpen}
+        onOpenChange={setLoginDialogOpen}
+        showTrigger={false}
+      />
     </article>
   )
 }
@@ -414,15 +625,22 @@ function mapMeetingDetailToView(meeting: MeetingDetailData, members: MeetingMemb
     description,
     techStacks: meeting.techStacks ?? [],
     isBookmarked: meeting.isBookmarked ?? false,
+    isLeader: meeting.isLeader ?? false,
+    status: meeting.status,
     positions: positions.map((position) => ({
       id: position.id,
       job: position.name,
       current: position.currentCount,
       max: position.recruitCount,
+      isClosed: position.isClosed ?? false,
       description: position.description ?? "상세 모집 요건이 없습니다.",
     })),
     members: members.map(mapMeetingMemberToView),
   }
+}
+
+function isPositionFull(position: DetailPosition) {
+  return position.isClosed || position.current >= position.max
 }
 
 function getProgressValue(current: number, max: number) {
