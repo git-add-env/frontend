@@ -1,8 +1,12 @@
 "use client"
 
 import { useState } from "react"
+import { useRouter } from "next/navigation"
+
+import { ArrowRight } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
 import {
   Dialog,
   DialogContent,
@@ -19,7 +23,8 @@ import {
 import { ApiFetchError } from "@/lib/api/api-fetch"
 import { errorMessage } from "@/lib/api/error"
 
-import { EmptyOrError } from "./EmptyOrError"
+import { EmptyOrError, FindMeetingsButton } from "./EmptyOrError"
+import { MeetingCardSkeletonGrid } from "./MeetingCardSkeleton"
 import { MeetingCard } from "./MeetingCard"
 
 type ConfirmAction = "cancel" | "delete" | "complete"
@@ -34,8 +39,33 @@ type MyMeetingsTabProps = {
   status: "recruiting" | "active"
 }
 
+// ⋯ 드롭다운 안의 액션 항목 — 전체폭 좌측정렬 버튼.
+function MenuItem({
+  children,
+  onClick,
+  danger,
+}: {
+  children: React.ReactNode
+  onClick: () => void
+  danger?: boolean
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "w-full rounded-md px-2.5 py-1.5 text-left text-sm transition-colors hover:bg-muted",
+        danger ? "text-destructive hover:bg-destructive/10" : "text-foreground",
+      )}
+    >
+      {children}
+    </button>
+  )
+}
+
 export function MyMeetingsTab({ status }: MyMeetingsTabProps) {
-  const { data: meetings, isError } = useMyMeetings(status)
+  const router = useRouter()
+  const { data: meetings, isError, isPending } = useMyMeetings(status)
   const [confirm, setConfirm] = useState<ConfirmState>(null)
   const [confirmError, setConfirmError] = useState<string | null>(null)
 
@@ -64,13 +94,15 @@ export function MyMeetingsTab({ status }: MyMeetingsTabProps) {
   }
 
   if (isError) return <EmptyOrError message="모임을 불러오지 못했습니다." />
-  if (!meetings) return <EmptyOrError message="로딩 중..." />
+  if (isPending || !meetings)
+    return <MeetingCardSkeletonGrid className="grid gap-3 sm:grid-cols-2" />
   if (meetings.length === 0)
     return (
       <EmptyOrError
         message={
           status === "recruiting" ? "모집중인 모임이 없습니다." : "활동중인 모임이 없습니다."
         }
+        action={<FindMeetingsButton />}
       />
     )
 
@@ -78,64 +110,57 @@ export function MyMeetingsTab({ status }: MyMeetingsTabProps) {
     <>
       <div className="grid gap-3 sm:grid-cols-2">
         {meetings.map((meeting) => {
+          // 모집중: (모임장)삭제 / (멤버)참여취소, 활동중: (모임장)종료. ⋯ 메뉴에 들어간다.
+          let menuItem: React.ReactNode = null
+          if (meeting.isLeader && meeting.status === "RECRUITING") {
+            menuItem = (
+              <MenuItem
+                danger
+                onClick={() =>
+                  setConfirm({ meetingId: meeting.meetingId, title: meeting.title, action: "delete" })
+                }
+              >
+                삭제
+              </MenuItem>
+            )
+          } else if (meeting.isLeader && meeting.status === "ACTIVE") {
+            menuItem = (
+              <MenuItem
+                onClick={() =>
+                  setConfirm({ meetingId: meeting.meetingId, title: meeting.title, action: "complete" })
+                }
+              >
+                종료
+              </MenuItem>
+            )
+          } else if (!meeting.isLeader && meeting.status === "RECRUITING") {
+            menuItem = (
+              <MenuItem
+                danger
+                onClick={() =>
+                  setConfirm({ meetingId: meeting.meetingId, title: meeting.title, action: "cancel" })
+                }
+              >
+                참여 취소
+              </MenuItem>
+            )
+          }
+
           return (
             <MeetingCard
               key={meeting.meetingId}
               meeting={meeting}
-              footer={
-                <div className="mt-3 flex flex-wrap justify-end gap-2">
-                  {meeting.isLeader ? (
-                    <>
-                      {/* 모집중: 삭제 / 활동중: 종료. 완료된 모임엔 모임장 액션 없음. */}
-                      {meeting.status === "RECRUITING" && (
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={() =>
-                            setConfirm({
-                              meetingId: meeting.meetingId,
-                              title: meeting.title,
-                              action: "delete",
-                            })
-                          }
-                        >
-                          삭제
-                        </Button>
-                      )}
-                      {meeting.status === "ACTIVE" && (
-                        <Button
-                          size="sm"
-                          variant="default"
-                          onClick={() =>
-                            setConfirm({
-                              meetingId: meeting.meetingId,
-                              title: meeting.title,
-                              action: "complete",
-                            })
-                          }
-                        >
-                          종료
-                        </Button>
-                      )}
-                    </>
-                  ) : (
-                    meeting.status === "RECRUITING" && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() =>
-                          setConfirm({
-                            meetingId: meeting.meetingId,
-                            title: meeting.title,
-                            action: "cancel",
-                          })
-                        }
-                      >
-                        참여 취소
-                      </Button>
-                    )
-                  )}
-                </div>
+              menu={menuItem}
+              // 카드 전체 클릭은 상세 페이지로. "내 모임" 버튼/⋯ 메뉴는 각자 stopPropagation으로 분리됨.
+              onClick={() => router.push(`/meetings/${meeting.meetingId}`)}
+              action={
+                <Button
+                  size="sm"
+                  onClick={() => router.push(`/dashboard?meetingId=${meeting.meetingId}`)}
+                >
+                  내 모임
+                  <ArrowRight />
+                </Button>
               }
             />
           )
