@@ -907,6 +907,7 @@ function getPayload(form: MeetingFormState): MeetingUpsertPayload {
     title: form.title.trim(),
     category: form.category,
     description: form.description.trim(),
+    additionalNotice: form.referenceNote.trim() || null,
     thumbnailUrl: form.thumbnailUrl.trim() || null,
     techStacks: form.techStacks,
     deadline: form.deadline,
@@ -976,7 +977,7 @@ function mapMeetingDetailToForm(meeting: MeetingDetail): MeetingFormState {
     description: meeting.description ?? meeting.introduction ?? meeting.content ?? "",
     techStackInput: "",
     techStacks: meeting.techStacks ?? [],
-    referenceNote: "",
+    referenceNote: meeting.additionalNotice ?? "",
     positions:
       meeting.positions?.length > 0
         ? meeting.positions.map((position) => ({

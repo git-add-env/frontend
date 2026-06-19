@@ -87,6 +87,7 @@ type MeetingView = {
   maxMembers: number
   heroImage: string
   description: string
+  additionalNotice: string | null
   techStacks: string[]
   isBookmarked: boolean
   isLeader: boolean
@@ -320,26 +321,35 @@ export function MeetingDetail({ meetingId }: MeetingDetailProps) {
   const [selectedPositionId, setSelectedPositionId] = useState<number | null>(null)
   const [joinErrorMessage, setJoinErrorMessage] = useState<string | null>(null)
   const canFetch = typeof meetingId === "number" && Number.isFinite(meetingId)
-  const detailAuth = authStatus === "authenticated"
+  const requestAuth = authStatus === "authenticated"
   const detailQuery = useQuery({
     queryKey: canFetch
       ? [...queryKeys.meetings.detail(meetingId), authStatus]
       : ["meetings", "detail", "missing", authStatus],
-    queryFn: () => fetchMeetingDetail(meetingId as number, { auth: detailAuth }),
+    queryFn: () => fetchMeetingDetail(meetingId as number, { auth: requestAuth }),
     enabled: canFetch && authStatus !== "loading",
   })
   const membersQuery = useQuery({
-    queryKey: canFetch ? queryKeys.meetings.members(meetingId) : ["meetings", "members", "missing"],
-    queryFn: () => fetchMeetingMembers(meetingId as number, { auth: false }),
-    enabled: canFetch,
+    queryKey: canFetch
+      ? [...queryKeys.meetings.members(meetingId), authStatus]
+      : ["meetings", "members", "missing", authStatus],
+    queryFn: () => fetchMeetingMembers(meetingId as number, { auth: requestAuth }),
+    enabled: canFetch && authStatus !== "loading",
   })
+  const detailMembers = detailQuery.data?.members
+  const displayedMembers = useMemo(
+    () => membersQuery.data?.members ?? detailMembers ?? [],
+    [detailMembers, membersQuery.data?.members],
+  )
   const meeting = useMemo(() => {
     if (!detailQuery.data) {
       return null
     }
 
-    return mapMeetingDetailToView(detailQuery.data, membersQuery.data?.members ?? [])
-  }, [detailQuery.data, membersQuery.data?.members])
+    return mapMeetingDetailToView(detailQuery.data, displayedMembers)
+  }, [detailQuery.data, displayedMembers])
+  const showMembersLoading = membersQuery.isLoading && displayedMembers.length === 0
+  const showMembersError = membersQuery.isError && displayedMembers.length === 0
   const openPositions = useMemo(() => {
     return meeting?.positions.filter((position) => !isPositionFull(position)) ?? []
   }, [meeting?.positions])
@@ -418,10 +428,16 @@ export function MeetingDetail({ meetingId }: MeetingDetailProps) {
   }
 
   if (detailQuery.isError || !meeting) {
+    const detailErrorMessage =
+      detailQuery.error instanceof ApiFetchError
+        ? errorMessage(detailQuery.error)
+        : "모임 상세 정보를 불러오지 못했습니다."
+
     return (
       <Card className="rounded-xl border-[#c3c6d7] bg-white shadow-sm">
-        <CardContent className="p-10 text-center text-[#434655]">
-          모임 상세 정보를 불러오지 못했습니다.
+        <CardContent className="space-y-2 p-10 text-center text-[#434655]">
+          <p>모임 상세 정보를 불러오지 못했습니다.</p>
+          <p className="text-sm text-[#737686]">{detailErrorMessage}</p>
         </CardContent>
       </Card>
     )
@@ -483,6 +499,19 @@ export function MeetingDetail({ meetingId }: MeetingDetailProps) {
               </div>
             </CardContent>
           </Card>
+
+          {meeting.additionalNotice ? (
+            <Card className="rounded-xl border-[#c3c6d7] bg-white shadow-sm">
+              <CardContent className="space-y-6 p-6">
+                <SectionTitle icon={<ClipboardList className="size-5" />} title="추가 안내" />
+                <div className="space-y-4 text-base leading-7 text-[#434655]">
+                  {meeting.additionalNotice.split("\n").map((paragraph, index) => (
+                    <p key={index}>{paragraph}</p>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          ) : null}
 
           <Card className="rounded-xl border-[#c3c6d7] bg-white shadow-sm">
             <CardContent className="space-y-6 p-6">
@@ -566,12 +595,17 @@ export function MeetingDetail({ meetingId }: MeetingDetailProps) {
               <CardContent className="space-y-4 p-6">
                 <SectionTitle icon={<Users className="size-5" />} title="참여 멤버" />
                 <div className="space-y-2">
-                  {meeting.members.slice(0, 4).map((member) => (
-                    <MemberRow key={member.id} member={member} />
-                  ))}
-                  {membersQuery.isError ? (
+                  {showMembersLoading ? (
+                    <p className="px-2 text-sm text-[#737686]">참여 멤버를 불러오는 중입니다.</p>
+                  ) : showMembersError ? (
                     <p className="px-2 text-sm text-[#737686]">참여 멤버를 불러오지 못했습니다.</p>
-                  ) : null}
+                  ) : meeting.members.length > 0 ? (
+                    meeting.members.slice(0, 4).map((member) => (
+                      <MemberRow key={member.id} member={member} />
+                    ))
+                  ) : (
+                    <p className="px-2 text-sm text-[#737686]">아직 참여 멤버가 없습니다.</p>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -623,6 +657,7 @@ function mapMeetingDetailToView(meeting: MeetingDetailData, members: MeetingMemb
     maxMembers,
     heroImage: meeting.thumbnailUrl ?? FALLBACK_MEETING_IMAGE_URL,
     description,
+    additionalNotice: meeting.additionalNotice?.trim() || null,
     techStacks: meeting.techStacks ?? [],
     isBookmarked: meeting.isBookmarked ?? false,
     isLeader: meeting.isLeader ?? false,

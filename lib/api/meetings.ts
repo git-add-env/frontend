@@ -42,9 +42,11 @@ export type MeetingListParams = {
 
 export type MeetingDetail = MeetingSummary & {
   isLeader?: boolean
+  members?: MeetingMember[]
   description?: string | null
   introduction?: string | null
   content?: string | null
+  additionalNotice?: string | null
   startDate?: string | null
   expectedDuration?: string | null
   duration?: string | null
@@ -63,6 +65,7 @@ export type MeetingUpsertPayload = {
   title: string
   category: string
   description: string
+  additionalNotice?: string | null
   thumbnailUrl?: string | null
   techStacks: string[]
   deadline: string
@@ -124,22 +127,15 @@ export function fetchMeetings({
   })
 }
 
-export async function fetchMeetingDetail(meetingId: number, options?: ApiClientOptions) {
-  try {
-    const data = await apiClient<MeetingDetailResponse>(`/api/meetings/${meetingId}`, {
-      auth: options?.auth ?? false,
-    })
+export async function fetchMeetingDetail(
+  meetingId: number,
+  options?: ApiClientOptions,
+): Promise<MeetingDetail> {
+  const data = await apiClient<MeetingDetailResponse>(`/api/meetings/${meetingId}`, {
+    auth: options?.auth ?? false,
+  })
 
-    return unwrapMeetingDetail(data)
-  } catch (error) {
-    const fallback = await fetchMeetingSummaryById(meetingId)
-
-    if (fallback) {
-      return fallback
-    }
-
-    throw error
-  }
+  return unwrapMeetingDetail(data)
 }
 
 function unwrapMeetingDetail(data: MeetingDetailResponse) {
@@ -201,25 +197,4 @@ export function getMeetingMutationId(data: MeetingMutationResponse) {
   }
 
   throw new Error("지원하지 않는 모임 생성/수정 응답 형식입니다.")
-}
-
-async function fetchMeetingSummaryById(meetingId: number) {
-  let cursor: number | null | undefined
-  const visitedCursors = new Set<number>()
-
-  while (true) {
-    const data = await fetchMeetings({ cursor, size: 100 })
-    const meeting = data.meetings.find((item) => item.meetingId === meetingId)
-
-    if (meeting) {
-      return meeting
-    }
-
-    if (!data.hasNext || data.nextCursor === null || visitedCursors.has(data.nextCursor)) {
-      return null
-    }
-
-    visitedCursors.add(data.nextCursor)
-    cursor = data.nextCursor
-  }
 }
