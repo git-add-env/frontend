@@ -1,9 +1,6 @@
 "use client"
 
 import { useState } from "react"
-import { useRouter } from "next/navigation"
-
-import { ArrowRight } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -64,7 +61,6 @@ function MenuItem({
 }
 
 export function MyMeetingsTab({ status }: MyMeetingsTabProps) {
-  const router = useRouter()
   const { data: meetings, isError, isPending } = useMyMeetings(status)
   const [confirm, setConfirm] = useState<ConfirmState>(null)
   const [confirmError, setConfirmError] = useState<string | null>(null)
@@ -95,7 +91,7 @@ export function MyMeetingsTab({ status }: MyMeetingsTabProps) {
 
   if (isError) return <EmptyOrError message="모임을 불러오지 못했습니다." />
   if (isPending || !meetings)
-    return <MeetingCardSkeletonGrid className="grid gap-3 sm:grid-cols-2" />
+    return <MeetingCardSkeletonGrid className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3" />
   if (meetings.length === 0)
     return (
       <EmptyOrError
@@ -108,7 +104,7 @@ export function MyMeetingsTab({ status }: MyMeetingsTabProps) {
 
   return (
     <>
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {meetings.map((meeting) => {
           // 모집중: (모임장)삭제 / (멤버)참여취소, 활동중: (모임장)종료. ⋯ 메뉴에 들어간다.
           let menuItem: React.ReactNode = null
@@ -151,17 +147,8 @@ export function MyMeetingsTab({ status }: MyMeetingsTabProps) {
               key={meeting.meetingId}
               meeting={meeting}
               menu={menuItem}
-              // 카드 전체 클릭은 상세 페이지로. "내 모임" 버튼/⋯ 메뉴는 각자 stopPropagation으로 분리됨.
-              onClick={() => router.push(`/meetings/${meeting.meetingId}`)}
-              action={
-                <Button
-                  size="sm"
-                  onClick={() => router.push(`/dashboard?meetingId=${meeting.meetingId}`)}
-                >
-                  내 모임
-                  <ArrowRight />
-                </Button>
-              }
+              // 내 모임(모집중·활동중)은 이미 참여 중이라 카드 전체를 대시보드로 보낸다. ⋯ 메뉴는 z-10으로 그 위에서 동작.
+              href={`/dashboard?meetingId=${meeting.meetingId}`}
             />
           )
         })}

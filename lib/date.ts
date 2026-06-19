@@ -1,6 +1,6 @@
 // 날짜/시간 표시 유틸.
 
-// 마감 표시: 오늘 마감이면 "N시간 남음", 내일 이후는 "D-N", 마감 경과 시 "마감".
+// 마감 표시: 오늘 마감이면 "N시간", 내일 이후는 "D-N", 마감 경과 시 "마감".
 // deadline은 날짜만(YYYY-MM-DD)이라 그날 끝(로컬 23:59:59)까지 모집으로 본다.
 // 주의: new Date("2026-06-19")는 UTC 자정(=KST 09:00)으로 파싱되므로 직접 쓰면 안 됨.
 export function formatDeadline(iso: string): string {
@@ -18,7 +18,7 @@ export function formatDeadline(iso: string): string {
   // 오늘 마감 → 그날 끝(23:59:59)까지 남은 시간
   const endOfToday = new Date(y, m - 1, d, 23, 59, 59).getTime()
   const hours = Math.floor((endOfToday - now.getTime()) / (1000 * 60 * 60))
-  return hours > 0 ? `${hours}시간 남음` : "마감"
+  return hours > 0 ? `${hours}시간` : "마감"
 }
 
 // 일정 날짜를 "2026.05.28 (수)" 형태로 변환.

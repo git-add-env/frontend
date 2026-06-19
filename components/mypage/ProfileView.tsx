@@ -14,7 +14,7 @@ type ProfileViewProps = {
 export function ProfileView({ profile, onEdit }: ProfileViewProps) {
   return (
     <div className="rounded-2xl border border-border bg-card px-6 py-5">
-      <div className="flex flex-col items-center gap-5 text-center sm:flex-row sm:items-center sm:gap-7 sm:text-left">
+      <div className="flex flex-col items-center gap-5 text-center md:flex-row md:items-center md:gap-7 md:text-left">
         <ProfileAvatar
           profileImage={profile.profileImage}
           nickname={profile.nickname}
@@ -23,7 +23,7 @@ export function ProfileView({ profile, onEdit }: ProfileViewProps) {
         />
 
         <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-sm text-muted-foreground sm:justify-start">
+          <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-sm text-muted-foreground md:justify-start">
             <span className="text-lg font-bold text-foreground">{profile.nickname}</span>
             {profile.job && (
               <>
@@ -46,7 +46,7 @@ export function ProfileView({ profile, onEdit }: ProfileViewProps) {
             <p className="mt-1.5 text-sm text-foreground/80">{profile.introduction}</p>
           )}
 
-          <div className="mt-1.5 flex items-center justify-center gap-1.5 text-sm text-muted-foreground sm:justify-start">
+          <div className="mt-1.5 flex items-center justify-center gap-1.5 text-sm text-muted-foreground md:justify-start">
             <Mail className="size-3.5 shrink-0" />
             <span className="truncate" title={profile.email}>
               {profile.email}
@@ -56,7 +56,7 @@ export function ProfileView({ profile, onEdit }: ProfileViewProps) {
           {profile.techStacks.length > 0 && (
             <TechStackBadges
               techStacks={profile.techStacks}
-              className="mt-3 justify-center sm:justify-start"
+              className="mt-3 justify-center md:justify-start"
             />
           )}
         </div>
@@ -65,7 +65,7 @@ export function ProfileView({ profile, onEdit }: ProfileViewProps) {
           size="sm"
           variant="outline"
           onClick={onEdit}
-          className="w-full shrink-0 sm:w-auto sm:self-start"
+          className="w-full shrink-0 md:w-auto md:self-start"
         >
           <Pencil />
           프로필 수정

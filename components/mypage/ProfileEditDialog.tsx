@@ -51,7 +51,8 @@ export function ProfileEditDialog({ profile, edit, open, onCancel, onSave }: Pro
         <div className="mb-2 flex items-center gap-4">
           <ProfileAvatar
             profileImage={edit.previewImage}
-            nickname={profile.nickname}
+            // 이미지 없을 때 fallback 이니셜이 편집 중 닉네임을 따라가도록(비면 기존 닉네임).
+            nickname={edit.nickname || profile.nickname}
             className="size-24"
             fallbackClassName="text-3xl"
           />
@@ -204,6 +205,7 @@ export function ProfileEditDialog({ profile, edit, open, onCancel, onSave }: Pro
                     <button
                       key={skill}
                       type="button"
+                      aria-pressed={selected}
                       onClick={() => edit.toggleSkill(skill)}
                       className={cn(
                         "min-h-8 rounded-md border px-2 py-1 text-xs font-medium transition-colors",
