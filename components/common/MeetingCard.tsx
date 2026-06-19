@@ -33,6 +33,7 @@ export type Meeting = {
 type MeetingCardProps = {
   meeting: Meeting
   onBookmarkToggle?: (meetingId: string, bookmarked: boolean) => void
+  bookmarkDisabled?: boolean
 }
 
 type MeetingCardImageProps = {
@@ -42,6 +43,7 @@ type MeetingCardImageProps = {
   isClosingToday?: boolean
   onBookmarkToggle?: (bookmarked: boolean) => void
   showBookmark?: boolean
+  bookmarkDisabled?: boolean
   className?: string
   sizes?: string
 }
@@ -53,6 +55,7 @@ export function MeetingCardImage({
   isClosingToday,
   onBookmarkToggle,
   showBookmark = true,
+  bookmarkDisabled = false,
   className,
   sizes = "(min-width: 1280px) 384px, (min-width: 768px) 50vw, 100vw",
 }: MeetingCardImageProps) {
@@ -73,6 +76,7 @@ export function MeetingCardImage({
         <BookMarkBtn
           bookmarked={isBookmarked}
           onToggle={onBookmarkToggle}
+          disabled={bookmarkDisabled}
           className="absolute right-4 top-4 size-9 bg-white/80 p-2 shadow-sm backdrop-blur-md hover:bg-white"
         />
       ) : null}
@@ -80,7 +84,11 @@ export function MeetingCardImage({
   )
 }
 
-export default function MeetingCard({ meeting, onBookmarkToggle }: MeetingCardProps) {
+export default function MeetingCard({
+  meeting,
+  onBookmarkToggle,
+  bookmarkDisabled = false,
+}: MeetingCardProps) {
   function handleBookmarkToggle(bookmarked: boolean) {
     onBookmarkToggle?.(meeting.id, bookmarked)
   }
@@ -93,6 +101,7 @@ export default function MeetingCard({ meeting, onBookmarkToggle }: MeetingCardPr
         isBookmarked={meeting.isBookmarked}
         isClosingToday={meeting.isClosingToday}
         onBookmarkToggle={handleBookmarkToggle}
+        bookmarkDisabled={bookmarkDisabled}
         className="relative h-48 w-full overflow-hidden bg-[#e6e8ea]"
       />
 

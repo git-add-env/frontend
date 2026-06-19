@@ -4,17 +4,23 @@ import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react"
 import Link from "next/link"
 import { useInfiniteQuery } from "@tanstack/react-query"
 import { ChevronDown, LoaderCircle, Plus, Search } from "lucide-react"
+import { useSession } from "next-auth/react"
 
+import LoginDialog from "@/components/common/LoginDialog"
 import MeetingCard, { type Meeting } from "@/components/common/MeetingCard"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { CATEGORY_LABEL } from "@/constants/category"
+import { useMeetingBookmarkMutation } from "@/hooks/api/use-meeting-bookmark"
 import { queryKeys } from "@/hooks/api/query-keys"
+import { ApiFetchError } from "@/lib/api/api-fetch"
+import { errorMessage } from "@/lib/api/error"
 import {
   fetchMeetings,
   type MeetingListParams,
   type MeetingSummary,
 } from "@/lib/api/meetings"
+import { notify } from "@/lib/notify"
 
 const FALLBACK_MEETING_IMAGE_URL = "https://images.unsplash.com/photo-1516321318423-f06f85e504b3"
 const CATEGORY_QUERY_VALUE: Record<string, string> = {
@@ -29,18 +35,36 @@ const SORT_QUERY_VALUE: Record<string, string> = {
   마감순: "deadline",
 }
 
+type BookmarkOverridesState = {
+  scope: string
+  values: Record<string, boolean>
+}
+
 export default function MeetingsPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedCategory, setSelectedCategory] = useState("전체")
   const [sortOrder, setSortOrder] = useState("최신순")
-  const [bookmarkOverrides, setBookmarkOverrides] = useState<Record<string, boolean>>({})
+  const [bookmarkOverrides, setBookmarkOverrides] = useState<BookmarkOverridesState>({
+    scope: "",
+    values: {},
+  })
+  const [loginDialogOpen, setLoginDialogOpen] = useState(false)
   const loadMoreRef = useRef<HTMLDivElement | null>(null)
+  const { status: authStatus } = useSession()
+  const bookmarkMutation = useMeetingBookmarkMutation()
+  const isAuthenticated = authStatus === "authenticated"
 
   const categories = ["전체", "프로젝트", "해커톤", "공모전"]
   const listParams = useMemo(
     () => getMeetingListParams(searchQuery, selectedCategory, sortOrder),
     [searchQuery, selectedCategory, sortOrder],
   )
+  const bookmarkOverrideScope = useMemo(
+    () => `${authStatus}:${listParams.category}:${listParams.keyword ?? ""}:${listParams.sort}`,
+    [authStatus, listParams],
+  )
+  const scopedBookmarkOverrides =
+    bookmarkOverrides.scope === bookmarkOverrideScope ? bookmarkOverrides.values : {}
   const {
     data,
     isError,
@@ -52,13 +76,19 @@ export default function MeetingsPage() {
     refetch,
     fetchNextPage,
   } = useInfiniteQuery({
-    queryKey: [...queryKeys.meetings.list, listParams],
+    queryKey: [...queryKeys.meetings.list, listParams, authStatus],
     initialPageParam: null as number | null,
     queryFn: ({ pageParam }) =>
-      fetchMeetings({
-        ...listParams,
-        cursor: pageParam,
-      }),
+      fetchMeetings(
+        {
+          ...listParams,
+          cursor: pageParam,
+        },
+        {
+          auth: isAuthenticated,
+        },
+      ),
+    enabled: authStatus !== "loading",
     getNextPageParam: (lastPage) =>
       lastPage.hasNext && lastPage.nextCursor !== null ? lastPage.nextCursor : undefined,
   })
@@ -92,7 +122,40 @@ export default function MeetingsPage() {
   }, [fetchNextPage, hasNextPage, isFetchingNextPage])
 
   function handleBookmarkToggle(meetingId: string, bookmarked: boolean) {
-    setBookmarkOverrides((prev) => ({ ...prev, [meetingId]: bookmarked }))
+    if (!isAuthenticated) {
+      notify.info("로그인이 필요한 서비스입니다.")
+      setLoginDialogOpen(true)
+      return
+    }
+
+    const parsedMeetingId = Number(meetingId)
+
+    if (!Number.isFinite(parsedMeetingId)) {
+      notify.error("북마크를 처리할 수 없습니다.")
+      return
+    }
+
+    bookmarkMutation.mutate(
+      { meetingId: parsedMeetingId, bookmarked },
+      {
+        onSuccess: () => {
+          setBookmarkOverrides((prev) => ({
+            scope: bookmarkOverrideScope,
+            values: {
+              ...(prev.scope === bookmarkOverrideScope ? prev.values : {}),
+              [meetingId]: bookmarked,
+            },
+          }))
+        },
+        onError: (error) => {
+          notify.error(
+            error instanceof ApiFetchError
+              ? errorMessage(error)
+              : "북마크 변경에 실패했습니다.",
+          )
+        },
+      },
+    )
   }
 
   return (
@@ -195,13 +258,15 @@ export default function MeetingsPage() {
             <>
               <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
                 {meetings.map((meeting) => {
-                  const isBookmarked = bookmarkOverrides[meeting.id] ?? meeting.isBookmarked
+                  const isBookmarked =
+                    scopedBookmarkOverrides[meeting.id] ?? meeting.isBookmarked
 
                   return (
                     <MeetingCard
                       key={meeting.id}
                       meeting={{ ...meeting, isBookmarked }}
                       onBookmarkToggle={handleBookmarkToggle}
+                      bookmarkDisabled={bookmarkMutation.isPending}
                     />
                   )
                 })}
@@ -228,6 +293,11 @@ export default function MeetingsPage() {
           <span className="hidden sm:inline">모임 만들기</span>
         </Link>
       </Button>
+      <LoginDialog
+        open={loginDialogOpen}
+        onOpenChange={setLoginDialogOpen}
+        showTrigger={false}
+      />
     </main>
   )
 }
