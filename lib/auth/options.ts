@@ -19,7 +19,7 @@ const TEST_LOGIN_PAYLOAD = {
   providerId: "test-user-001",
   email: "test-user-001@example.com",
   name: "테스트유저1",
-  image: "https://example.com/profile/test-user-001.png",
+  image: null,
 }
 
 function getProviderAccountId(account: Account) {

@@ -49,12 +49,11 @@ export type Meeting = {
   status: string
 }
 
-export type Bookmark = {
+// 북마크 목록 응답(MP-API-006). 백엔드 BookmarkItemResponse = { id, ...MeetingSummary(@JsonUnwrapped) }.
+// 즉 Meeting 전체 필드(thumbnailUrl·status·isLeader 등) + 북마크 PK(id)가 그대로 내려온다.
+// (Swagger 스키마는 @JsonUnwrapped라 일부만 노출되지만 실제 JSON엔 모두 포함)
+export type Bookmark = Meeting & {
   id: number
-  meetingId: number
-  title: string
-  category: string
-  deadline: string
 }
 
 export async function fetchMyProfile(): Promise<Profile> {
