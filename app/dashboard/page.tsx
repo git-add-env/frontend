@@ -1,6 +1,7 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { Suspense, useMemo, useState } from "react"
+import { useSearchParams } from "next/navigation"
 
 import { DashboardSidebar } from "@/components/dashboard/DashboardSidebar"
 import { DashboardTabs } from "@/components/dashboard/DashboardTabs"
@@ -21,7 +22,7 @@ const tabs: { key: TabKey; label: string }[] = [
   { key: "members", label: "멤버" },
 ]
 
-export default function DashboardPage() {
+function DashboardContent() {
   // 대시보드는 참여 중인 모임(모집중 + 활동중)을 함께 보여준다.
   // 백엔드 status 필터가 한 번에 하나라 두 번 조회 후 합친다. (완료는 제외)
   const recruiting = useMyMeetings("recruiting")
@@ -34,8 +35,17 @@ export default function DashboardPage() {
   const [selectedGroupId, setSelectedGroupId] = useState<number | null>(null)
   const [activeTab, setActiveTab] = useState<TabKey>("notices")
 
-  // 사용자가 아직 선택하지 않았으면(null) 첫 모임을 기본 선택으로 사용.
-  const effectiveGroupId = selectedGroupId ?? groups?.[0]?.meetingId ?? null
+  // 마이페이지 "내 모임" 버튼이 ?meetingId= 로 넘긴 모임을 초기 선택으로 사용.
+  // 단 내 모임 목록(groups)에 실제로 있을 때만 — 없으면 무시하고 첫 모임으로.
+  const searchParams = useSearchParams()
+  const meetingIdParam = Number(searchParams.get("meetingId"))
+  const urlGroupId =
+    meetingIdParam > 0 && groups?.some((g) => g.meetingId === meetingIdParam)
+      ? meetingIdParam
+      : null
+
+  // 사용자가 아직 선택하지 않았으면(null) URL 지정 모임 → 없으면 첫 모임을 기본 선택으로 사용.
+  const effectiveGroupId = selectedGroupId ?? urlGroupId ?? groups?.[0]?.meetingId ?? null
   const selectedGroup = groups?.find((g) => g.meetingId === effectiveGroupId) ?? null
   const isLeader = selectedGroup?.isLeader ?? false
 
@@ -94,5 +104,14 @@ export default function DashboardPage() {
         )}
       </section>
     </div>
+  )
+}
+
+export default function DashboardPage() {
+  // useSearchParams는 Suspense 경계 안에서 호출해야 한다(Next App Router 요구사항).
+  return (
+    <Suspense fallback={null}>
+      <DashboardContent />
+    </Suspense>
   )
 }

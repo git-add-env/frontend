@@ -2,7 +2,8 @@
 
 import Link from "next/link"
 import { signOut, useSession } from "next-auth/react"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
+import { useQueryClient } from "@tanstack/react-query"
 import { User } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -10,9 +11,11 @@ import LoginDialog from "@/components/common/LoginDialog"
 import { NotificationBell } from "@/components/common/NotificationBell"
 import OnboardingDialog from "@/components/common/OnboardingDialog"
 import { useSyncAuthUser } from "@/hooks/use-sync-auth-user"
+import { clearAuthScopedQueries } from "@/lib/auth/query-cache"
 import { logoutBackend } from "@/lib/auth/user"
 import { notify } from "@/lib/notify"
 import { cn } from "@/lib/utils"
+import { useAuthStore } from "@/stores/auth-store"
 
 const navigationItems = [
   { label: "모임찾기", href: "/meetings" },
@@ -21,12 +24,17 @@ const navigationItems = [
 
 export default function Header() {
   const pathname = usePathname()
+  const router = useRouter()
   const { status } = useSession()
+  const queryClient = useQueryClient()
+  const clearUser = useAuthStore((state) => state.clearUser)
 
   useSyncAuthUser()
 
   async function handleLogout() {
     const toastId = notify.loading("로그아웃 중입니다.")
+    clearUser()
+    clearAuthScopedQueries(queryClient)
 
     try {
       await logoutBackend()
@@ -34,7 +42,8 @@ export default function Header() {
     } catch {
       notify.warning("백엔드 로그아웃 확인은 실패했지만 세션은 종료합니다.", { id: toastId })
     } finally {
-      await signOut()
+      await signOut({ redirect: false })
+      router.refresh()
     }
   }
 

@@ -2,8 +2,9 @@
 
 import type * as React from "react"
 import { useState } from "react"
-import { signIn } from "next-auth/react"
+import { signIn, useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
+import { useQueryClient } from "@tanstack/react-query"
 
 import { Button } from "@/components/ui/button"
 import OnboardingDialog from "@/components/common/OnboardingDialog"
@@ -16,6 +17,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
+import { queryKeys } from "@/hooks/api/query-keys"
+import { clearAuthScopedQueries } from "@/lib/auth/query-cache"
 import { notify } from "@/lib/notify"
 
 function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
@@ -61,6 +64,8 @@ export default function LoginDialog({
   showTrigger = true,
 }: LoginDialogProps) {
   const router = useRouter()
+  const { update } = useSession()
+  const queryClient = useQueryClient()
   const [internalLoginOpen, setInternalLoginOpen] = useState(false)
   const [onboardingPreviewOpen, setOnboardingPreviewOpen] = useState(false)
   const [testLoginLoading, setTestLoginLoading] = useState(false)
@@ -96,6 +101,9 @@ export default function LoginDialog({
 
       if (result?.error) throw new Error("테스트 로그인에 실패했습니다.")
 
+      clearAuthScopedQueries(queryClient)
+      await update()
+      await queryClient.invalidateQueries({ queryKey: queryKeys.auth.me })
       setLoginOpen(false)
       router.refresh()
       notify.success("테스트 계정으로 로그인되었습니다.", { id: toastId })

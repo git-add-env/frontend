@@ -2,7 +2,7 @@ import { Geist_Mono, Inter } from "next/font/google"
 
 import "./globals.css"
 import Header from "@/components/common/Header"
-import { AuthProvider } from "@/components/providers/auth-provider"
+import { AuthProvider, AuthQuerySync } from "@/components/providers/auth-provider"
 import { QueryProvider } from "@/components/providers/query-provider"
 import { ToastProvider } from "@/components/providers/toast-provider"
 import { ThemeProvider } from "@/components/theme-provider"
@@ -30,6 +30,7 @@ export default function RootLayout({
       <body>
         <AuthProvider>
           <QueryProvider>
+            <AuthQuerySync />
             <ThemeProvider>
               <ToastProvider>
                 <div className="flex min-h-svh flex-col">
