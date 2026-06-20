@@ -1,7 +1,7 @@
 import * as React from "react"
 import { cva, type VariantProps } from "class-variance-authority"
 import { Slot } from "radix-ui"
-import { Bell, Crown, Users } from "lucide-react"
+import { Crown, Users } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 const badgeVariants = cva(
@@ -38,7 +38,7 @@ const badgeVariants = cva(
         deadline: "bg-white text-black border-border",
         // 디데이(D-7 등): 흰 배경 + 회색 텍스트
         dday: "bg-white text-gray-500 border-border",
-        // 오늘 마감: 흰 배경 + 빨간 텍스트 (알림 아이콘과 함께)
+        // 오늘 마감: 흰 배경 + 빨간 텍스트
         today: "bg-red-50 text-red-500 border-red-500",
         // 모임장: 흰 배경 + 살짝 어두운 노란 테두리
         host: "rounded-3xl bg-white text-yellow-500 border-yellow-500",
@@ -69,19 +69,6 @@ function Badge({
   )
 }
 
-// 오늘 마감 배지 — 빨간 텍스트 + 알림(Bell) 아이콘 고정
-function TodayDeadlineBadge({
-  className,
-  ...props
-}: Omit<React.ComponentProps<typeof Badge>, "variant" | "children">) {
-  return (
-    <Badge variant="today" className={className} {...props}>
-      <Bell />
-      오늘 마감
-    </Badge>
-  )
-}
-
 // 모임장 배지 — 노란 테두리 + 왕관(Crown) 아이콘 고정
 function HostBadge({
   className,
@@ -104,7 +91,10 @@ function TechStackBadge({
   return (
     <Badge
       variant="muted"
-      className={cn("rounded-full border-border", className)}
+      className={cn(
+        "border-[#1abcfe]/25 bg-[#1abcfe]/5 text-[#007caf]",
+        className,
+      )}
       {...props}
     >
       #{children}
@@ -148,17 +138,7 @@ function MemberCountBadge({
   )
 }
 
-// 직군별 색상 (data/job-categories.json: 프론트엔드/백엔드/풀스택/디자인/PM/기타)
-const JOB_BADGE_STYLES: Record<string, string> = {
-  프론트엔드: "bg-blue-500/10 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400",
-  백엔드: "bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400",
-  풀스택: "bg-violet-500/10 text-violet-600 dark:bg-violet-500/20 dark:text-violet-400",
-  디자인: "bg-pink-500/10 text-pink-600 dark:bg-pink-500/20 dark:text-pink-400",
-  PM: "bg-amber-500/10 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400",
-  기타: "bg-muted text-foreground",
-}
-
-// 직군 배지 — 직군명을 받아 직군별 색으로. 모르는 값이면 outline 폴백
+// 직군 배지 — 직군명을 공통 스타일로 표시
 function JobBadge({
   job,
   className,
@@ -166,11 +146,10 @@ function JobBadge({
 }: Omit<React.ComponentProps<typeof Badge>, "variant" | "children"> & {
   job: string
 }) {
-  const style = JOB_BADGE_STYLES[job]
   return (
     <Badge
-      variant={style ? "muted" : "outline"}
-      className={cn(style, className)}
+      variant="outline"
+      className={className}
       {...props}
     >
       {job}
@@ -178,7 +157,7 @@ function JobBadge({
   )
 }
 
-// 직군 + 정원 합본 배지 — "프론트엔드 3/6" 처럼 직군별 색 + 인원 카운트
+// 직군 + 정원 합본 배지 — "프론트엔드 3/6" 처럼 직군명과 인원 카운트 표시
 function JobCountBadge({
   job,
   current,
@@ -190,15 +169,14 @@ function JobCountBadge({
   current: number
   max: number
 }) {
-  const style = JOB_BADGE_STYLES[job]
   return (
     <Badge
-      variant={style ? "muted" : "outline"}
-      className={cn(style, className)}
+      variant="outline"
+      className={className}
       {...props}
     >
       <Users />
-      {job} {current}/{max}
+      {job} <span className="meeting-job-count">{current}/{max}</span>
     </Badge>
   )
 }
@@ -233,7 +211,6 @@ function CategoryBadge({
 export {
   Badge,
   badgeVariants,
-  TodayDeadlineBadge,
   HostBadge,
   TechStackBadge,
   TechStackBadges,
@@ -241,6 +218,5 @@ export {
   JobBadge,
   JobCountBadge,
   CategoryBadge,
-  JOB_BADGE_STYLES,
   CATEGORY_BADGE_STYLES,
 }
