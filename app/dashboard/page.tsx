@@ -3,6 +3,7 @@
 import { Suspense, useMemo, useState } from "react"
 import { useSearchParams } from "next/navigation"
 
+import { DashboardContentSkeleton } from "@/components/dashboard/DashboardStates"
 import { DashboardSidebar } from "@/components/dashboard/DashboardSidebar"
 import { DashboardTabs } from "@/components/dashboard/DashboardTabs"
 import { MeetingHeader } from "@/components/dashboard/MeetingHeader"
@@ -28,10 +29,15 @@ function DashboardContent() {
   const recruiting = useMyMeetings("recruiting")
   const active = useMyMeetings("active")
   const groups = useMemo(
-    () => (recruiting.data && active.data ? [...recruiting.data, ...active.data] : null),
-    [recruiting.data, active.data],
+    () =>
+      recruiting.data && active.data
+        ? [...recruiting.data, ...active.data]
+        : null,
+    [recruiting.data, active.data]
   )
   const groupsError = recruiting.isError || active.isError
+  // 사이드바(groups) 로딩 중이면 컨텐츠도 같이 스켈레톤 → 좌→우 두 번 스켈레톤 어색함 제거.
+  const groupsLoading = !groups && !groupsError
   const [selectedGroupId, setSelectedGroupId] = useState<number | null>(null)
   const [activeTab, setActiveTab] = useState<TabKey>("notices")
 
@@ -45,8 +51,10 @@ function DashboardContent() {
       : null
 
   // 사용자가 아직 선택하지 않았으면(null) URL 지정 모임 → 없으면 첫 모임을 기본 선택으로 사용.
-  const effectiveGroupId = selectedGroupId ?? urlGroupId ?? groups?.[0]?.meetingId ?? null
-  const selectedGroup = groups?.find((g) => g.meetingId === effectiveGroupId) ?? null
+  const effectiveGroupId =
+    selectedGroupId ?? urlGroupId ?? groups?.[0]?.meetingId ?? null
+  const selectedGroup =
+    groups?.find((g) => g.meetingId === effectiveGroupId) ?? null
   const isLeader = selectedGroup?.isLeader ?? false
 
   return (
@@ -58,47 +66,63 @@ function DashboardContent() {
         onSelect={setSelectedGroupId}
       />
 
-      <section className="flex min-w-0 flex-1 flex-col gap-4">
-        <MeetingHeader group={selectedGroup} />
-
-        {effectiveGroupId !== null && selectedGroup && (
-          <VideoConferenceBanner
-            key={effectiveGroupId}
-            meetingId={effectiveGroupId}
-            isLeader={isLeader}
-            status={selectedGroup.status}
-          />
-        )}
-
-        <DashboardTabs tabs={tabs} active={activeTab} onChange={setActiveTab} />
-
-        {effectiveGroupId === null ? (
-          <p className="text-sm text-muted-foreground">먼저 모임을 선택해주세요.</p>
+      {/* min-h: 탭/항목 수에 따라 컨텐츠 높이가 들쑥거려 Footer가 움직이는 것 방지(최소 높이 고정) */}
+      <section className="flex min-h-[1200px] min-w-0 flex-1 flex-col gap-4">
+        {groupsLoading ? (
+          <DashboardContentSkeleton />
         ) : (
           <>
-            {activeTab === "notices" && (
-              <NoticesTab
+            <MeetingHeader group={selectedGroup} />
+
+            {effectiveGroupId !== null && selectedGroup && (
+              <VideoConferenceBanner
                 key={effectiveGroupId}
                 meetingId={effectiveGroupId}
                 isLeader={isLeader}
+                status={selectedGroup.status}
               />
             )}
-            {activeTab === "schedules" && (
-              <SchedulesTab
-                key={effectiveGroupId}
-                meetingId={effectiveGroupId}
-                isLeader={isLeader}
-              />
-            )}
-            {activeTab === "resources" && (
-              <ResourceCard
-                key={effectiveGroupId}
-                meetingId={effectiveGroupId}
-                isLeader={isLeader}
-              />
-            )}
-            {activeTab === "members" && (
-              <MembersTab key={effectiveGroupId} meetingId={effectiveGroupId} />
+
+            <DashboardTabs
+              tabs={tabs}
+              active={activeTab}
+              onChange={setActiveTab}
+            />
+
+            {effectiveGroupId === null ? (
+              <p className="text-sm text-muted-foreground">
+                먼저 모임을 선택해주세요.
+              </p>
+            ) : (
+              <>
+                {activeTab === "notices" && (
+                  <NoticesTab
+                    key={effectiveGroupId}
+                    meetingId={effectiveGroupId}
+                    isLeader={isLeader}
+                  />
+                )}
+                {activeTab === "schedules" && (
+                  <SchedulesTab
+                    key={effectiveGroupId}
+                    meetingId={effectiveGroupId}
+                    isLeader={isLeader}
+                  />
+                )}
+                {activeTab === "resources" && (
+                  <ResourceCard
+                    key={effectiveGroupId}
+                    meetingId={effectiveGroupId}
+                    isLeader={isLeader}
+                  />
+                )}
+                {activeTab === "members" && (
+                  <MembersTab
+                    key={effectiveGroupId}
+                    meetingId={effectiveGroupId}
+                  />
+                )}
+              </>
             )}
           </>
         )}

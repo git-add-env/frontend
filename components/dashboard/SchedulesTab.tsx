@@ -2,7 +2,7 @@
 
 import { format } from "date-fns"
 import { useState } from "react"
-import { Calendar, ChevronDown, Trash2 } from "lucide-react"
+import { Calendar, CalendarDays, ChevronDown, Plus, Trash2 } from "lucide-react"
 
 import { Calendars } from "@/components/common/Calendars"
 import { ConfirmDialog } from "@/components/common/ConfirmDialog"
@@ -19,6 +19,8 @@ import type { Schedule } from "@/lib/api/dashboard"
 import { errorMessage } from "@/lib/api/error"
 import { findNextMeeting, splitSchedules } from "@/lib/schedule"
 import { cn } from "@/lib/utils"
+
+import { ListSkeleton } from "./DashboardStates"
 
 type SchedulesTabProps = {
   meetingId: number
@@ -86,21 +88,59 @@ export function SchedulesTab({ meetingId, isLeader }: SchedulesTabProps) {
     <div className="flex flex-col gap-4">
       <div className="rounded-2xl border border-border bg-card p-6">
         <p className="text-sm text-muted-foreground">다음 회의 일정</p>
-        {next ? (
-          <p className="mt-1 text-lg font-semibold">
-            {next.title} · {next.date} {next.time}
-          </p>
-        ) : (
-          <p className="mt-1 text-lg font-semibold">예정된 회의가 없습니다.</p>
-        )}
+        <div className="mt-2 flex items-center justify-between gap-3">
+          <div className="flex min-w-0 items-center gap-3">
+            <span className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-muted text-muted-foreground">
+              <CalendarDays className="size-6" />
+            </span>
+            <div className="min-w-0">
+              {next ? (
+                <>
+                  <p className="truncate text-base font-bold">{next.title}</p>
+                  <p className="truncate text-sm text-muted-foreground">
+                    {next.date} {next.time}
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p className="text-base font-bold">예정된 회의가 없어요</p>
+                  <p className="text-sm text-muted-foreground">
+                    다음 회의를 잡고 멤버에게 알려보세요.
+                  </p>
+                </>
+              )}
+            </div>
+          </div>
+          {isLeader && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="shrink-0 rounded-full"
+              onClick={() => setAdding(true)}
+            >
+              <Plus /> 일정 추가
+            </Button>
+          )}
+        </div>
       </div>
 
       <div className="rounded-2xl border border-border bg-card p-6">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-base font-semibold">예정 일정</h2>
           {isLeader && (
-            <Button size="sm" variant="outline" onClick={() => setAdding((v) => !v)}>
-              {adding ? "취소" : "+ 일정 추가"}
+            <Button
+              size="sm"
+              variant="outline"
+              className="rounded-full"
+              onClick={() => setAdding((v) => !v)}
+            >
+              {adding ? (
+                "취소"
+              ) : (
+                <>
+                  <Plus /> 일정 추가
+                </>
+              )}
             </Button>
           )}
         </div>
@@ -178,9 +218,19 @@ export function SchedulesTab({ meetingId, isLeader }: SchedulesTabProps) {
         {isError ? (
           <p className="text-sm text-muted-foreground">일정을 불러오지 못했습니다.</p>
         ) : !schedules ? (
-          <p className="text-sm text-muted-foreground">불러오는 중...</p>
+          <ListSkeleton />
         ) : upcoming.length === 0 ? (
-          <p className="text-sm text-muted-foreground">예정된 일정이 없습니다.</p>
+          <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-border p-10 text-center">
+            <span className="flex size-12 items-center justify-center rounded-full border border-border bg-card text-muted-foreground">
+              <CalendarDays className="size-6" />
+            </span>
+            <div>
+              <p className="text-sm font-bold text-foreground">예정된 일정이 없어요</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                회의·마감 등 팀 일정을 추가해보세요.
+              </p>
+            </div>
+          </div>
         ) : (
           <ul className="flex flex-col gap-2">
             {upcoming.map((schedule) => (
@@ -265,7 +315,7 @@ function ScheduleItem({ schedule, isLeader, onRemove, muted }: ScheduleItemProps
     >
       <div className="min-w-0">
         <div className="flex min-w-0 items-center gap-2">
-          <p className="min-w-0 truncate text-sm font-medium">{schedule.title}</p>
+          <p className="min-w-0 truncate text-sm font-bold">{schedule.title}</p>
           {schedule.isMeeting && (
             <span className="shrink-0 rounded-full bg-accent px-2 py-0.5 text-xs">화상 회의</span>
           )}

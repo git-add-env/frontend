@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Trash2 } from "lucide-react"
+import { FileText, Link2, Plus, Trash2 } from "lucide-react"
 
 import { ConfirmDialog } from "@/components/common/ConfirmDialog"
 import { Button } from "@/components/ui/button"
@@ -12,6 +12,8 @@ import {
 } from "@/hooks/dashboard/use-resources"
 import { ApiFetchError } from "@/lib/api/api-fetch"
 import { errorMessage } from "@/lib/api/error"
+
+import { EmptyState, ListSkeleton } from "./DashboardStates"
 
 type ResourceCardProps = {
   meetingId: number
@@ -57,11 +59,22 @@ export function ResourceCard({ meetingId, isLeader }: ResourceCardProps) {
 
   return (
     <div className="rounded-2xl border border-border bg-card p-6">
-      <div className="mb-3 flex items-center justify-between">
+      <div className="mb-4 flex items-center justify-between">
         <h2 className="text-base font-semibold">참고 링크</h2>
         {isLeader && (
-          <Button size="xs" variant="outline" onClick={() => setAdding((v) => !v)}>
-            {adding ? "취소" : "링크 추가"}
+          <Button
+            size="sm"
+            variant="outline"
+            className="rounded-full"
+            onClick={() => setAdding((v) => !v)}
+          >
+            {adding ? (
+              "취소"
+            ) : (
+              <>
+                <Plus /> 링크 추가
+              </>
+            )}
           </Button>
         )}
       </div>
@@ -101,23 +114,34 @@ export function ResourceCard({ meetingId, isLeader }: ResourceCardProps) {
       {isError ? (
         <p className="text-sm text-muted-foreground">링크를 불러오지 못했습니다.</p>
       ) : !resources ? (
-        <p className="text-sm text-muted-foreground">불러오는 중...</p>
+        <ListSkeleton />
       ) : resources.length === 0 ? (
-        <p className="text-sm text-muted-foreground">등록된 링크가 없습니다.</p>
+        <EmptyState message="등록된 링크가 없습니다." />
       ) : (
         <ul className="flex flex-col gap-2">
           {resources.map((resource) => (
             <li
               key={resource.id}
-              className="flex items-center justify-between gap-2 rounded-lg border border-border p-3"
+              className="flex items-center gap-3 rounded-xl border border-border bg-muted/30 p-4 transition-colors hover:bg-muted/50"
             >
               <a
                 href={resource.url}
                 target="_blank"
                 rel="noreferrer"
-                className="min-w-0 truncate text-sm text-primary hover:underline"
+                className="flex min-w-0 flex-1 items-center gap-3"
               >
-                {resource.title}
+                {/* 링크 아이콘 박스 */}
+                <span className="flex size-10 shrink-0 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground">
+                  <FileText className="size-5" />
+                </span>
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-bold text-foreground">{resource.title}</p>
+                  <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
+                    <Link2 className="size-3 shrink-0" />
+                    {/* 표시는 프로토콜(https://) 떼고, 이동은 원본 url로 */}
+                    <span className="truncate">{resource.url.replace(/^https?:\/\//, "")}</span>
+                  </p>
+                </div>
               </a>
               {isLeader && (
                 <button

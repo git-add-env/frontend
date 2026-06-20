@@ -11,6 +11,7 @@ import {
   updateNotice,
   type Notice,
 } from "@/lib/api/dashboard"
+import { notify } from "@/lib/notify"
 
 export function useNotices(meetingId: number) {
   return useQuery<{ notices: Notice[] }, ApiFetchError, Notice[]>({
@@ -27,6 +28,7 @@ export function useCreateNotice(meetingId: number) {
     mutationFn: (input) => createNotice(meetingId, input),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.meetings.notices(meetingId) })
+      notify.success("공지를 등록했어요")
     },
   })
 }
@@ -38,6 +40,7 @@ export function useDeleteNotice(meetingId: number) {
     mutationFn: (noticeId) => deleteNotice(meetingId, noticeId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.meetings.notices(meetingId) })
+      notify.success("공지를 삭제했어요")
     },
   })
 }
@@ -53,6 +56,7 @@ export function useUpdateNotice(meetingId: number) {
     mutationFn: ({ noticeId, input }) => updateNotice(meetingId, noticeId, input),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.meetings.notices(meetingId) })
+      notify.success("공지를 수정했어요")
     },
   })
 }

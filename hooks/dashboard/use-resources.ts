@@ -10,6 +10,7 @@ import {
   fetchResources,
   type Resource,
 } from "@/lib/api/dashboard"
+import { notify } from "@/lib/notify"
 
 export function useResources(meetingId: number) {
   return useQuery<{ resources: Resource[] }, ApiFetchError, Resource[]>({
@@ -26,6 +27,7 @@ export function useCreateResource(meetingId: number) {
     mutationFn: (input) => createResource(meetingId, input),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.meetings.resources(meetingId) })
+      notify.success("링크를 추가했어요")
     },
   })
 }
@@ -37,6 +39,7 @@ export function useDeleteResource(meetingId: number) {
     mutationFn: (resourceId) => deleteResource(meetingId, resourceId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.meetings.resources(meetingId) })
+      notify.success("링크를 삭제했어요")
     },
   })
 }
