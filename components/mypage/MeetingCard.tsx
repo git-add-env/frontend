@@ -5,7 +5,6 @@ import Link from "next/link"
 
 import {
   CheckCircle2,
-  Clock,
   Crown,
   FolderGit2,
   MoreHorizontal,
@@ -15,12 +14,12 @@ import {
   type LucideIcon,
 } from "lucide-react"
 
+import { MeetingDeadlineBadge } from "@/components/common/MeetingDeadlineBadge"
 import { CategoryBadge } from "@/components/ui/badge"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Progress } from "@/components/ui/progress"
 import { CATEGORY_LABEL } from "@/constants/category"
 import type { Meeting } from "@/lib/api/mypage"
-import { formatDeadline } from "@/lib/date"
 import { cn } from "@/lib/utils"
 
 type MeetingCardProps = {
@@ -114,25 +113,12 @@ export function MeetingCard({
             <CategoryBadge category={CATEGORY_LABEL[meeting.category] ?? meeting.category} />
             {/* 마감 카운트다운: 기본은 모집중일 때만. showDeadline(찜 탭)이면 완료 외(활동중 포함)에도 표시. */}
             {(meeting.status === "RECRUITING" ||
-              (showDeadline && meeting.status !== "COMPLETED")) &&
-              (() => {
-                const remaining = formatDeadline(meeting.deadline)
-                return (
-                  <span
-                    className={cn(
-                      "flex items-center gap-1 text-sm shrink-0",
-                      // 오늘 마감(시간 단위 임박)이면 빨간색 강조, D-N 카운트다운은 기존 muted 색 유지
-                      meeting.isDeadlineToday
-                        ? "font-semibold text-destructive"
-                        : "font-medium text-muted-foreground",
-                    )}
-                  >
-                    <Clock className="size-3.5" aria-hidden="true" />
-                    {/* formatDeadline은 마감 경과 시 "마감"을 반환 → "마감 마감" 중복 방지 */}
-                    {remaining === "마감" ? "마감" : `${remaining}`}
-                  </span>
-                )
-              })()}
+              (showDeadline && meeting.status !== "COMPLETED")) ? (
+              <MeetingDeadlineBadge
+                deadline={meeting.deadline}
+                isDeadlineToday={meeting.isDeadlineToday}
+              />
+            ) : null}
             {meeting.status === "COMPLETED" && (
               <span className="ml-auto mr-1 flex items-center gap-1 text-sm font-medium text-emerald-500">
                 <CheckCircle2 className="size-3.5" aria-hidden="true" />
