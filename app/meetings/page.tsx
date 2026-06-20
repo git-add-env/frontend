@@ -190,55 +190,55 @@ export default function MeetingsPage() {
               </div>
               <Button
                 type="button"
-                className="h-12 rounded-lg bg-blue-400 px-8 text-base font-medium text-white hover:bg-blue-500 sm:w-32"
+                className="h-12 rounded-lg bg-[#1abcfe] px-8 text-base font-medium text-white hover:bg-[#0eaeea] sm:w-32"
               >
                 검색
               </Button>
             </div>
-
-            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-              <div className="flex flex-wrap gap-2">
-                {categories.map((category) => {
-                  const isActive = selectedCategory === category
-
-                  return (
-                    <button
-                      key={category}
-                      type="button"
-                      onClick={() => setSelectedCategory(category)}
-                      className={
-                        isActive
-                          ? "rounded-full bg-blue-400 px-6 py-2 text-sm font-medium tracking-normal text-white shadow-sm"
-                          : "rounded-full bg-[#e6e8ea] px-6 py-2 text-sm font-medium tracking-normal text-[#434655] transition hover:bg-[#d9dcdf]"
-                      }
-                    >
-                      {category}
-                    </button>
-                  )
-                })}
-              </div>
-
-              <label className="relative w-fit">
-                <span className="sr-only">정렬</span>
-                <select
-                  value={sortOrder}
-                  onChange={(event) => setSortOrder(event.target.value)}
-                  className="h-10 appearance-none rounded-lg border border-[#c3c6d7] bg-[#f2f4f6] py-2 pl-4 pr-9 text-base text-[#434655] outline-none transition focus:border-[#004ac6] focus:ring-2 focus:ring-[#004ac6]/20"
-                >
-                  <option>최신순</option>
-                  <option>인기순</option>
-                  <option>마감순</option>
-                </select>
-                <ChevronDown
-                  className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-[#434655]"
-                  aria-hidden="true"
-                />
-              </label>
-            </div>
           </div>
         </section>
 
-        <section>
+        <section className="flex flex-col gap-5">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div className="flex flex-wrap gap-1.5">
+              {categories.map((category) => {
+                const isActive = selectedCategory === category
+
+                return (
+                  <button
+                    key={category}
+                    type="button"
+                    onClick={() => setSelectedCategory(category)}
+                    className={
+                      isActive
+                        ? "rounded-full bg-[#3a3f44] px-5 py-1.5 text-sm font-medium tracking-normal text-white shadow-sm"
+                        : "rounded-full bg-[#e6e8ea] px-5 py-1.5 text-sm font-medium tracking-normal text-[#434655] transition hover:bg-[#d9dcdf]"
+                    }
+                  >
+                    {category}
+                  </button>
+                )
+              })}
+            </div>
+
+            <label className="relative w-fit">
+              <span className="sr-only">정렬</span>
+              <select
+                value={sortOrder}
+                onChange={(event) => setSortOrder(event.target.value)}
+                className="h-9 appearance-none rounded-lg border border-[#c3c6d7] bg-[#f2f4f6] py-1.5 pl-3.5 pr-8 text-sm text-[#434655] outline-none transition focus:border-[#004ac6] focus:ring-2 focus:ring-[#004ac6]/20"
+              >
+                <option>최신순</option>
+                <option>인기순</option>
+                <option>마감순</option>
+              </select>
+              <ChevronDown
+                className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-[#434655]"
+                aria-hidden="true"
+              />
+            </label>
+          </div>
+
           {isError ? (
             <div className="rounded-xl border border-dashed border-[#c3c6d7] bg-white p-12 text-center text-[#565e74]">
               <p>모임 목록을 불러오지 못했습니다.</p>
@@ -256,7 +256,7 @@ export default function MeetingsPage() {
             <LoadingState />
           ) : meetings.length > 0 ? (
             <>
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              <div className="grid gap-x-4 gap-y-9 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 {meetings.map((meeting) => {
                   const isBookmarked =
                     scopedBookmarkOverrides[meeting.id] ?? meeting.isBookmarked
@@ -286,7 +286,7 @@ export default function MeetingsPage() {
       <Button
         asChild
         size="lg"
-        className="fixed bottom-6 right-6 z-40 h-14 rounded-full bg-blue-500 px-5 text-base text-white shadow-lg hover:bg-blue-600 sm:bottom-8 sm:right-[max(2rem,calc((100vw-1280px)/2+1.5rem))]"
+        className="fixed bottom-6 right-6 z-40 h-14 rounded-full bg-blue-600 px-5 text-base text-white shadow-lg hover:bg-blue-700 sm:bottom-8 sm:right-[max(2rem,calc((100vw-1280px)/2+1.5rem))]"
       >
         <Link href="/meetings/create" aria-label="모임 만들기">
           <Plus className="size-5" aria-hidden="true" />
