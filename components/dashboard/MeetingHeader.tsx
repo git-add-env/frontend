@@ -1,4 +1,4 @@
-import { Badge, CategoryBadge, HostBadge } from "@/components/ui/badge"
+import { CategoryBadge, HostBadge } from "@/components/ui/badge"
 import { CATEGORY_LABEL } from "@/constants/category"
 import type { Meeting } from "@/lib/api/mypage"
 
@@ -15,18 +15,9 @@ export function MeetingHeader({ group }: MeetingHeaderProps) {
           <CategoryBadge
             category={CATEGORY_LABEL[group.category] ?? group.category}
           />
-          {/* 상태 배지: 모집중(파랑) / 활동중(초록). 완료는 표시 없음 */}
-          {group.status === "RECRUITING" && (
-            <Badge variant="recruiting" className="rounded-full">
-              모집중
-            </Badge>
+          {group.isLeader && (
+            <HostBadge className="border-2 font-bold [&>svg]:stroke-[2.5]" />
           )}
-          {group.status === "ACTIVE" && (
-            <Badge variant="active" className="rounded-full">
-              활동중
-            </Badge>
-          )}
-          {group.isLeader && <HostBadge />}
         </div>
       )}
       <h1 className="text-2xl font-semibold tracking-normal">

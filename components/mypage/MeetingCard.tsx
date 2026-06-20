@@ -171,11 +171,15 @@ export function MeetingCard({
           {/* min-h-11: 하단에 액션 버튼(h-8)이 없는 탭(찜·완료)도 같은 높이를 확보 → 탭 간 카드 높이 통일
               min-w-0: 좁은 칸에서 자식이 칼럼 밖으로 넘치지 않게(overflow 방지) */}
           <div className="mt-auto flex min-h-11 min-w-0 items-center gap-2 pt-3">
-            <Users className="size-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
-            {/* flex-1 + min-w-0: 칸이 좁으면 진행률 바가 먼저 줄어든다(고정폭 w-24가 명수/버튼을 카드 밖으로 밀던 원인 제거) */}
+            {/* 모임찾기 카드와 동일: [아이콘] 모집 현황 + 진행바 + 카운트("명" 없음) */}
+            <div className="flex shrink-0 items-center gap-1.5 text-sm font-medium text-foreground">
+              <Users className="size-3.5 text-muted-foreground" aria-hidden="true" />
+              <span>모집 현황</span>
+            </div>
+            {/* flex-1 + min-w-0: 칸이 좁으면 진행률 바가 먼저 줄어든다(고정폭이 카운트/버튼을 카드 밖으로 밀던 원인 제거) */}
             <Progress value={pct} className="min-w-0 flex-1" />
-            <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
-              {currentCount}/{totalCount}명
+            <span className="shrink-0 text-xs font-bold tabular-nums text-muted-foreground">
+              {currentCount}/{totalCount}
             </span>
             {action && <div className="relative z-10 shrink-0">{action}</div>}
           </div>

@@ -11,6 +11,7 @@ import {
   type Schedule,
   type ScheduleInput,
 } from "@/lib/api/dashboard"
+import { notify } from "@/lib/notify"
 
 export function useSchedules(meetingId: number) {
   return useQuery<{ schedules: Schedule[] }, ApiFetchError, Schedule[]>({
@@ -27,6 +28,7 @@ export function useCreateSchedule(meetingId: number) {
     mutationFn: (input) => createSchedule(meetingId, input),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.meetings.schedules(meetingId) })
+      notify.success("일정을 추가했어요")
     },
   })
 }
@@ -38,6 +40,7 @@ export function useDeleteSchedule(meetingId: number) {
     mutationFn: (scheduleId) => deleteSchedule(meetingId, scheduleId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.meetings.schedules(meetingId) })
+      notify.success("일정을 삭제했어요")
     },
   })
 }
