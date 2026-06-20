@@ -482,16 +482,18 @@ export function MeetingDetail({ meetingId }: MeetingDetailProps) {
             <ChevronLeft className="size-5" aria-hidden="true" />
           </Link>
         </Button>
-        <Button
-          asChild
-          size="icon"
-          className="size-10 rounded-full bg-[#3a3f44] text-sm font-medium text-white hover:bg-[#30353a] sm:h-10 sm:w-auto sm:gap-2 sm:px-4"
-        >
-          <Link href={`/meetings/${meetingId}/edit`} aria-label="모임 수정" title="모임 수정">
-            <Pencil className="size-3.5" aria-hidden="true" />
-            <span className="hidden sm:inline">모임 수정</span>
-          </Link>
-        </Button>
+        {meeting.isLeader ? (
+          <Button
+            asChild
+            size="icon"
+            className="size-10 rounded-full bg-[#3a3f44] text-sm font-medium text-white hover:bg-[#30353a] sm:h-10 sm:w-auto sm:gap-2 sm:px-4"
+          >
+            <Link href={`/meetings/${meetingId}/edit`} aria-label="모임 수정" title="모임 수정">
+              <Pencil className="size-3.5" aria-hidden="true" />
+              <span className="hidden sm:inline">모임 수정</span>
+            </Link>
+          </Button>
+        ) : null}
       </div>
 
       <div className="grid gap-6 lg:grid-cols-12">
