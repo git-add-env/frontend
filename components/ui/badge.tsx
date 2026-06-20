@@ -151,17 +151,7 @@ function MemberCountBadge({
   )
 }
 
-// 직군별 색상 (data/job-categories.json: 프론트엔드/백엔드/풀스택/디자인/PM/기타)
-const JOB_BADGE_STYLES: Record<string, string> = {
-  프론트엔드: "bg-blue-500/10 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400",
-  백엔드: "bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400",
-  풀스택: "bg-violet-500/10 text-violet-600 dark:bg-violet-500/20 dark:text-violet-400",
-  디자인: "bg-pink-500/10 text-pink-600 dark:bg-pink-500/20 dark:text-pink-400",
-  PM: "bg-amber-500/10 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400",
-  기타: "bg-muted text-foreground",
-}
-
-// 직군 배지 — 직군명을 받아 직군별 색으로. 모르는 값이면 outline 폴백
+// 직군 배지 — 직군명을 공통 스타일로 표시
 function JobBadge({
   job,
   className,
@@ -169,11 +159,10 @@ function JobBadge({
 }: Omit<React.ComponentProps<typeof Badge>, "variant" | "children"> & {
   job: string
 }) {
-  const style = JOB_BADGE_STYLES[job]
   return (
     <Badge
-      variant={style ? "muted" : "outline"}
-      className={cn(style, className)}
+      variant="outline"
+      className={className}
       {...props}
     >
       {job}
@@ -181,7 +170,7 @@ function JobBadge({
   )
 }
 
-// 직군 + 정원 합본 배지 — "프론트엔드 3/6" 처럼 직군별 색 + 인원 카운트
+// 직군 + 정원 합본 배지 — "프론트엔드 3/6" 처럼 직군명과 인원 카운트 표시
 function JobCountBadge({
   job,
   current,
@@ -193,11 +182,10 @@ function JobCountBadge({
   current: number
   max: number
 }) {
-  const style = JOB_BADGE_STYLES[job]
   return (
     <Badge
-      variant={style ? "muted" : "outline"}
-      className={cn(style, className)}
+      variant="outline"
+      className={className}
       {...props}
     >
       <Users />
@@ -244,6 +232,5 @@ export {
   JobBadge,
   JobCountBadge,
   CategoryBadge,
-  JOB_BADGE_STYLES,
   CATEGORY_BADGE_STYLES,
 }
