@@ -2,9 +2,23 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
 
 // 대시보드 탭 공통 로딩 스켈레톤(리스트 행 n개). "불러오는 중..." 평문 대체.
-export function ListSkeleton({ rows = 3, className }: { rows?: number; className?: string }) {
+// 기본은 role="status" + sr-only로 보조기기에 로딩을 알린다.
+// decorative: 다른 status 영역(예: DashboardContentSkeleton) 안에 중첩될 때 이중 안내 방지용.
+export function ListSkeleton({
+  rows = 3,
+  className,
+  decorative = false,
+}: {
+  rows?: number
+  className?: string
+  decorative?: boolean
+}) {
   return (
-    <div className={cn("flex flex-col gap-2", className)} aria-hidden>
+    <div
+      className={cn("flex flex-col gap-2", className)}
+      {...(decorative ? { "aria-hidden": true } : { role: "status" })}
+    >
+      {!decorative && <span className="sr-only">불러오는 중</span>}
       {Array.from({ length: rows }, (_, index) => (
         <Skeleton key={index} className="h-16 w-full rounded-lg" />
       ))}
@@ -16,7 +30,10 @@ export function ListSkeleton({ rows = 3, className }: { rows?: number; className
 // 사이드바 로딩과 동시에 띄워, 스켈레톤이 좌→우로 두 번 뜨는 어색함을 없앤다.
 export function DashboardContentSkeleton() {
   return (
-    <div className="flex flex-col gap-4" aria-hidden>
+    // role="status" + sr-only로 로딩을 알린다. 내부 스켈레톤은 빈 박스라 읽히지 않고,
+    // 중첩 ListSkeleton은 decorative로 이중 안내를 막는다.
+    <div role="status" className="flex flex-col gap-4">
+      <span className="sr-only">불러오는 중</span>
       <Skeleton className="h-8 w-48" />
       <Skeleton className="h-20 w-full rounded-2xl" />
       <div className="flex gap-2 border-b border-border pb-2">
@@ -24,7 +41,7 @@ export function DashboardContentSkeleton() {
           <Skeleton key={index} className="h-6 w-16" />
         ))}
       </div>
-      <ListSkeleton rows={3} />
+      <ListSkeleton rows={3} decorative />
     </div>
   )
 }

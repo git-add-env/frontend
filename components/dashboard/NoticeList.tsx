@@ -58,7 +58,12 @@ export function NoticeList({ meetingId, isLeader, onSelect }: NoticeListProps) {
       <div className="flex items-center justify-between">
         <h2 className="text-base font-semibold">공지사항</h2>
         {isLeader && (
-          <Button size="sm" variant="outline" onClick={() => setAdding(true)}>
+          <Button
+            size="sm"
+            variant="outline"
+            className="rounded-full"
+            onClick={() => setAdding(true)}
+          >
             <SquarePen /> 작성
           </Button>
         )}

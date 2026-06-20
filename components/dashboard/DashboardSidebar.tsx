@@ -107,7 +107,8 @@ export function DashboardSidebar({
           </p>
         )}
         {!groups && !groupsError && (
-          <div className="flex flex-col gap-2 px-1 py-1" aria-hidden>
+          <div role="status" className="flex flex-col gap-2 px-1 py-1">
+            <span className="sr-only">참여 모임 불러오는 중</span>
             {Array.from({ length: 4 }, (_, index) => (
               <Skeleton key={index} className="h-12 w-full rounded-lg" />
             ))}
