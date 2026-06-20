@@ -102,10 +102,6 @@ export function fetchMyBookmarks() {
   return apiClient<{ bookmarks: Bookmark[] }>("/api/users/me/bookmarks")
 }
 
-export function deleteBookmark(meetingId: number) {
-  return apiClient<void>(`/api/bookmarks/${meetingId}`, { method: "DELETE" })
-}
-
 // MP-API-009 멤버 모임 참여 취소 (모집중에서만 가능).
 export function cancelMembership(meetingId: number) {
   return apiClient<void>(`/api/meetings/${meetingId}/members/me`, {

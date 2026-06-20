@@ -4,7 +4,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
 import { queryKeys } from "@/hooks/api/query-keys"
 import type { ApiFetchError } from "@/lib/api/api-fetch"
-import { deleteBookmark, fetchMyBookmarks, type Bookmark } from "@/lib/api/mypage"
+import { deleteBookmark } from "@/lib/api/bookmarks"
+import { fetchMyBookmarks, type Bookmark } from "@/lib/api/mypage"
 
 export function useMyBookmarks() {
   return useQuery<{ bookmarks: Bookmark[] }, ApiFetchError, Bookmark[]>({

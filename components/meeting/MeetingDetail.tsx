@@ -40,6 +40,10 @@ import {
 } from "@/components/ui/dialog"
 import { Progress } from "@/components/ui/progress"
 import { CATEGORY_LABEL } from "@/constants/category"
+import {
+  useMeetingBookmarkMutation,
+  useMeetingBookmarkState,
+} from "@/hooks/api/use-meeting-bookmark"
 import { queryKeys } from "@/hooks/api/query-keys"
 import { ApiFetchError } from "@/lib/api/api-fetch"
 import { errorMessage } from "@/lib/api/error"
@@ -95,6 +99,11 @@ type MeetingView = {
   positions: DetailPosition[]
   members: DetailMember[]
 }
+
+type BookmarkOverrideState = {
+  meetingId: number
+  bookmarked: boolean
+} | null
 
 type SectionTitleProps = {
   icon: ReactNode
@@ -320,8 +329,10 @@ export function MeetingDetail({ meetingId }: MeetingDetailProps) {
   const [loginDialogOpen, setLoginDialogOpen] = useState(false)
   const [selectedPositionId, setSelectedPositionId] = useState<number | null>(null)
   const [joinErrorMessage, setJoinErrorMessage] = useState<string | null>(null)
+  const [bookmarkOverride, setBookmarkOverride] = useState<BookmarkOverrideState>(null)
   const canFetch = typeof meetingId === "number" && Number.isFinite(meetingId)
   const requestAuth = authStatus === "authenticated"
+  const bookmarkMutation = useMeetingBookmarkMutation()
   const detailQuery = useQuery({
     queryKey: canFetch
       ? [...queryKeys.meetings.detail(meetingId), authStatus]
@@ -348,6 +359,14 @@ export function MeetingDetail({ meetingId }: MeetingDetailProps) {
 
     return mapMeetingDetailToView(detailQuery.data, displayedMembers)
   }, [detailQuery.data, displayedMembers])
+  const cachedBookmarked = useMeetingBookmarkState(
+    authStatus === "authenticated" && canFetch ? meetingId : undefined,
+    meeting?.isBookmarked,
+  )
+  const displayedBookmarked =
+    authStatus === "authenticated" && canFetch && bookmarkOverride?.meetingId === meetingId
+      ? bookmarkOverride.bookmarked
+      : cachedBookmarked
   const showMembersLoading = membersQuery.isLoading && displayedMembers.length === 0
   const showMembersError = membersQuery.isError && displayedMembers.length === 0
   const openPositions = useMemo(() => {
@@ -382,6 +401,37 @@ export function MeetingDetail({ meetingId }: MeetingDetailProps) {
       )
     },
   })
+
+  function handleBookmarkToggle(bookmarked: boolean) {
+    if (authStatus !== "authenticated") {
+      notify.info("로그인이 필요한 서비스입니다.")
+      setLoginDialogOpen(true)
+      return
+    }
+
+    if (!canFetch) {
+      notify.error("북마크를 처리할 수 없습니다.")
+      return
+    }
+
+    const nextOverride = { meetingId: meetingId as number, bookmarked }
+    const previousOverride = bookmarkOverride
+    setBookmarkOverride(nextOverride)
+
+    bookmarkMutation.mutate(
+      { meetingId: meetingId as number, bookmarked },
+      {
+        onError: (error) => {
+          setBookmarkOverride(previousOverride)
+          notify.error(
+            error instanceof ApiFetchError
+              ? errorMessage(error)
+              : "북마크 변경에 실패했습니다.",
+          )
+        },
+      },
+    )
+  }
 
   function handleJoinClick() {
     if (authStatus !== "authenticated") {
@@ -470,7 +520,9 @@ export function MeetingDetail({ meetingId }: MeetingDetailProps) {
                     <div className="flex items-center justify-between gap-4">
                       <CategoryBadge category={meeting.category} className="h-auto px-3 py-1 text-xs" />
                       <BookMarkBtn
-                        bookmarked={meeting.isBookmarked}
+                        bookmarked={displayedBookmarked}
+                        onToggle={handleBookmarkToggle}
+                        disabled={bookmarkMutation.isPending}
                         className="size-9 bg-white/80 p-2 shadow-sm backdrop-blur-md hover:bg-white"
                       />
                     </div>

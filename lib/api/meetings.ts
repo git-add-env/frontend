@@ -107,7 +107,7 @@ export function fetchMeetings({
   category = "ALL",
   keyword,
   sort = "latest",
-}: MeetingListParams = {}) {
+}: MeetingListParams = {}, options?: ApiClientOptions) {
   const params = new URLSearchParams({
     size: String(size),
     category,
@@ -123,7 +123,7 @@ export function fetchMeetings({
   }
 
   return apiClient<MeetingListResponse>(`/api/meetings?${params.toString()}`, {
-    auth: false,
+    auth: options?.auth ?? false,
   })
 }
 

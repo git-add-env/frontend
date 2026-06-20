@@ -6,14 +6,19 @@ import { Bookmark } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 type BookMarkBtnProps = {
-
   // 제어형: 값을 주면 그 상태를 그대로 반영. 안 주면 내부 state로 토글(비제어형).
   bookmarked?: boolean
   onToggle?: (next: boolean) => void
   className?: string
+  disabled?: boolean
 }
 
-export function BookMarkBtn({ bookmarked: controlled, onToggle, className }: BookMarkBtnProps = {}) {
+export function BookMarkBtn({
+  bookmarked: controlled,
+  onToggle,
+  className,
+  disabled = false,
+}: BookMarkBtnProps = {}) {
   // 찜 여부 상태 (비제어형일 때만 사용, 클릭 시 토글)
   const [internal, setInternal] = useState(false)
   const isControlled = controlled !== undefined
@@ -29,10 +34,11 @@ export function BookMarkBtn({ bookmarked: controlled, onToggle, className }: Boo
     <button
       type="button"
       onClick={handleClick}
+      disabled={disabled}
       aria-label={bookmarked ? "북마크 해제" : "북마크 추가"}
       aria-pressed={bookmarked}
       className={cn(
-        "flex size-12 items-center justify-center rounded-full border bg-white p-2 transition-transform duration-200 hover:scale-110 hover:shadow-md active:scale-95",
+        "flex size-12 items-center justify-center rounded-full border bg-white p-2 transition-transform duration-200 hover:scale-110 hover:shadow-md active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:scale-100 disabled:hover:shadow-none",
         className,
       )}
     >
