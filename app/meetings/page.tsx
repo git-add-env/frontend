@@ -326,6 +326,7 @@ function mapMeetingSummaryToCardMeeting(meeting: MeetingSummary): Meeting {
     title: meeting.title,
     date: formatDisplayDate(meeting.deadline),
     deadline: formatDisplayDate(meeting.deadline),
+    deadlineDate: meeting.deadline,
     status: getCardStatus(meeting.status),
     category: CATEGORY_LABEL[meeting.category] ?? meeting.category,
     memberCount: meeting.recruitSummary.currentCount,

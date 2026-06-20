@@ -6,11 +6,11 @@ import { Users } from "lucide-react"
 
 import { PositionJobCountBadges } from "@/components/common/Badges"
 import { BookMarkBtn } from "@/components/common/BookMarkBtn"
+import { MeetingDeadlineBadge } from "@/components/common/MeetingDeadlineBadge"
 import { MemberCountBar } from "@/components/common/MemberCountBar"
 import {
   CategoryBadge,
   TechStackBadges,
-  TodayDeadlineBadge,
 } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 
@@ -19,6 +19,7 @@ export type Meeting = {
   title: string
   date: string
   deadline: string
+  deadlineDate?: string
   status: "개설확정" | "모집중" | "마감"
   category: string
   memberCount: number
@@ -39,6 +40,7 @@ type MeetingCardProps = {
 type MeetingCardImageProps = {
   imageUrl: string
   title: string
+  deadline?: string
   isBookmarked?: boolean
   isClosingToday?: boolean
   onBookmarkToggle?: (bookmarked: boolean) => void
@@ -51,6 +53,7 @@ type MeetingCardImageProps = {
 export function MeetingCardImage({
   imageUrl,
   title,
+  deadline,
   isBookmarked,
   isClosingToday,
   onBookmarkToggle,
@@ -69,8 +72,12 @@ export function MeetingCardImage({
         sizes={sizes}
         className="object-cover"
       />
-      {isClosingToday ? (
-        <TodayDeadlineBadge className="absolute bottom-4 left-4" />
+      {isClosingToday && deadline ? (
+        <MeetingDeadlineBadge
+          deadline={deadline}
+          isDeadlineToday
+          className="absolute left-4 top-4 rounded-sm bg-white/90 px-2 py-0.5 text-[13px] font-bold shadow-sm backdrop-blur-sm [&>svg]:size-3.5"
+        />
       ) : null}
       {showBookmark ? (
         <BookMarkBtn
@@ -106,6 +113,7 @@ export default function MeetingCard({
       <MeetingCardImage
         imageUrl={meeting.imageUrl}
         title={meeting.title}
+        deadline={meeting.deadlineDate ?? meeting.deadline}
         isBookmarked={meeting.isBookmarked}
         isClosingToday={meeting.isClosingToday}
         onBookmarkToggle={handleBookmarkToggle}

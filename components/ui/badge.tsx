@@ -1,7 +1,7 @@
 import * as React from "react"
 import { cva, type VariantProps } from "class-variance-authority"
 import { Slot } from "radix-ui"
-import { Bell, Crown, Users } from "lucide-react"
+import { Crown, Users } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 const badgeVariants = cva(
@@ -38,7 +38,7 @@ const badgeVariants = cva(
         deadline: "bg-white text-black border-border",
         // 디데이(D-7 등): 흰 배경 + 회색 텍스트
         dday: "bg-white text-gray-500 border-border",
-        // 오늘 마감: 흰 배경 + 빨간 텍스트 (알림 아이콘과 함께)
+        // 오늘 마감: 흰 배경 + 빨간 텍스트
         today: "bg-red-50 text-red-500 border-red-500",
         // 모임장: 흰 배경 + 살짝 어두운 노란 테두리
         host: "rounded-3xl bg-white text-yellow-500 border-yellow-500",
@@ -66,19 +66,6 @@ function Badge({
       className={cn(badgeVariants({ variant }), className)}
       {...props}
     />
-  )
-}
-
-// 오늘 마감 배지 — 빨간 텍스트 + 알림(Bell) 아이콘 고정
-function TodayDeadlineBadge({
-  className,
-  ...props
-}: Omit<React.ComponentProps<typeof Badge>, "variant" | "children">) {
-  return (
-    <Badge variant="today" className={className} {...props}>
-      <Bell />
-      오늘 마감
-    </Badge>
   )
 }
 
@@ -224,7 +211,6 @@ function CategoryBadge({
 export {
   Badge,
   badgeVariants,
-  TodayDeadlineBadge,
   HostBadge,
   TechStackBadge,
   TechStackBadges,
