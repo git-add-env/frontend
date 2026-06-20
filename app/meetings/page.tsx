@@ -159,19 +159,19 @@ export default function MeetingsPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#f7f9fb] px-4 py-10 sm:px-6 lg:px-12">
-      <div className="mx-auto flex max-w-[1184px] flex-col gap-8">
+    <main className="min-h-screen bg-[#f7f9fb]">
+      <div className="mx-auto flex w-full max-w-[1280px] flex-col gap-18 px-6 py-10">
         <section className="flex flex-col gap-6">
-          <div>
+          {/* <div>
             <h1 className="text-[32px] font-medium leading-10 tracking-normal text-[#191c1e]">
               함께 성장할 팀원을 찾아보세요
             </h1>
             <p className="mt-1 text-lg leading-7 text-[#434655]">
               당신의 열정을 함께 나눌 프로젝트와 동료들이 기다리고 있습니다.
             </p>
-          </div>
+          </div> */}
 
-          <div className="flex flex-col gap-6 rounded-xl border border-[#c3c6d7] bg-white p-6 shadow-sm">
+          <div className="flex flex-col gap-6 rounded-xl border-0 bg-white p-6 shadow-md">
             <div className="flex flex-col gap-3 sm:flex-row">
               <div className="relative min-w-0 flex-1">
                 <Search
@@ -256,7 +256,7 @@ export default function MeetingsPage() {
             <LoadingState />
           ) : meetings.length > 0 ? (
             <>
-              <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                 {meetings.map((meeting) => {
                   const isBookmarked =
                     scopedBookmarkOverrides[meeting.id] ?? meeting.isBookmarked
@@ -286,7 +286,7 @@ export default function MeetingsPage() {
       <Button
         asChild
         size="lg"
-        className="fixed bottom-6 right-6 z-40 h-14 rounded-full bg-blue-500 px-5 text-base text-white shadow-lg hover:bg-blue-600 sm:bottom-8 sm:right-8"
+        className="fixed bottom-6 right-6 z-40 h-14 rounded-full bg-blue-500 px-5 text-base text-white shadow-lg hover:bg-blue-600 sm:bottom-8 sm:right-[max(2rem,calc((100vw-1280px)/2+1.5rem))]"
       >
         <Link href="/meetings/create" aria-label="모임 만들기">
           <Plus className="size-5" aria-hidden="true" />

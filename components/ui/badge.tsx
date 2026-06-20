@@ -104,7 +104,10 @@ function TechStackBadge({
   return (
     <Badge
       variant="muted"
-      className={cn("rounded-full border-border", className)}
+      className={cn(
+        "border-[#1abcfe]/25 bg-[#1abcfe]/5 text-[#007caf]",
+        className,
+      )}
       {...props}
     >
       #{children}
@@ -198,7 +201,7 @@ function JobCountBadge({
       {...props}
     >
       <Users />
-      {job} {current}/{max}
+      {job} <span className="meeting-job-count">{current}/{max}</span>
     </Badge>
   )
 }
