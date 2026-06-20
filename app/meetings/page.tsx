@@ -256,7 +256,7 @@ export default function MeetingsPage() {
             <LoadingState />
           ) : meetings.length > 0 ? (
             <>
-              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 {meetings.map((meeting) => {
                   const isBookmarked =
                     scopedBookmarkOverrides[meeting.id] ?? meeting.isBookmarked
