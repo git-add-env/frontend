@@ -50,6 +50,7 @@ import {
   applyMeeting,
   fetchMeetingDetail,
   fetchMeetingMembers,
+  normalizeMeetingPositions,
   type MeetingDetail as MeetingDetailData,
   type MeetingMember,
 } from "@/lib/api/meetings"
@@ -671,7 +672,7 @@ export function MeetingDetail({ meetingId }: MeetingDetailProps) {
 
 function mapMeetingDetailToView(meeting: MeetingDetailData, members: MeetingMember[]): MeetingView {
   const description = meeting.description ?? meeting.introduction ?? meeting.content ?? "모임 소개가 없습니다."
-  const positions = meeting.positions ?? []
+  const positions = normalizeMeetingPositions(meeting.positions)
 
   return {
     title: meeting.title ?? "제목 없는 모임",

@@ -56,6 +56,7 @@ export type MeetingDetail = MeetingSummary & {
 }
 
 export type MeetingUpsertPosition = {
+  id?: number
   name: string
   recruitCount: number
   description?: string | null
@@ -197,4 +198,25 @@ export function getMeetingMutationId(data: MeetingMutationResponse) {
   }
 
   throw new Error("지원하지 않는 모임 생성/수정 응답 형식입니다.")
+}
+
+export function normalizeMeetingPositions(positions: MeetingPosition[] = []) {
+  const positionByName = new Map<string, MeetingPosition>()
+
+  positions.forEach((position) => {
+    const key = getPositionNameKey(position)
+    const current = positionByName.get(key)
+
+    if (!current || position.id > current.id) {
+      positionByName.set(key, position)
+    }
+  })
+
+  return Array.from(positionByName.values()).sort((a, b) => a.id - b.id)
+}
+
+function getPositionNameKey(position: MeetingPosition) {
+  const normalizedName = position.name.trim().toLowerCase()
+
+  return normalizedName || `position-${position.id}`
 }
