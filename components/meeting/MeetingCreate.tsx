@@ -830,7 +830,7 @@ function PositionSelect({ value, options, disabledOptions, onChange }: PositionS
                 )}
               >
                 <span className="truncate">{option}</span>
-                {isDisabled ? <span className="shrink-0 text-xs">선택됨</span> : null}
+                {isDisabled ? <span className="shrink-0 text-xs">이미 추가됨</span> : null}
               </button>
             )
           })}
