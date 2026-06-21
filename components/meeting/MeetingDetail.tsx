@@ -7,20 +7,20 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import Link from "next/link"
 import { useSession } from "next-auth/react"
 import {
-  BookOpenText,
   Calendar,
-  ChevronRight,
-  ClipboardList,
+  Check,
+  ChevronLeft,
   Clock3,
   Crown,
   LoaderCircle,
-  Users,
+  Pencil,
   Video,
 } from "lucide-react"
 
 import { BookMarkBtn } from "@/components/common/BookMarkBtn"
 import LoginDialog from "@/components/common/LoginDialog"
 import { MeetingCardImage } from "@/components/common/MeetingCard"
+import { MeetingDeadlineBadge } from "@/components/common/MeetingDeadlineBadge"
 import MeetingRecommendationCarousel from "@/components/common/MeetingRecommendationCarousel"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
@@ -38,7 +38,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { Progress } from "@/components/ui/progress"
 import { CATEGORY_LABEL } from "@/constants/category"
 import {
   useMeetingBookmarkMutation,
@@ -84,11 +83,11 @@ type MeetingView = {
   title: string
   category: string
   deadline: string
+  deadlineDate: string
+  isDeadlineToday: boolean
   startDate: string
   duration: string
   meetingSchedule: string
-  memberCount: number
-  maxMembers: number
   heroImage: string
   description: string
   additionalNotice: string | null
@@ -106,16 +105,12 @@ type BookmarkOverrideState = {
 } | null
 
 type SectionTitleProps = {
-  icon: ReactNode
   title: string
 }
 
-function SectionTitle({ icon, title }: SectionTitleProps) {
+function SectionTitle({ title }: SectionTitleProps) {
   return (
-    <div className="flex items-center gap-2">
-      <span className="text-blue-500">{icon}</span>
-      <h2 className="text-xl font-medium tracking-normal text-[#191c1e]">{title}</h2>
-    </div>
+    <h2 className="text-lg font-bold tracking-normal text-[#191c1e]">{title}</h2>
   )
 }
 
@@ -154,10 +149,13 @@ function PositionRequirement({ position }: PositionRequirementProps) {
     >
       <div className="min-w-0 space-y-1">
         <div className="flex flex-wrap items-center gap-2">
-          <p className="text-base font-medium text-[#191c1e]">{position.job}</p>
+          <p className="text-base font-bold text-[#191c1e]">{position.job}</p>
           <Badge
-            variant={isFull ? "muted" : "recruiting"}
-            className="h-auto rounded-full px-2 py-1 text-xs"
+            variant={isFull ? "muted" : "outline"}
+            className={cn(
+              "h-auto rounded-full px-2 py-1 text-xs",
+              !isFull && "border-blue-100 bg-blue-50 text-blue-600",
+            )}
           >
             {isFull ? "모집 완료" : `${remainingCount}명 모집 중`}
           </Badge>
@@ -171,29 +169,6 @@ function PositionRequirement({ position }: PositionRequirementProps) {
         )}
       >
         모집 인원: {position.max}명
-      </p>
-    </div>
-  )
-}
-
-type RecruitmentStatusProps = {
-  position: DetailPosition
-}
-
-function RecruitmentStatus({ position }: RecruitmentStatusProps) {
-  const isFull = isPositionFull(position)
-
-  return (
-    <div
-      className={cn(
-        "flex items-center justify-between gap-4 rounded-lg bg-[#eceef0] px-4 py-2",
-        isFull && "opacity-60",
-      )}
-    >
-      <p className="text-sm font-medium text-[#191c1e]">{position.job}</p>
-      <p className={cn("text-sm font-medium text-blue-500", isFull && "text-[#737686]")}>
-        {position.current} / {position.max}
-        {isFull ? " (마감)" : ""}
       </p>
     </div>
   )
@@ -230,7 +205,7 @@ function JoinMeetingDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-2">
+        <div className="space-y-2 pt-2">
           {positions.map((position) => {
             const remainingCount = Math.max(position.max - position.current, 0)
             const selected = selectedPositionId === position.id
@@ -240,7 +215,7 @@ function JoinMeetingDialog({
                 key={position.id}
                 className={cn(
                   "flex cursor-pointer items-start gap-3 rounded-lg border border-[#c3c6d7] p-4 transition-colors",
-                  selected && "border-blue-400 bg-blue-50",
+                  selected && "border-[#1abcfe] bg-[#1abcfe]/10",
                 )}
               >
                 <input
@@ -249,13 +224,22 @@ function JoinMeetingDialog({
                   value={position.id}
                   checked={selected}
                   onChange={() => onSelectPosition(position.id)}
-                  className="mt-1 size-4 accent-blue-500"
+                  className="sr-only"
                   disabled={isPending}
                 />
+                <span
+                  aria-hidden="true"
+                  className={cn(
+                    "mt-1 flex size-5 shrink-0 items-center justify-center rounded-full border border-[#c3c6d7] bg-white transition-colors",
+                    selected && "border-[#1abcfe] bg-[#1abcfe]",
+                  )}
+                >
+                  {selected ? <Check className="size-3.5 text-white" /> : null}
+                </span>
                 <span className="min-w-0 flex-1 space-y-1">
                   <span className="flex flex-wrap items-center gap-2">
-                    <span className="text-sm font-medium text-[#191c1e]">{position.job}</span>
-                    <Badge variant="recruiting" className="h-auto rounded-full px-2 py-1 text-xs">
+                    <span className="text-sm font-bold text-[#191c1e]">{position.job}</span>
+                    <Badge className="h-auto rounded-full border border-blue-100 bg-blue-50 px-2 py-1 text-xs text-blue-600">
                       {remainingCount}명 모집 중
                     </Badge>
                   </span>
@@ -274,12 +258,13 @@ function JoinMeetingDialog({
           </p>
         ) : null}
 
-        <div className="flex justify-end gap-2">
-          <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={isPending}>
-            닫기
-          </Button>
-          <Button onClick={onSubmit} disabled={isPending || selectedPositionId === null}>
-            {isPending ? "참여 중..." : "참여하기"}
+        <div className="pt-2">
+          <Button
+            className="h-12 w-full rounded-lg bg-[#1abcfe] text-base font-medium text-white hover:bg-[#0eaeea]"
+            onClick={onSubmit}
+            disabled={isPending || selectedPositionId === null}
+          >
+            {isPending ? "신청 중..." : "참가 신청하기"}
           </Button>
         </div>
       </DialogContent>
@@ -324,7 +309,7 @@ function MemberRow({ member }: MemberRowProps) {
 
 export function MeetingDetail({ meetingId }: MeetingDetailProps) {
   const queryClient = useQueryClient()
-  const { data: session, status: authStatus } = useSession()
+  const { status: authStatus } = useSession()
   const [joinDialogOpen, setJoinDialogOpen] = useState(false)
   const [loginDialogOpen, setLoginDialogOpen] = useState(false)
   const [selectedPositionId, setSelectedPositionId] = useState<number | null>(null)
@@ -373,15 +358,6 @@ export function MeetingDetail({ meetingId }: MeetingDetailProps) {
     return meeting?.positions.filter((position) => !isPositionFull(position)) ?? []
   }, [meeting?.positions])
   const canJoinByStatus = !meeting?.status || meeting.status === "RECRUITING"
-  const currentUserId = session?.user?.id
-  const isLeaderByMembers =
-    authStatus === "authenticated" &&
-    currentUserId !== undefined &&
-    meeting?.members.some(
-      (member) => member.isLeader && String(member.id) === String(currentUserId),
-    ) === true
-  const isCurrentUserLeader = meeting?.isLeader === true || isLeaderByMembers
-  const isCheckingLeader = authStatus === "authenticated" && membersQuery.isLoading
   const joinMutation = useMutation({
     mutationFn: (positionId: number) => applyMeeting(meetingId as number, { positionId }),
     onSuccess: async () => {
@@ -465,7 +441,7 @@ export function MeetingDetail({ meetingId }: MeetingDetailProps) {
 
   if (!canFetch) {
     return (
-      <Card className="rounded-xl border-[#c3c6d7] bg-white shadow-sm">
+      <Card className="rounded-xl border-0 bg-white shadow-md ring-0">
         <CardContent className="p-10 text-center text-[#434655]">
           상세 정보를 불러올 모임을 선택해주세요.
         </CardContent>
@@ -484,7 +460,7 @@ export function MeetingDetail({ meetingId }: MeetingDetailProps) {
         : "모임 상세 정보를 불러오지 못했습니다."
 
     return (
-      <Card className="rounded-xl border-[#c3c6d7] bg-white shadow-sm">
+      <Card className="rounded-xl border-0 bg-white shadow-md ring-0">
         <CardContent className="space-y-2 p-10 text-center text-[#434655]">
           <p>모임 상세 정보를 불러오지 못했습니다.</p>
           <p className="text-sm text-[#737686]">{detailErrorMessage}</p>
@@ -495,17 +471,34 @@ export function MeetingDetail({ meetingId }: MeetingDetailProps) {
 
   return (
     <article className="flex flex-col gap-6">
-      <nav className="flex flex-wrap items-center gap-1 text-sm font-medium tracking-normal text-[#434655]">
-        <span>Home</span>
-        <ChevronRight className="size-4" aria-hidden="true" />
-        <span>모임찾기</span>
-        <ChevronRight className="size-4" aria-hidden="true" />
-        <span className="text-blue-500">프로젝트 상세</span>
-      </nav>
+      <div className="flex items-center justify-between gap-4">
+        <Button
+          asChild
+          size="icon"
+          variant="ghost"
+          className="size-10 rounded-full bg-white text-[#191c1e] shadow-sm hover:bg-white hover:text-[#191c1e]"
+        >
+          <Link href="/meetings" aria-label="모임 찾기 페이지로 이동" title="모임 찾기">
+            <ChevronLeft className="size-5" aria-hidden="true" />
+          </Link>
+        </Button>
+        {meeting.isLeader ? (
+          <Button
+            asChild
+            size="icon"
+            className="size-10 rounded-full bg-[#3a3f44] text-sm font-medium text-white hover:bg-[#30353a] sm:h-10 sm:w-auto sm:gap-2 sm:px-4"
+          >
+            <Link href={`/meetings/${meetingId}/edit`} aria-label="모임 수정" title="모임 수정">
+              <Pencil className="size-3.5" aria-hidden="true" />
+              <span className="hidden sm:inline">모임 수정</span>
+            </Link>
+          </Button>
+        ) : null}
+      </div>
 
       <div className="grid gap-6 lg:grid-cols-12">
         <div className="flex flex-col gap-6 lg:col-span-8">
-          <Card className="overflow-hidden rounded-xl border-[#c3c6d7] bg-white py-0 shadow-sm">
+          <Card className="overflow-hidden rounded-xl border-0 bg-white py-0 shadow-md ring-0">
             <CardContent className="p-0">
               <div className="relative flex flex-col xl:flex-row">
                 <MeetingCardImage
@@ -513,12 +506,24 @@ export function MeetingDetail({ meetingId }: MeetingDetailProps) {
                   title={meeting.title}
                   sizes="(min-width: 1280px) 300px, (min-width: 1024px) 36vw, 100vw"
                   showBookmark={false}
-                  className="relative min-h-64 w-full overflow-hidden bg-[#f2f4f6] xl:min-h-full xl:w-[37%] xl:min-w-[220px] xl:self-stretch"
+                  className="relative aspect-video w-full overflow-hidden bg-[#f2f4f6] xl:aspect-[4/4] xl:w-[37%] xl:min-w-[220px]"
                 />
-                <div className="flex min-w-0 flex-1 flex-col justify-between gap-6 p-6 xl:pr-14">
+                <div className="flex min-w-0 flex-1 flex-col gap-5 p-5 sm:p-6 xl:gap-6 xl:pr-14">
                   <div className="space-y-3">
                     <div className="flex items-center justify-between gap-4">
-                      <CategoryBadge category={meeting.category} className="h-auto px-3 py-1 text-xs" />
+                      <div className="flex flex-wrap items-center gap-2">
+                        <CategoryBadge
+                          category={meeting.category}
+                          className="h-auto px-3 py-1 text-xs"
+                        />
+                        {meeting.isDeadlineToday ? (
+                          <MeetingDeadlineBadge
+                            deadline={meeting.deadlineDate}
+                            isDeadlineToday
+                            className="rounded-full border border-red-110 bg-red-50 px-2.5 py-1 text-xs font-bold [&>svg]:size-3"
+                          />
+                        ) : null}
+                      </div>
                       <BookMarkBtn
                         bookmarked={displayedBookmarked}
                         onToggle={handleBookmarkToggle}
@@ -526,25 +531,30 @@ export function MeetingDetail({ meetingId }: MeetingDetailProps) {
                         className="size-9 bg-white/80 p-2 shadow-sm backdrop-blur-md hover:bg-white"
                       />
                     </div>
-                    <h1 className="max-w-xl text-[32px] font-medium leading-10 tracking-normal text-[#191c1e]">
+                    <h1 className="max-w-xl text-2xl font-bold leading-8 tracking-normal text-[#191c1e] sm:text-[28px] sm:leading-9">
                       {meeting.title}
                     </h1>
-                    <p className="text-base leading-6 text-[#434655]">
+                  </div>
+                  <div className="mt-auto space-y-1">
+                    {meeting.techStacks.length > 0 ? (
+                      <TechStackBadges
+                        techStacks={meeting.techStacks}
+                        className="gap-1.5"
+                      />
+                    ) : null}
+                    <p className="pt-3 text-sm leading-5 text-[#737686]">
                       모집 마감일 : {meeting.deadline}
                     </p>
-                    {meeting.techStacks.length > 0 ? (
-                      <TechStackBadges techStacks={meeting.techStacks} className="gap-1.5 pt-1" />
-                    ) : null}
                   </div>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="rounded-xl border-[#c3c6d7] bg-white shadow-sm">
-            <CardContent className="space-y-6 p-6">
-              <SectionTitle icon={<BookOpenText className="size-5" />} title="모임소개" />
-              <div className="space-y-4 text-base leading-7 text-[#434655]">
+          <Card className="rounded-xl border-0 bg-white shadow-md ring-0">
+            <CardContent className="space-y-4 p-5">
+              <SectionTitle title="모임소개" />
+              <div className="space-y-3 text-base leading-7 text-[#434655]">
                 {meeting.description.split("\n").map((paragraph, index) => (
                   <p key={index}>{paragraph}</p>
                 ))}
@@ -553,10 +563,10 @@ export function MeetingDetail({ meetingId }: MeetingDetailProps) {
           </Card>
 
           {meeting.additionalNotice ? (
-            <Card className="rounded-xl border-[#c3c6d7] bg-white shadow-sm">
-              <CardContent className="space-y-6 p-6">
-                <SectionTitle icon={<ClipboardList className="size-5" />} title="추가 안내" />
-                <div className="space-y-4 text-base leading-7 text-[#434655]">
+            <Card className="rounded-xl border-0 bg-white shadow-md ring-0">
+              <CardContent className="space-y-4 p-5">
+                <SectionTitle title="추가 안내" />
+                <div className="space-y-3 text-base leading-7 text-[#434655]">
                   {meeting.additionalNotice.split("\n").map((paragraph, index) => (
                     <p key={index}>{paragraph}</p>
                   ))}
@@ -565,10 +575,10 @@ export function MeetingDetail({ meetingId }: MeetingDetailProps) {
             </Card>
           ) : null}
 
-          <Card className="rounded-xl border-[#c3c6d7] bg-white shadow-sm">
-            <CardContent className="space-y-6 p-6">
-              <SectionTitle icon={<ClipboardList className="size-5" />} title="상세 모집 요건" />
-              <div className="space-y-4">
+          <Card className="rounded-xl border-0 bg-white shadow-md ring-0">
+            <CardContent className="space-y-4 p-5">
+              <SectionTitle title="상세 모집 요건" />
+              <div className="space-y-3">
                 {meeting.positions.map((position) => (
                   <PositionRequirement key={position.id} position={position} />
                 ))}
@@ -579,9 +589,9 @@ export function MeetingDetail({ meetingId }: MeetingDetailProps) {
 
         <aside className="flex flex-col gap-6 lg:col-span-4">
           <div className="sticky top-6 flex flex-col gap-6">
-            <Card className="rounded-xl border-[#c3c6d7] bg-white shadow-sm">
-              <CardContent className="space-y-5 p-6">
-                <h2 className="text-xl font-medium tracking-normal text-[#191c1e]">진행 정보</h2>
+            <Card className="rounded-xl border-0 bg-white shadow-md ring-0">
+              <CardContent className="space-y-4 p-5">
+                <h2 className="text-lg font-bold tracking-normal text-[#191c1e]">진행 정보</h2>
                 <div>
                   <InfoRow
                     label="시작 예정일"
@@ -600,52 +610,23 @@ export function MeetingDetail({ meetingId }: MeetingDetailProps) {
                   />
                 </div>
 
-                <div className="space-y-3 pt-2">
-                  <h3 className="text-xl font-medium tracking-normal text-[#191c1e]">모집 현황</h3>
-                  <div className="space-y-2">
-                    {meeting.positions.map((position) => (
-                      <RecruitmentStatus key={position.id} position={position} />
-                    ))}
-                  </div>
-                  <div className="rounded-lg bg-[#f7f9fb] p-4">
-                    <div className="mb-3 flex items-center justify-between text-sm">
-                      <span className="text-[#434655]">전체 참여</span>
-                      <span className="font-medium text-blue-500">
-                        {meeting.memberCount} / {meeting.maxMembers}
-                      </span>
-                    </div>
-                    <Progress value={getProgressValue(meeting.memberCount, meeting.maxMembers)} />
-                  </div>
-                </div>
-
-                {isCurrentUserLeader ? (
-                  <Button
-                    asChild
-                    className="h-14 w-full rounded-lg bg-blue-400 text-lg font-medium text-white hover:bg-blue-500"
-                  >
-                    <Link href={`/meetings/${meetingId}/edit`}>수정하기</Link>
-                  </Button>
-                ) : (
-                  <Button
-                    className="h-14 w-full rounded-lg bg-blue-400 text-lg font-medium text-white hover:bg-blue-500"
-                    onClick={handleJoinClick}
-                    disabled={isCheckingLeader || openPositions.length === 0 || !canJoinByStatus}
-                  >
-                    {isCheckingLeader
-                      ? "권한 확인 중..."
-                      : !canJoinByStatus
-                        ? "모집 마감"
-                        : openPositions.length === 0
-                          ? "모집 완료"
-                          : "참여하기"}
-                  </Button>
-                )}
+                <Button
+                  className="h-14 w-full rounded-lg bg-[#1abcfe] text-lg font-medium text-white shadow-lg shadow-[#1abcfe]/18 hover:bg-[#0eaeea] hover:shadow-xl hover:shadow-[#1abcfe]/23"
+                  onClick={handleJoinClick}
+                  disabled={openPositions.length === 0 || !canJoinByStatus}
+                >
+                  {!canJoinByStatus
+                    ? "모집 마감"
+                    : openPositions.length === 0
+                      ? "모집 완료"
+                      : "참가하기"}
+                </Button>
               </CardContent>
             </Card>
 
-            <Card className="rounded-xl border-[#c3c6d7] bg-white shadow-sm">
-              <CardContent className="space-y-4 p-6">
-                <SectionTitle icon={<Users className="size-5" />} title="참여 멤버" />
+            <Card className="rounded-xl border-0 bg-white shadow-md ring-0">
+              <CardContent className="space-y-3 p-5">
+                <SectionTitle title="참여 멤버" />
                 <div className="space-y-2">
                   {showMembersLoading ? (
                     <p className="px-2 text-sm text-[#737686]">참여 멤버를 불러오는 중입니다.</p>
@@ -691,22 +672,16 @@ export function MeetingDetail({ meetingId }: MeetingDetailProps) {
 function mapMeetingDetailToView(meeting: MeetingDetailData, members: MeetingMember[]): MeetingView {
   const description = meeting.description ?? meeting.introduction ?? meeting.content ?? "모임 소개가 없습니다."
   const positions = meeting.positions ?? []
-  const maxMembers =
-    meeting.recruitSummary?.totalCount ??
-    positions.reduce((total, position) => total + position.recruitCount, 0)
-  const memberCount =
-    meeting.recruitSummary?.currentCount ??
-    positions.reduce((total, position) => total + position.currentCount, 0)
 
   return {
     title: meeting.title ?? "제목 없는 모임",
     category: CATEGORY_LABEL[meeting.category] ?? meeting.category ?? "프로젝트",
     deadline: formatDisplayDate(meeting.deadline),
+    deadlineDate: meeting.deadline,
+    isDeadlineToday: isMeetingDeadlineToday(meeting.deadline, meeting.isDeadlineToday),
     startDate: formatDisplayDate(meeting.startDate),
     duration: meeting.expectedDuration ?? meeting.duration ?? "-",
     meetingSchedule: meeting.meetingSchedule ?? meeting.meetingType ?? "-",
-    memberCount,
-    maxMembers,
     heroImage: meeting.thumbnailUrl ?? FALLBACK_MEETING_IMAGE_URL,
     description,
     additionalNotice: meeting.additionalNotice?.trim() || null,
@@ -730,14 +705,6 @@ function isPositionFull(position: DetailPosition) {
   return position.isClosed || position.current >= position.max
 }
 
-function getProgressValue(current: number, max: number) {
-  if (max <= 0) {
-    return 0
-  }
-
-  return (current / max) * 100
-}
-
 function mapMeetingMemberToView(member: MeetingMember): DetailMember {
   return {
     id: member.id,
@@ -746,6 +713,26 @@ function mapMeetingMemberToView(member: MeetingMember): DetailMember {
     profileImage: member.profileImage,
     isLeader: member.isLeader,
   }
+}
+
+function isMeetingDeadlineToday(deadline: string, fallback?: boolean) {
+  if (fallback) {
+    return true
+  }
+
+  const dateOnlyMatch = /^(\d{4})-(\d{2})-(\d{2})/.exec(deadline)
+
+  if (!dateOnlyMatch) {
+    return false
+  }
+
+  const now = new Date()
+
+  return (
+    Number(dateOnlyMatch[1]) === now.getFullYear() &&
+    Number(dateOnlyMatch[2]) === now.getMonth() + 1 &&
+    Number(dateOnlyMatch[3]) === now.getDate()
+  )
 }
 
 function formatDisplayDate(date: string | null | undefined) {

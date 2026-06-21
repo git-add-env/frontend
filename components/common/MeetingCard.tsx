@@ -76,7 +76,7 @@ export function MeetingCardImage({
         <MeetingDeadlineBadge
           deadline={deadline}
           isDeadlineToday
-          className="absolute left-4 top-4 rounded-sm bg-white/90 px-2 py-0.5 text-[13px] font-bold shadow-sm backdrop-blur-sm [&>svg]:size-3.5"
+          className="absolute left-4 top-4 rounded-full border border-red-200 bg-red-50 px-2.5 py-1 text-xs font-bold [&>svg]:size-3"
         />
       ) : null}
       {showBookmark ? (

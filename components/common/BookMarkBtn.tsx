@@ -45,8 +45,8 @@ export function BookMarkBtn({
       <Bookmark
         className={
           bookmarked
-            ? "text-blue-400 fill-blue-400 transition-colors"
-            : "text-blue-400 transition-colors"
+            ? "fill-[#1abcfe] text-[#1abcfe] transition-colors"
+            : "text-[#1abcfe] transition-colors"
         }
       />
     </button>
