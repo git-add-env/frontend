@@ -3,8 +3,10 @@
 import {
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ChangeEvent,
+  type DragEvent,
   type FormEvent,
   type KeyboardEvent,
   type ReactNode,
@@ -43,6 +45,7 @@ import {
   type MeetingDetail,
   type MeetingUpsertPayload,
 } from "@/lib/api/meetings"
+import { uploadImage } from "@/lib/api/uploads"
 import { notify } from "@/lib/notify"
 import { cn } from "@/lib/utils"
 
@@ -107,6 +110,8 @@ const INITIAL_FORM: MeetingFormState = {
 
 const DURATION_OPTIONS = ["1개월 미만", "1-3개월", "3-6개월", "6개월 이상"] as const
 const SCHEDULE_OPTIONS = ["주 1회", "주 2회", "주 3회 이상", "협의 후 결정"] as const
+const IMAGE_ACCEPT_TYPES = ["image/jpeg", "image/png", "image/webp"] as const
+const IMAGE_MAX_SIZE = 5 * 1024 * 1024
 
 export function MeetingCreate({ meetingId }: MeetingCreateProps) {
   const isEditMode = typeof meetingId === "number" && Number.isFinite(meetingId)
@@ -154,9 +159,11 @@ type MeetingCreateFormProps = {
 function MeetingCreateForm({ initialForm, isEditMode, meetingId }: MeetingCreateFormProps) {
   const router = useRouter()
   const queryClient = useQueryClient()
+  const thumbnailInputRef = useRef<HTMLInputElement>(null)
   const [form, setForm] = useState<MeetingFormState>(initialForm)
   const [fieldError, setFieldError] = useState<string | null>(null)
   const [activeSectionId, setActiveSectionId] = useState<SectionId>("basic-info")
+  const [thumbnailUploading, setThumbnailUploading] = useState(false)
 
   const completion = useMemo(() => getCompletion(form), [form])
   const totalRecruitCount = useMemo(
@@ -195,6 +202,7 @@ function MeetingCreateForm({ initialForm, isEditMode, meetingId }: MeetingCreate
       notify.error(isEditMode ? "모임 수정에 실패했습니다." : "모임 생성에 실패했습니다.")
     },
   })
+  const isSubmitting = mutation.isPending || thumbnailUploading
 
   useEffect(() => {
     const sections = SECTION_NAV_ITEMS.map((item) => document.getElementById(item.id)).filter(
@@ -262,6 +270,49 @@ function MeetingCreateForm({ initialForm, isEditMode, meetingId }: MeetingCreate
     )
   }
 
+  async function handleThumbnailFile(file: File) {
+    if (!validateImageFile(file)) {
+      return
+    }
+
+    setFieldError(null)
+    setThumbnailUploading(true)
+
+    try {
+      const imageUrl = await uploadImage(file)
+
+      updateField("thumbnailUrl", imageUrl)
+      notify.success("커버 이미지가 업로드되었습니다.")
+    } catch (error) {
+      notify.error(error instanceof Error ? error.message : "이미지 업로드에 실패했습니다.")
+    } finally {
+      setThumbnailUploading(false)
+    }
+  }
+
+  function handleThumbnailInputChange(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0]
+    event.target.value = ""
+
+    if (!file) {
+      return
+    }
+
+    void handleThumbnailFile(file)
+  }
+
+  function handleThumbnailDrop(event: DragEvent<HTMLDivElement>) {
+    event.preventDefault()
+
+    const file = event.dataTransfer.files[0]
+
+    if (!file) {
+      return
+    }
+
+    void handleThumbnailFile(file)
+  }
+
   function handlePositionChange<K extends keyof PositionForm>(
     positionId: string,
     key: K,
@@ -322,6 +373,11 @@ function MeetingCreateForm({ initialForm, isEditMode, meetingId }: MeetingCreate
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
 
+    if (thumbnailUploading) {
+      notify.warning("이미지 업로드가 완료된 뒤 저장해주세요.")
+      return
+    }
+
     const payload = getPayload(form, { includePositionIds: isEditMode })
     const error = validatePayload(payload)
 
@@ -347,10 +403,10 @@ function MeetingCreateForm({ initialForm, isEditMode, meetingId }: MeetingCreate
             <Button
               type="submit"
               form={FORM_ID}
-              disabled={mutation.isPending}
+              disabled={isSubmitting}
               className="h-14 rounded-lg bg-blue-400 text-base text-white hover:bg-blue-500"
             >
-              {mutation.isPending ? (
+              {isSubmitting ? (
                 <LoaderCircle className="size-4 animate-spin" aria-hidden="true" />
               ) : (
                 <Save className="size-4" aria-hidden="true" />
@@ -395,7 +451,21 @@ function MeetingCreateForm({ initialForm, isEditMode, meetingId }: MeetingCreate
           </Field>
 
           <Field label="커버 이미지">
-            <label className="flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-[#c3c6d7] bg-[#f7f9fb] p-10 text-center transition hover:border-blue-400 hover:bg-blue-50">
+            <div
+              onDrop={handleThumbnailDrop}
+              onDragOver={(event) => event.preventDefault()}
+              className={cn(
+                "flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-[#c3c6d7] bg-[#f7f9fb] p-10 text-center transition",
+                thumbnailUploading ? "opacity-80" : "hover:border-blue-400 hover:bg-blue-50",
+              )}
+            >
+              <input
+                ref={thumbnailInputRef}
+                type="file"
+                accept={IMAGE_ACCEPT_TYPES.join(",")}
+                onChange={handleThumbnailInputChange}
+                className="hidden"
+              />
               {form.thumbnailUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
@@ -403,26 +473,30 @@ function MeetingCreateForm({ initialForm, isEditMode, meetingId }: MeetingCreate
                   alt=""
                   className="mb-4 aspect-[1200/630] max-h-52 w-full rounded-lg object-cover"
                 />
+              ) : thumbnailUploading ? (
+                <LoaderCircle className="mb-3 size-10 animate-spin text-blue-400" aria-hidden="true" />
               ) : (
                 <ImagePlus className="mb-3 size-10 text-[#737686]" aria-hidden="true" />
               )}
               <span className="text-base text-[#565e74]">
-                이미지를 드래그하거나 클릭하여 업로드하세요
+                이미지를 드래그하여 업로드하세요
               </span>
               <span className="mt-1 text-base text-[#737686]">1200 x 630px 권장, 최대 5MB</span>
-              <span className="mt-4 flex w-full max-w-xl items-center gap-2">
-                <Upload className="size-4 text-[#737686]" aria-hidden="true" />
-                <Input
-                  value={form.thumbnailUrl}
-                  onChange={(event: ChangeEvent<HTMLInputElement>) =>
-                    updateField("thumbnailUrl", event.target.value)
-                  }
-                  onClick={(event) => event.stopPropagation()}
-                  placeholder="이미지 URL을 입력해주세요."
-                  className="h-11 rounded-lg border-[#c3c6d7] bg-white"
-                />
-              </span>
-            </label>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => thumbnailInputRef.current?.click()}
+                disabled={isSubmitting}
+                className="mt-4 h-11 rounded-lg border-[#c3c6d7] bg-white text-blue-500"
+              >
+                {thumbnailUploading ? (
+                  <LoaderCircle className="size-4 animate-spin" aria-hidden="true" />
+                ) : (
+                  <Upload className="size-4" aria-hidden="true" />
+                )}
+                {thumbnailUploading ? "업로드 중" : form.thumbnailUrl ? "이미지 변경" : "이미지 추가"}
+              </Button>
+            </div>
           </Field>
 
           <div className="grid gap-6 md:grid-cols-2">
@@ -622,10 +696,10 @@ function MeetingCreateForm({ initialForm, isEditMode, meetingId }: MeetingCreate
             </Button>
             <Button
               type="submit"
-              disabled={mutation.isPending}
+              disabled={isSubmitting}
               className="h-12 flex-1 rounded-lg bg-blue-400 text-white hover:bg-blue-500"
             >
-              {mutation.isPending ? (
+              {isSubmitting ? (
                 <LoaderCircle className="size-4 animate-spin" aria-hidden="true" />
               ) : (
                 <Save className="size-4" aria-hidden="true" />
@@ -1020,6 +1094,20 @@ function getCompletion(form: MeetingFormState) {
 
 function isValidRecruitCount(value: number) {
   return Number.isFinite(value) && Number.isInteger(value) && value >= 1
+}
+
+function validateImageFile(file: File) {
+  if (file.size > IMAGE_MAX_SIZE) {
+    notify.error("이미지는 5MB 이하여야 합니다.")
+    return false
+  }
+
+  if (!IMAGE_ACCEPT_TYPES.some((type) => type === file.type)) {
+    notify.error("jpg/png/webp 형식만 업로드할 수 있습니다.")
+    return false
+  }
+
+  return true
 }
 
 function mapMeetingDetailToForm(meeting: MeetingDetail): MeetingFormState {

@@ -1,6 +1,7 @@
 // 마이페이지(MP-API 001~008) 호출 헬퍼. 각 함수는 명세서의 응답 스키마를 그대로 반환한다.
 
 import { apiClient } from "./api-client"
+import { requestImageUploadPresign, uploadImage } from "./uploads"
 
 export type Profile = {
   id: number
@@ -69,28 +70,12 @@ export async function patchMyProfile(patch: ProfilePatch): Promise<Profile> {
   return res.user
 }
 
-// 공용 이미지 업로드 presign 엔드포인트(POST /api/uploads/images). 썸네일·프로필 공통.
-// 흐름: ① presign 발급 → ② uploadUrl로 S3 직접 PUT → ③ imageUrl을 patchMyProfile({ profileImage })로 저장.
 export function requestProfileImagePresign(fileName: string, fileType: string) {
-  return apiClient<{ uploadUrl: string; imageUrl: string }>(
-    "/api/uploads/images",
-    { method: "POST", body: JSON.stringify({ fileName, fileType }) },
-  )
+  return requestImageUploadPresign(fileName, fileType)
 }
 
-// presign + S3(PUT)까지 수행하고 저장용 imageUrl을 반환한다. 프로필 저장은 호출부에서 patchMyProfile로.
 export async function uploadProfileImage(file: File): Promise<string> {
-  const { uploadUrl, imageUrl } = await requestProfileImagePresign(file.name, file.type)
-  // S3는 우리 API가 아니므로 apiClient 대신 raw fetch로 PUT.
-  const res = await fetch(uploadUrl, {
-    method: "PUT",
-    headers: { "Content-Type": file.type },
-    body: file,
-  })
-  if (!res.ok) {
-    throw new Error("이미지 업로드에 실패했습니다. 다시 시도해주세요.")
-  }
-  return imageUrl
+  return uploadImage(file)
 }
 
 export function fetchMyMeetings(status?: "recruiting" | "active" | "completed") {
