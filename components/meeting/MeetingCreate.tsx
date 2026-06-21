@@ -271,6 +271,10 @@ function MeetingCreateForm({ initialForm, isEditMode, meetingId }: MeetingCreate
   }
 
   async function handleThumbnailFile(file: File) {
+    if (thumbnailUploading) {
+      return
+    }
+
     if (!validateImageFile(file)) {
       return
     }
@@ -373,8 +377,12 @@ function MeetingCreateForm({ initialForm, isEditMode, meetingId }: MeetingCreate
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
 
-    if (thumbnailUploading) {
-      notify.warning("이미지 업로드가 완료된 뒤 저장해주세요.")
+    if (isSubmitting) {
+      notify.warning(
+        thumbnailUploading
+          ? "이미지 업로드가 완료된 뒤 저장해주세요."
+          : "모임 저장이 완료된 뒤 다시 시도해주세요.",
+      )
       return
     }
 
