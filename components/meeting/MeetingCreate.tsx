@@ -38,6 +38,7 @@ import {
   createMeeting,
   fetchMeetingDetail,
   getMeetingMutationId,
+  normalizeMeetingPositions,
   updateMeeting,
   type MeetingDetail,
   type MeetingUpsertPayload,
@@ -51,6 +52,7 @@ type MeetingCreateProps = {
 
 type PositionForm = {
   id: string
+  serverId?: number
   name: string
   recruitCount: number
   description: string
@@ -96,13 +98,7 @@ const INITIAL_FORM: MeetingFormState = {
   positions: [
     {
       id: "position-1",
-      name: "프론트엔드 개발자",
-      recruitCount: 2,
-      description: "",
-    },
-    {
-      id: "position-2",
-      name: "백엔드 개발자",
+      name: "",
       recruitCount: 1,
       description: "",
     },
@@ -167,6 +163,11 @@ function MeetingCreateForm({ initialForm, isEditMode, meetingId }: MeetingCreate
     () => form.positions.reduce((total, position) => total + position.recruitCount, 0),
     [form.positions],
   )
+  const selectedPositionNames = useMemo(
+    () => form.positions.map((position) => position.name).filter(Boolean),
+    [form.positions],
+  )
+  const canAddPosition = form.positions.length < ONBOARDING_JOB_OPTIONS.length
   const filteredTechStackOptions = useMemo(() => {
     const query = form.techStackInput.trim().toLowerCase()
 
@@ -266,6 +267,16 @@ function MeetingCreateForm({ initialForm, isEditMode, meetingId }: MeetingCreate
     key: K,
     value: PositionForm[K],
   ) {
+    if (
+      key === "name" &&
+      typeof value === "string" &&
+      value &&
+      form.positions.some((position) => position.id !== positionId && position.name === value)
+    ) {
+      setFieldError("이미 선택한 포지션입니다.")
+      return
+    }
+
     if (key === "recruitCount" && !isValidRecruitCount(value as number)) {
       setFieldError("포지션별 모집 인원은 1명 이상의 정수여야 합니다.")
       return
@@ -281,9 +292,14 @@ function MeetingCreateForm({ initialForm, isEditMode, meetingId }: MeetingCreate
   }
 
   function handleAddPosition() {
+    if (!canAddPosition) {
+      setFieldError("선택 가능한 포지션을 모두 추가했습니다.")
+      return
+    }
+
     const nextPosition: PositionForm = {
       id: `position-${getStableId()}`,
-      name: "기타",
+      name: "",
       recruitCount: 1,
       description: "",
     }
@@ -306,7 +322,7 @@ function MeetingCreateForm({ initialForm, isEditMode, meetingId }: MeetingCreate
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
 
-    const payload = getPayload(form)
+    const payload = getPayload(form, { includePositionIds: isEditMode })
     const error = validatePayload(payload)
 
     if (error) {
@@ -524,7 +540,11 @@ function MeetingCreateForm({ initialForm, isEditMode, meetingId }: MeetingCreate
             <button
               type="button"
               onClick={handleAddPosition}
-              className="inline-flex items-center gap-1 text-base font-medium text-blue-500"
+              disabled={!canAddPosition}
+              className={cn(
+                "inline-flex items-center gap-1 text-base font-medium transition",
+                canAddPosition ? "text-blue-500" : "cursor-not-allowed text-[#737686]",
+              )}
             >
               <Plus className="size-4" aria-hidden="true" />
               포지션 추가
@@ -551,6 +571,7 @@ function MeetingCreateForm({ initialForm, isEditMode, meetingId }: MeetingCreate
                     <PositionSelect
                       value={position.name}
                       options={ONBOARDING_JOB_OPTIONS}
+                      disabledOptions={selectedPositionNames.filter((name) => name !== position.name)}
                       onChange={(value) => handlePositionChange(position.id, "name", value)}
                     />
                   </Field>
@@ -753,13 +774,18 @@ function PillControl({ value, options, onChange }: PillControlProps) {
 type PositionSelectProps = {
   value: string
   options: readonly string[]
+  disabledOptions: string[]
   onChange: (value: string) => void
 }
 
-function PositionSelect({ value, options, onChange }: PositionSelectProps) {
+function PositionSelect({ value, options, disabledOptions, onChange }: PositionSelectProps) {
   const [open, setOpen] = useState(false)
 
   function handleSelect(option: string) {
+    if (disabledOptions.includes(option)) {
+      return
+    }
+
     onChange(option)
     setOpen(false)
   }
@@ -769,9 +795,12 @@ function PositionSelect({ value, options, onChange }: PositionSelectProps) {
       <PopoverTrigger asChild>
         <button
           type="button"
-          className="flex h-11 w-full items-center justify-between gap-2 rounded-lg border border-[#c3c6d7] bg-white px-4 text-left text-base text-[#191c1e] outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20"
+          className={cn(
+            "flex h-11 w-full items-center justify-between gap-2 rounded-lg border border-[#c3c6d7] bg-white px-4 text-left text-base outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20",
+            value ? "text-[#191c1e]" : "text-[#737686]",
+          )}
         >
-          <span className="min-w-0 truncate">{value}</span>
+          <span className="min-w-0 truncate">{value || "포지션을 선택해주세요"}</span>
           <ChevronDown className="size-4 shrink-0 text-[#565e74]" aria-hidden="true" />
         </button>
       </PopoverTrigger>
@@ -782,20 +811,26 @@ function PositionSelect({ value, options, onChange }: PositionSelectProps) {
         <div className="max-h-[440px] overflow-y-auto overscroll-contain">
           {options.map((option) => {
             const isSelected = value === option
+            const isDisabled = disabledOptions.includes(option)
 
             return (
               <button
                 key={option}
                 type="button"
                 onClick={() => handleSelect(option)}
+                disabled={isDisabled}
+                aria-disabled={isDisabled}
                 className={cn(
-                  "flex h-11 w-full items-center rounded-md px-3 text-left text-sm transition",
+                  "flex h-11 w-full items-center justify-between gap-3 rounded-md px-3 text-left text-sm transition",
                   isSelected
                     ? "bg-blue-50 font-medium text-blue-500"
+                    : isDisabled
+                      ? "cursor-not-allowed bg-[#f7f9fb] text-[#9ca3af]"
                     : "text-[#434655] hover:bg-[#f7f9fb] hover:text-[#191c1e]",
                 )}
               >
                 <span className="truncate">{option}</span>
+                {isDisabled ? <span className="shrink-0 text-xs">선택됨</span> : null}
               </button>
             )
           })}
@@ -902,7 +937,11 @@ function SelectField({ value, options, onChange }: SelectFieldProps) {
   )
 }
 
-function getPayload(form: MeetingFormState): MeetingUpsertPayload {
+type GetPayloadOptions = {
+  includePositionIds?: boolean
+}
+
+function getPayload(form: MeetingFormState, options: GetPayloadOptions = {}): MeetingUpsertPayload {
   return {
     title: form.title.trim(),
     category: form.category,
@@ -914,11 +953,19 @@ function getPayload(form: MeetingFormState): MeetingUpsertPayload {
     startDate: form.startDate,
     expectedDuration: form.expectedDuration.trim(),
     meetingSchedule: form.meetingSchedule.trim(),
-    positions: form.positions.map((position) => ({
-      name: position.name,
-      recruitCount: position.recruitCount,
-      description: position.description.trim() || null,
-    })),
+    positions: form.positions.map((position) => {
+      const payloadPosition = {
+        name: position.name.trim(),
+        recruitCount: position.recruitCount,
+        description: position.description.trim() || null,
+      }
+
+      if (options.includePositionIds && typeof position.serverId === "number") {
+        return { id: position.serverId, ...payloadPosition }
+      }
+
+      return payloadPosition
+    }),
   }
 }
 
@@ -931,11 +978,21 @@ function validatePayload(payload: MeetingUpsertPayload) {
   if (!payload.meetingSchedule) return "회의 일정을 입력해주세요."
   if (payload.techStacks.length === 0) return "기술 스택을 1개 이상 선택해주세요."
   if (payload.positions.length === 0) return "모집 포지션을 1개 이상 추가해주세요."
+  if (payload.positions.some((position) => !position.name)) {
+    return "포지션명을 선택해주세요."
+  }
+  if (hasDuplicatePositionNames(payload.positions.map((position) => position.name))) {
+    return "이미 선택한 포지션은 중복으로 추가할 수 없습니다."
+  }
   if (payload.positions.some((position) => !isValidRecruitCount(position.recruitCount))) {
     return "포지션별 모집 인원은 1명 이상의 정수여야 합니다."
   }
 
   return null
+}
+
+function hasDuplicatePositionNames(names: string[]) {
+  return new Set(names).size !== names.length
 }
 
 function getCompletion(form: MeetingFormState) {
@@ -966,6 +1023,8 @@ function isValidRecruitCount(value: number) {
 }
 
 function mapMeetingDetailToForm(meeting: MeetingDetail): MeetingFormState {
+  const positions = normalizeMeetingPositions(meeting.positions)
+
   return {
     title: meeting.title ?? "",
     category: meeting.category ?? "PROJECT",
@@ -979,9 +1038,10 @@ function mapMeetingDetailToForm(meeting: MeetingDetail): MeetingFormState {
     techStacks: meeting.techStacks ?? [],
     referenceNote: meeting.additionalNotice ?? "",
     positions:
-      meeting.positions?.length > 0
-        ? meeting.positions.map((position) => ({
+      positions.length > 0
+        ? positions.map((position) => ({
             id: `position-${position.id}`,
+            serverId: position.id,
             name: position.name,
             recruitCount: position.recruitCount,
             description: position.description ?? "",
