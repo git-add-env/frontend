@@ -1,7 +1,12 @@
 "use client"
 
 import { useMemo, useState } from "react"
-import { ChevronDownIcon, MessageSquareIcon, PlusIcon, UsersIcon } from "lucide-react"
+import {
+  ChevronDownIcon,
+  MessageSquareIcon,
+  PlusIcon,
+  UsersIcon,
+} from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useSession } from "next-auth/react"
 
@@ -39,7 +44,9 @@ function ProgressDots({ step }: { step: number }) {
           <div
             className={cn(
               "flex size-5 items-center justify-center rounded-full text-[11px] font-semibold",
-              step === item ? "bg-foreground text-background" : "bg-muted text-muted-foreground",
+              step === item
+                ? "bg-foreground text-background"
+                : "bg-muted text-muted-foreground"
             )}
           >
             {item}
@@ -77,7 +84,9 @@ export default function OnboardingDialog({
     const query = skillQuery.trim().toLowerCase()
 
     return query
-      ? ONBOARDING_TECH_STACK_OPTIONS.filter((skill) => skill.toLowerCase().includes(query))
+      ? ONBOARDING_TECH_STACK_OPTIONS.filter((skill) =>
+          skill.toLowerCase().includes(query)
+        )
       : ONBOARDING_TECH_STACK_OPTIONS
   }, [skillQuery])
 
@@ -102,7 +111,9 @@ export default function OnboardingDialog({
 
   function toggleSkill(skill: string) {
     setSelectedSkills((current) =>
-      current.includes(skill) ? current.filter((item) => item !== skill) : [...current, skill],
+      current.includes(skill)
+        ? current.filter((item) => item !== skill)
+        : [...current, skill]
     )
   }
 
@@ -134,18 +145,23 @@ export default function OnboardingDialog({
         throw new Error(result?.message ?? "온보딩에 실패했습니다.")
       }
 
+      // 세션 플래그가 해제되더라도 완료 화면은 사용자가 직접 닫을 때까지 유지한다.
+      setStep(5)
+      setInternalOpen(true)
+
       await update({
         accessToken: result.accessToken ?? session?.accessToken,
         user: result.user,
+        onboardingRequired: false,
       })
 
       notify.success("회원가입이 완료되었습니다.", {
         description: "이제 관심사에 맞는 모임을 찾아볼 수 있어요.",
       })
-      setStep(5)
       router.refresh()
     } catch (error) {
-      const message = error instanceof Error ? error.message : "온보딩에 실패했습니다."
+      const message =
+        error instanceof Error ? error.message : "온보딩에 실패했습니다."
       setErrorMessage(message)
       notify.error(message)
     } finally {
@@ -191,7 +207,9 @@ export default function OnboardingDialog({
           <div className="grid gap-7 py-2">
             <DialogHeader className="items-center text-center">
               <DialogTitle className="text-xl">닉네임을 알려주세요</DialogTitle>
-              <DialogDescription>다른 사용자에게 표시될 이름입니다.</DialogDescription>
+              <DialogDescription>
+                다른 사용자에게 표시될 이름입니다.
+              </DialogDescription>
             </DialogHeader>
             <label className="grid gap-2 text-sm font-medium">
               닉네임
@@ -202,9 +220,15 @@ export default function OnboardingDialog({
                 maxLength={ONBOARDING_NICKNAME_MAX_LENGTH}
                 className="h-12 rounded-md border bg-background px-4 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
               />
-              <span className="text-xs font-normal text-muted-foreground">2-10자 이내</span>
+              <span className="text-xs font-normal text-muted-foreground">
+                2-10자 이내
+              </span>
             </label>
-            <Button className="h-11" onClick={() => setStep(2)} disabled={nickname.trim().length < 2}>
+            <Button
+              className="h-11"
+              onClick={() => setStep(2)}
+              disabled={nickname.trim().length < 2}
+            >
               다음
             </Button>
           </div>
@@ -213,8 +237,12 @@ export default function OnboardingDialog({
         {step === 2 && (
           <div className="grid gap-6 py-2">
             <DialogHeader className="items-center text-center">
-              <DialogTitle className="text-xl">직종과 경력을 선택해주세요</DialogTitle>
-              <DialogDescription>관심사에 맞는 모임 추천에 사용합니다.</DialogDescription>
+              <DialogTitle className="text-xl">
+                직종과 경력을 선택해주세요
+              </DialogTitle>
+              <DialogDescription>
+                관심사에 맞는 모임 추천에 사용합니다.
+              </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4">
               <div className="grid gap-2 text-sm font-medium">
@@ -240,7 +268,7 @@ export default function OnboardingDialog({
                     <ChevronDownIcon
                       className={cn(
                         "size-4 shrink-0 text-muted-foreground transition-transform",
-                        isJobDropdownOpen && "rotate-180",
+                        isJobDropdownOpen && "rotate-180"
                       )}
                     />
                   </button>
@@ -261,7 +289,7 @@ export default function OnboardingDialog({
                           }}
                           className={cn(
                             "cursor-pointer rounded-sm px-3 py-2 text-left text-sm outline-none hover:bg-accent hover:text-accent-foreground focus-visible:bg-accent focus-visible:text-accent-foreground",
-                            job === item && "bg-accent text-accent-foreground",
+                            job === item && "bg-accent text-accent-foreground"
                           )}
                         >
                           {item}
@@ -287,7 +315,11 @@ export default function OnboardingDialog({
                 </select>
               </label>
             </div>
-            <Button className="h-11" onClick={() => setStep(3)} disabled={!job || !career}>
+            <Button
+              className="h-11"
+              onClick={() => setStep(3)}
+              disabled={!job || !career}
+            >
               다음
             </Button>
           </div>
@@ -296,8 +328,12 @@ export default function OnboardingDialog({
         {step === 3 && (
           <div className="grid gap-5 py-2">
             <DialogHeader className="items-center text-center">
-              <DialogTitle className="text-xl">기술 스택을 선택해주세요</DialogTitle>
-              <DialogDescription>하나 이상 선택하면 더 정확하게 추천할 수 있습니다.</DialogDescription>
+              <DialogTitle className="text-xl">
+                기술 스택을 선택해주세요
+              </DialogTitle>
+              <DialogDescription>
+                하나 이상 선택하면 더 정확하게 추천할 수 있습니다.
+              </DialogDescription>
             </DialogHeader>
             <input
               value={skillQuery}
@@ -318,7 +354,7 @@ export default function OnboardingDialog({
                       "min-h-9 cursor-pointer rounded-md border px-2 py-1 text-xs font-medium transition-colors",
                       selected
                         ? "border-foreground bg-foreground text-background"
-                        : "bg-background hover:bg-muted",
+                        : "bg-background hover:bg-muted"
                     )}
                   >
                     {skill}
@@ -326,8 +362,14 @@ export default function OnboardingDialog({
                 )
               })}
             </div>
-            <p className="text-xs text-muted-foreground">{selectedSkills.length}개 선택됨</p>
-            <Button className="h-11" onClick={() => setStep(4)} disabled={selectedSkills.length === 0}>
+            <p className="text-xs text-muted-foreground">
+              {selectedSkills.length}개 선택됨
+            </p>
+            <Button
+              className="h-11"
+              onClick={() => setStep(4)}
+              disabled={selectedSkills.length === 0}
+            >
               다음
             </Button>
           </div>
@@ -337,15 +379,23 @@ export default function OnboardingDialog({
           <div className="grid gap-6 py-2">
             <DialogHeader className="items-center text-center">
               <DialogTitle className="text-xl">
-                간단한 소개를 남겨주세요 <span className="text-muted-foreground">(선택)</span>
+                간단한 소개를 남겨주세요{" "}
+                <span className="text-muted-foreground">(선택)</span>
               </DialogTitle>
-              <DialogDescription>관심사나 목표를 짧게 적어보세요.</DialogDescription>
+              <DialogDescription>
+                관심사나 목표를 짧게 적어보세요.
+              </DialogDescription>
             </DialogHeader>
             <label className="grid gap-2">
               <textarea
                 value={introduction}
                 onChange={(event) =>
-                  setIntroduction(event.target.value.slice(0, ONBOARDING_INTRODUCTION_MAX_LENGTH))
+                  setIntroduction(
+                    event.target.value.slice(
+                      0,
+                      ONBOARDING_INTRODUCTION_MAX_LENGTH
+                    )
+                  )
                 }
                 placeholder="자기소개를 입력해주세요"
                 className="min-h-32 resize-none rounded-md border bg-background p-4 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
@@ -354,8 +404,16 @@ export default function OnboardingDialog({
                 {introduction.length}/{ONBOARDING_INTRODUCTION_MAX_LENGTH}
               </span>
             </label>
-            {errorMessage && <p className="text-sm font-medium text-destructive">{errorMessage}</p>}
-            <Button className="h-11" onClick={completeOnboarding} disabled={isSubmitting}>
+            {errorMessage && (
+              <p className="text-sm font-medium text-destructive">
+                {errorMessage}
+              </p>
+            )}
+            <Button
+              className="h-11"
+              onClick={completeOnboarding}
+              disabled={isSubmitting}
+            >
               {isSubmitting ? "처리 중..." : "완료"}
             </Button>
           </div>
@@ -364,8 +422,12 @@ export default function OnboardingDialog({
         {step === 5 && (
           <div className="grid gap-8 py-8 text-center">
             <DialogHeader className="items-center text-center">
-              <DialogTitle className="text-2xl">회원가입이 완료되었습니다</DialogTitle>
-              <DialogDescription>이제 모임을 만들거나 참여할 수 있습니다.</DialogDescription>
+              <DialogTitle className="text-2xl">
+                회원가입이 완료되었습니다
+              </DialogTitle>
+              <DialogDescription>
+                이제 모임을 만들거나 참여할 수 있습니다.
+              </DialogDescription>
             </DialogHeader>
             <div className="grid grid-cols-3 gap-3 text-xs font-medium">
               <div className="grid gap-2">

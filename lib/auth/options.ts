@@ -4,7 +4,11 @@ import GitHubProvider from "next-auth/providers/github"
 import GoogleProvider from "next-auth/providers/google"
 
 import { extractBackendAuthCookies } from "@/lib/auth/backend-cookies"
-import { exchangeSocialLoginWithMeta, type AppUser, type SocialProvider } from "@/lib/auth/backend"
+import {
+  exchangeSocialLoginWithMeta,
+  type AppUser,
+  type SocialProvider,
+} from "@/lib/auth/backend"
 
 type TestLoginUser = User & {
   accessToken: string
@@ -27,7 +31,9 @@ function getProviderAccountId(account: Account) {
 }
 
 function isTestLoginUser(user: User): user is TestLoginUser {
-  return "accessToken" in user && "appUser" in user && "onboardingRequired" in user
+  return (
+    "accessToken" in user && "appUser" in user && "onboardingRequired" in user
+  )
 }
 
 function getEnvValue(...keys: string[]) {
@@ -41,11 +47,19 @@ export const authOptions: NextAuthOptions = {
   providers: [
     GoogleProvider({
       clientId: getEnvValue("GOOGLE_CLIENT_ID", "AUTH_GOOGLE_ID", "GOOGLE_ID"),
-      clientSecret: getEnvValue("GOOGLE_CLIENT_SECRET", "AUTH_GOOGLE_SECRET", "GOOGLE_SECRET"),
+      clientSecret: getEnvValue(
+        "GOOGLE_CLIENT_SECRET",
+        "AUTH_GOOGLE_SECRET",
+        "GOOGLE_SECRET"
+      ),
     }),
     GitHubProvider({
       clientId: getEnvValue("GITHUB_CLIENT_ID", "AUTH_GITHUB_ID", "GITHUB_ID"),
-      clientSecret: getEnvValue("GITHUB_CLIENT_SECRET", "AUTH_GITHUB_SECRET", "GITHUB_SECRET"),
+      clientSecret: getEnvValue(
+        "GITHUB_CLIENT_SECRET",
+        "AUTH_GITHUB_SECRET",
+        "GITHUB_SECRET"
+      ),
     }),
     CredentialsProvider({
       id: "test-login",
@@ -53,12 +67,15 @@ export const authOptions: NextAuthOptions = {
       credentials: {},
       async authorize() {
         const result = await exchangeSocialLoginWithMeta(TEST_LOGIN_PAYLOAD)
-        const backendAuthCookies = extractBackendAuthCookies(result.response.headers.get("set-cookie"))
+        const backendAuthCookies = extractBackendAuthCookies(
+          result.response.headers.get("set-cookie")
+        )
         const loginResult = result.data
 
         return {
           id: String(loginResult.user.id),
-          name: loginResult.user.name ?? loginResult.user.nickname ?? "테스트유저1",
+          name:
+            loginResult.user.name ?? loginResult.user.nickname ?? "테스트유저1",
           email: loginResult.user.email,
           image: loginResult.user.profileImage ?? null,
           accessToken: loginResult.accessToken,
@@ -72,9 +89,14 @@ export const authOptions: NextAuthOptions = {
   ],
   callbacks: {
     async jwt({ token, account, profile, trigger, session, user }) {
-      if (trigger === "update" && session?.accessToken) {
-        token.accessToken = session.accessToken
-        token.onboardingRequired = session.onboardingRequired ?? token.onboardingRequired ?? false
+      if (trigger === "update" && session) {
+        if (session.accessToken) {
+          token.accessToken = session.accessToken
+        }
+
+        if (typeof session.onboardingRequired === "boolean") {
+          token.onboardingRequired = session.onboardingRequired
+        }
 
         if (session.user) {
           token.appUser = session.user as AppUser
@@ -108,9 +130,14 @@ export const authOptions: NextAuthOptions = {
           providerId: getProviderAccountId(account),
           email,
           name: profile.name,
-          image: "picture" in profile ? String(profile.picture ?? "") : token.picture,
+          image:
+            "picture" in profile
+              ? String(profile.picture ?? "")
+              : token.picture,
         })
-        const backendAuthCookies = extractBackendAuthCookies(result.response.headers.get("set-cookie"))
+        const backendAuthCookies = extractBackendAuthCookies(
+          result.response.headers.get("set-cookie")
+        )
         const loginResult = result.data
 
         if (backendAuthCookies.cookieHeader) {

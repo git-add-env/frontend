@@ -8,7 +8,8 @@ export const queryKeys = {
   meetings: {
     list: ["meetings", "list"] as const,
     detail: (meetingId: number) => ["meetings", meetingId, "detail"] as const,
-    bookmarkState: (meetingId: number) => ["meetings", meetingId, "bookmark-state"] as const,
+    bookmarkState: (meetingId: number) =>
+      ["meetings", meetingId, "bookmark-state"] as const,
 
     // 마이페이지 내 모임 목록 (status별). 미지정은 "all".
     mine: (status?: "recruiting" | "active" | "completed") =>
@@ -17,10 +18,15 @@ export const queryKeys = {
     mineAll: ["meetings", "mine"] as const,
     bookmarks: ["meetings", "bookmarks"] as const,
     members: (meetingId: number) => ["meetings", meetingId, "members"] as const,
-    schedules: (meetingId: number) => ["meetings", meetingId, "schedules"] as const,
+    schedules: (meetingId: number) =>
+      ["meetings", meetingId, "schedules"] as const,
     notices: (meetingId: number) => ["meetings", meetingId, "notices"] as const,
-    resources: (meetingId: number) => ["meetings", meetingId, "resources"] as const,
-    conference: (meetingId: number) => ["meetings", meetingId, "conference"] as const,
+    resources: (meetingId: number) =>
+      ["meetings", meetingId, "resources"] as const,
+    conference: (meetingId: number) =>
+      ["meetings", meetingId, "conference"] as const,
+    conferenceRole: (meetingId: number) =>
+      ["meetings", meetingId, "conference-role"] as const,
   },
   memberProfile: (userId: number) => ["users", userId, "profile"] as const,
   notifications: ["notifications"] as const,
