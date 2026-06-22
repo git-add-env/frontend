@@ -75,6 +75,13 @@ function DashboardContent() {
       ? meetingIdParam
       : null
 
+  // 세션 클릭값도 현재 목록에 있을 때만 사용 — 클릭 후 목록 갱신(탈퇴/삭제/완료)으로
+  // stale id가 남으면 존재하지 않는 meetingId가 탭 컴포넌트로 전달되는 것을 방지.
+  const validSelectedId =
+    selectedGroupId && groups?.some((g) => g.meetingId === selectedGroupId)
+      ? selectedGroupId
+      : null
+
   // 저장된 모임도 현재 내 목록에 있을 때만 사용 (탈퇴·삭제된 id는 무시).
   const validStoredId =
     storedGroupId && groups?.some((g) => g.meetingId === storedGroupId)
@@ -83,7 +90,7 @@ function DashboardContent() {
 
   // 선택 우선순위: 이번 세션 클릭 → URL 지정(마이페이지 진입) → 저장된 마지막 선택 → 첫 모임.
   const effectiveGroupId =
-    selectedGroupId ??
+    validSelectedId ??
     urlGroupId ??
     validStoredId ??
     groups?.[0]?.meetingId ??
