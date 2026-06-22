@@ -130,13 +130,15 @@ export function NotificationBell() {
   return (
     <Popover>
       <PopoverTrigger
-        className="relative inline-flex size-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+        className="relative inline-flex size-10 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
         aria-label="알림"
       >
         <Bell className="size-5" />
         {unreadCount > 0 && (
-          <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#1abcfe] px-1 text-[10px] font-semibold leading-none text-white">
-            {unreadCount > 9 ? "9+" : unreadCount}
+          <span className="absolute right-2 top-2 flex size-3 items-center justify-center">
+            <span className="absolute inline-flex size-full animate-ping rounded-full bg-[#1abcfe] opacity-75 motion-reduce:animate-none" />
+            <span className="relative inline-flex size-2 rounded-full bg-[#1abcfe] ring-2 ring-background" />
+            <span className="sr-only">읽지 않은 알림 있음</span>
           </span>
         )}
       </PopoverTrigger>
