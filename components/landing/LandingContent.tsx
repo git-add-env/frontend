@@ -85,10 +85,15 @@ const PARTICIPANTS: Participant[] = [
   { name: "준현", label: "나", avatarColor: "#6FD3A8" },
 ]
 
-export default function LandingContent() {
+export function LandingContent() {
   useEffect(() => {
-    // 새로고침 시 브라우저가 이전 스크롤 위치를 복원하지 않도록 막고 맨 위에서 시작
-    if ("scrollRestoration" in window.history) {
+    // 새로고침 시 브라우저가 이전 스크롤 위치를 복원하지 않도록 막고 맨 위에서 시작.
+    // 진입 시점 값을 저장해 언마운트 때 그대로 복원(전역 정책 오염 방지).
+    const supportsScrollRestoration = "scrollRestoration" in window.history
+    const prevScrollRestoration = supportsScrollRestoration
+      ? window.history.scrollRestoration
+      : undefined
+    if (supportsScrollRestoration) {
       window.history.scrollRestoration = "manual"
     }
     window.scrollTo(0, 0)
@@ -144,9 +149,9 @@ export default function LandingContent() {
       so?.disconnect()
       btn?.removeEventListener("click", start)
       timers.forEach(clearTimeout)
-      // 다른 페이지의 스크롤 복원에 영향이 가지 않도록 원복
-      if ("scrollRestoration" in window.history) {
-        window.history.scrollRestoration = "auto"
+      // 진입 시점 값으로 원복 (다른 페이지의 스크롤 복원 정책 보존)
+      if (supportsScrollRestoration && prevScrollRestoration) {
+        window.history.scrollRestoration = prevScrollRestoration
       }
     }
   }, [])

@@ -1,4 +1,4 @@
-import LandingContent from "@/components/landing/LandingContent"
+import { LandingContent } from "@/components/landing/LandingContent"
 
 export default function LandingPage() {
   return <LandingContent />
