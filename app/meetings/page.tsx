@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react"
+import { useEffect, useMemo, useRef, useState, type ChangeEvent, type MouseEvent } from "react"
 import Link from "next/link"
 import { useInfiniteQuery } from "@tanstack/react-query"
 import { ChevronDown, LoaderCircle, Plus, Search } from "lucide-react"
@@ -158,6 +158,16 @@ export default function MeetingsPage() {
     )
   }
 
+  function handleCreateMeetingClick(event: MouseEvent<HTMLAnchorElement>) {
+    if (isAuthenticated) {
+      return
+    }
+
+    event.preventDefault()
+    notify.info("로그인이 필요한 서비스입니다.")
+    setLoginDialogOpen(true)
+  }
+
   return (
     <main className="min-h-screen bg-[#f7f9fb]">
       <div className="mx-auto flex w-full max-w-[1280px] flex-col gap-18 px-6 py-10">
@@ -288,7 +298,11 @@ export default function MeetingsPage() {
         size="lg"
         className="fixed bottom-6 right-6 z-40 h-14 rounded-full bg-blue-600 px-5 text-base text-white shadow-lg hover:bg-blue-700 sm:bottom-8 sm:right-[max(2rem,calc((100vw-1280px)/2+1.5rem))]"
       >
-        <Link href="/meetings/create" aria-label="모임 만들기">
+        <Link
+          href="/meetings/create"
+          aria-label="모임 만들기"
+          onClick={handleCreateMeetingClick}
+        >
           <Plus className="size-5" aria-hidden="true" />
           <span className="hidden sm:inline">모임 만들기</span>
         </Link>
