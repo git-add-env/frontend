@@ -7,8 +7,6 @@ import { CompletedTab } from "@/components/mypage/CompletedTab"
 import { MyMeetingsTab } from "@/components/mypage/MyMeetingsTab"
 import { ProfileCard } from "@/components/mypage/ProfileCard"
 import { ProfileCardSkeleton } from "@/components/mypage/ProfileCardSkeleton"
-import { useMyBookmarks } from "@/hooks/mypage/use-bookmarks"
-import { useMyMeetings } from "@/hooks/mypage/use-my-meetings"
 import { useMyProfile } from "@/hooks/mypage/use-profile"
 import { cn } from "@/lib/utils"
 
@@ -24,19 +22,6 @@ const tabs: { key: TabKey; label: string }[] = [
 export default function MyPage() {
   const { data: profile, isError: profileError } = useMyProfile()
   const [activeTab, setActiveTab] = useState<TabKey>("recruiting")
-
-  // 탭 개수 배지용 — 탭 콘텐츠와 동일한 쿼리키라 캐시를 공유한다(중복 fetch 없음).
-  const recruiting = useMyMeetings("recruiting")
-  const active = useMyMeetings("active")
-  const bookmarked = useMyBookmarks()
-  const completed = useMyMeetings("completed")
-
-  const counts: Record<TabKey, number | undefined> = {
-    recruiting: recruiting.data?.length,
-    active: active.data?.length,
-    bookmarked: bookmarked.data?.length,
-    completed: completed.data?.length,
-  }
 
   return (
     <section className="mx-auto flex w-full max-w-[1280px] flex-col gap-6 px-6 py-10">
@@ -58,27 +43,20 @@ export default function MyPage() {
       <div className="flex gap-1 border-b border-border">
         {tabs.map((tab) => {
           const isActive = activeTab === tab.key
-          const count = counts[tab.key]
           return (
             <button
               key={tab.key}
               type="button"
               onClick={() => setActiveTab(tab.key)}
               className={cn(
-                "-mb-px flex shrink-0 items-center gap-1.5 border-b-[3px] border-transparent px-4 py-2.5 text-sm whitespace-nowrap text-muted-foreground transition-colors hover:text-foreground",
-                isActive && "border-foreground font-semibold text-foreground",
+                "relative flex shrink-0 items-center gap-1.5 px-4 py-2.5 text-sm font-medium whitespace-nowrap text-muted-foreground transition-colors hover:text-foreground",
+                isActive && "font-semibold text-foreground",
               )}
             >
               {tab.label}
-              {count !== undefined && (
-                <span
-                  className={cn(
-                    "text-xs tabular-nums",
-                    isActive ? "text-foreground/60" : "text-muted-foreground/60",
-                  )}
-                >
-                  {count}
-                </span>
+              {/* 활성 탭 밑줄 — 양끝 둥근 막대 (border-b로는 끝을 못 둥글게 함) */}
+              {isActive && (
+                <span className="absolute inset-x-3 -bottom-px h-[3px] rounded-full bg-brand" />
               )}
             </button>
           )

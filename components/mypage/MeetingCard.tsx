@@ -49,7 +49,7 @@ function Thumbnail({ meeting }: { meeting: Meeting }) {
     Icon: FolderGit2,
   }
   return (
-    <div className="relative w-32 shrink-0 self-stretch sm:h-32 sm:w-full sm:self-auto md:h-auto md:w-32 md:self-stretch">
+    <div className="relative size-32 shrink-0 self-start sm:w-full md:w-32">
       {meeting.thumbnailUrl ? (
         // 임의 S3 URL이라 next/image 도메인 설정을 피하려고 raw img 사용
         // eslint-disable-next-line @next/next/no-img-element
@@ -100,10 +100,10 @@ export function MeetingCard({
       <div
         className={cn(
           // relative: 제목 stretched link(after:inset-0)가 카드 전체를 덮는 기준점.
-          "relative flex flex-row gap-4 rounded-2xl border-2 border-border bg-card p-4 sm:flex-col sm:gap-3 md:flex-row md:gap-4",
+          "relative flex flex-row gap-4 rounded-2xl border border-border bg-card p-4 shadow-md sm:flex-col sm:gap-3 md:flex-row md:gap-4",
           // hover는 떠오르는 그림자. 링은 '제목 링크(a)가 키보드 포커스'일 때만 — 내부 버튼(⋯/찜) 클릭엔 안 뜨게.
           href &&
-          "cursor-pointer transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md has-[a:focus-visible]:ring-2 has-[a:focus-visible]:ring-ring",
+          "cursor-pointer transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg has-[a:focus-visible]:ring-2 has-[a:focus-visible]:ring-ring",
         )}
       >
         <Thumbnail meeting={meeting} />
