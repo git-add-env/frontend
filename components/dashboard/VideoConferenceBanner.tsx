@@ -1,14 +1,21 @@
 "use client"
 
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { Video } from "lucide-react"
 
 import { useConferenceStatus } from "@/hooks/dashboard/use-conference-status"
-import { useJoinMeeting, useStartMeeting } from "@/hooks/dashboard/use-meeting-room"
+import {
+  useJoinMeeting,
+  useStartMeeting,
+} from "@/hooks/dashboard/use-meeting-room"
 import { useSchedules } from "@/hooks/dashboard/use-schedules"
 import { ApiFetchError } from "@/lib/api/api-fetch"
+import type { MeetingRoom } from "@/lib/api/dashboard"
 import { formatMeetingDate } from "@/lib/date"
 import { findNextMeeting } from "@/lib/schedule"
+import { useAuthStore } from "@/stores/auth-store"
+import { useConferenceStore } from "@/stores/conference-store"
 
 import { VideoConference } from "./VideoConference"
 
@@ -24,6 +31,13 @@ export function VideoConferenceBanner({
   isLeader,
   status,
 }: VideoConferenceBannerProps) {
+  const router = useRouter()
+  const user = useAuthStore((state) => state.user)
+  const activeConference = useConferenceStore((state) => state.activeConference)
+  const canEnterConference = useConferenceStore(
+    (state) => state.canEnterConference
+  )
+  const setConnection = useConferenceStore((state) => state.setConnection)
   const startMeeting = useStartMeeting(meetingId)
   const joinMeeting = useJoinMeeting(meetingId)
   const meetingBusy = startMeeting.isPending || joinMeeting.isPending
@@ -31,25 +45,67 @@ export function VideoConferenceBanner({
 
   // 활동중일 때만 회의 진행 상태를 조회한다. 멤버는 isActive로 참여 가능 여부가 갈리고,
   // 모임장도 진행 중이면 버튼 문구가 '시작하기'→'참여하기'로 바뀐다.
-  const { data: conference } = useConferenceStatus(meetingId, status === "ACTIVE")
+  const { data: conference } = useConferenceStatus(
+    meetingId,
+    status === "ACTIVE"
+  )
 
   // 화상 회의로 표시된(isMeeting) 일정 중 가장 가까운 미래 회의를 배너에 안내한다.
   const { data: schedules } = useSchedules(meetingId)
   const nextMeeting = schedules ? findNextMeeting(schedules) : null
+  const isBlockedByOtherConference =
+    activeConference?.userId === String(user?.id) &&
+    activeConference.meetingId !== meetingId
 
   async function onMeeting() {
     setMeetingError(null)
+
+    if (!user) {
+      setMeetingError("로그인 정보를 확인한 뒤 다시 시도해주세요.")
+      return
+    }
+
+    const userId = String(user.id)
+
+    await useConferenceStore.persist.rehydrate()
+
+    if (!canEnterConference(meetingId, userId)) {
+      setMeetingError(
+        "이미 다른 화상회의에 참여 중입니다. 기존 회의에서 먼저 나가주세요."
+      )
+      return
+    }
+
     try {
-      if (isLeader) {
-        await startMeeting.mutateAsync()
+      let room: MeetingRoom
+
+      if (isLeader && !conference?.isActive) {
+        try {
+          room = await startMeeting.mutateAsync()
+        } catch (error) {
+          if (!(error instanceof ApiFetchError) || error.status !== 409) {
+            throw error
+          }
+
+          room = await joinMeeting.mutateAsync()
+        }
       } else {
-        await joinMeeting.mutateAsync()
+        room = await joinMeeting.mutateAsync()
       }
+
+      if (!setConnection(meetingId, userId, room)) {
+        setMeetingError(
+          "이미 다른 화상회의에 참여 중입니다. 기존 회의에서 먼저 나가주세요."
+        )
+        return
+      }
+
+      router.push(`/meetings/${meetingId}/conference`)
     } catch (e) {
       if (e instanceof ApiFetchError && e.status === 404) {
         setMeetingError("진행 중인 회의가 없습니다.")
       } else if (e instanceof ApiFetchError && e.status === 409) {
-        setMeetingError("이미 진행 중인 회의가 있습니다.")
+        setMeetingError("이미 다른 화상회의에 참여 중입니다.")
       } else {
         setMeetingError("회의 연결에 실패했습니다.")
       }
@@ -90,9 +146,15 @@ export function VideoConferenceBanner({
           isLeader={isLeader}
           meetingActive={conference?.isActive ?? false}
           busy={meetingBusy}
+          blocked={isBlockedByOtherConference}
           onClick={onMeeting}
         />
       </div>
+      {isBlockedByOtherConference && (
+        <p className="mt-3 text-xs text-muted-foreground">
+          다른 화상회의에 참여 중이어서 이 회의에는 입장할 수 없습니다.
+        </p>
+      )}
       {meetingError && (
         <p className="mt-3 rounded-md border border-destructive/40 bg-destructive/5 p-2 text-xs text-destructive">
           {meetingError}

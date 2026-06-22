@@ -7,6 +7,7 @@ import { useQueryClient } from "@tanstack/react-query"
 import { queryKeys } from "@/hooks/api/query-keys"
 import { clearAuthScopedQueries } from "@/lib/auth/query-cache"
 import { onAccessTokenRefreshed } from "@/lib/auth/refresh"
+import { getAuthUser } from "@/lib/auth/user"
 import { useAuthStore } from "@/stores/auth-store"
 
 function AccessTokenRefreshListener() {
@@ -21,6 +22,62 @@ function AccessTokenRefreshListener() {
   }, [update])
 
   return null
+}
+
+function OnboardingSessionReconciler() {
+  const { data: session, status, update } = useSession()
+  const checkedAccessTokenRef = useRef<string | null>(null)
+  const accessToken = session?.accessToken ?? null
+  const onboardingRequired = session?.onboardingRequired ?? false
+
+  useEffect(() => {
+    if (
+      status !== "authenticated" ||
+      !accessToken ||
+      !onboardingRequired ||
+      checkedAccessTokenRef.current === accessToken
+    ) {
+      return
+    }
+
+    checkedAccessTokenRef.current = accessToken
+
+    async function reconcileOnboardingSession() {
+      try {
+        const user = await getAuthUser()
+
+        if (!hasCompletedOnboarding(user)) {
+          return
+        }
+
+        await update({
+          accessToken,
+          user,
+          onboardingRequired: false,
+        })
+      } catch {
+        // 일시적인 백엔드 오류일 때는 세션을 임의로 변경하지 않는다.
+      }
+    }
+
+    void reconcileOnboardingSession()
+  }, [accessToken, onboardingRequired, status, update])
+
+  return null
+}
+
+function hasCompletedOnboarding(user: {
+  nickname?: string | null
+  job?: string | null
+  career?: string | null
+  techStacks?: string[]
+}) {
+  return Boolean(
+    user.nickname?.trim() &&
+    user.job?.trim() &&
+    user.career?.trim() &&
+    user.techStacks?.length
+  )
 }
 
 export function AuthQuerySync() {
@@ -67,6 +124,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   return (
     <SessionProvider>
       <AccessTokenRefreshListener />
+      <OnboardingSessionReconciler />
       {children}
     </SessionProvider>
   )

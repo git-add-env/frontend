@@ -1,5 +1,6 @@
 import { Geist_Mono, Inter } from "next/font/google"
 
+import "@livekit/components-styles"
 import "./globals.css"
 import Header from "@/components/common/Header"
 import { AuthProvider, AuthQuerySync } from "@/components/providers/auth-provider"
