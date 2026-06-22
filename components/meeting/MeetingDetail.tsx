@@ -51,6 +51,7 @@ import {
   fetchMeetingDetail,
   fetchMeetingMembers,
   normalizeMeetingPositions,
+  updateMyMeetingPosition,
   type MeetingDetail as MeetingDetailData,
   type MeetingMember,
 } from "@/lib/api/meetings"
@@ -179,8 +180,10 @@ type JoinMeetingDialogProps = {
   open: boolean
   positions: DetailPosition[]
   selectedPositionId: number | null
+  currentPositionId: number | null
   errorMessage: string | null
   isPending: boolean
+  submitLabel: string
   onOpenChange: (open: boolean) => void
   onSelectPosition: (positionId: number) => void
   onSubmit: () => void
@@ -190,8 +193,10 @@ function JoinMeetingDialog({
   open,
   positions,
   selectedPositionId,
+  currentPositionId,
   errorMessage,
   isPending,
+  submitLabel,
   onOpenChange,
   onSelectPosition,
   onSubmit,
@@ -210,12 +215,16 @@ function JoinMeetingDialog({
           {positions.map((position) => {
             const remainingCount = Math.max(position.max - position.current, 0)
             const selected = selectedPositionId === position.id
+            const isFull = isPositionFull(position)
+            const isCurrent = currentPositionId === position.id
+            const isDisabled = isPending || (isFull && !isCurrent)
 
             return (
               <label
                 key={position.id}
                 className={cn(
-                  "flex cursor-pointer items-start gap-3 rounded-lg border border-[#c3c6d7] p-4 transition-colors",
+                  "flex items-start gap-3 rounded-lg border border-[#c3c6d7] p-4 transition-colors",
+                  isDisabled ? "cursor-not-allowed bg-[#f7f9fb] opacity-70" : "cursor-pointer",
                   selected && "border-[#1abcfe] bg-[#1abcfe]/10",
                 )}
               >
@@ -226,7 +235,7 @@ function JoinMeetingDialog({
                   checked={selected}
                   onChange={() => onSelectPosition(position.id)}
                   className="sr-only"
-                  disabled={isPending}
+                  disabled={isDisabled}
                 />
                 <span
                   aria-hidden="true"
@@ -240,8 +249,19 @@ function JoinMeetingDialog({
                 <span className="min-w-0 flex-1 space-y-1">
                   <span className="flex flex-wrap items-center gap-2">
                     <span className="text-sm font-bold text-[#191c1e]">{position.job}</span>
-                    <Badge className="h-auto rounded-full border border-blue-100 bg-blue-50 px-2 py-1 text-xs text-blue-600">
-                      {remainingCount}명 모집 중
+                    <Badge
+                      className={cn(
+                        "h-auto rounded-full px-2 py-1 text-xs",
+                        isFull
+                          ? "border border-[#d7dae5] bg-white text-[#737686]"
+                          : "border border-blue-100 bg-blue-50 text-blue-600",
+                      )}
+                    >
+                      {isCurrent
+                        ? "현재 참여 중"
+                        : isFull
+                          ? "모집 완료"
+                          : `${remainingCount}명 모집 중`}
                     </Badge>
                   </span>
                   <span className="block text-sm leading-5 text-[#434655]">
@@ -265,7 +285,7 @@ function JoinMeetingDialog({
             onClick={onSubmit}
             disabled={isPending || selectedPositionId === null}
           >
-            {isPending ? "신청 중..." : "참가 신청하기"}
+            {isPending ? "처리 중..." : submitLabel}
           </Button>
         </div>
       </DialogContent>
@@ -310,7 +330,7 @@ function MemberRow({ member }: MemberRowProps) {
 
 export function MeetingDetail({ meetingId }: MeetingDetailProps) {
   const queryClient = useQueryClient()
-  const { status: authStatus } = useSession()
+  const { data: session, status: authStatus } = useSession()
   const [joinDialogOpen, setJoinDialogOpen] = useState(false)
   const [loginDialogOpen, setLoginDialogOpen] = useState(false)
   const [selectedPositionId, setSelectedPositionId] = useState<number | null>(null)
@@ -358,11 +378,44 @@ export function MeetingDetail({ meetingId }: MeetingDetailProps) {
   const openPositions = useMemo(() => {
     return meeting?.positions.filter((position) => !isPositionFull(position)) ?? []
   }, [meeting?.positions])
+  const sessionUserId = session?.user?.id ? String(session.user.id) : null
+  const currentMember = useMemo(() => {
+    if (!sessionUserId) {
+      return null
+    }
+
+    const member = displayedMembers.find((item) => String(item.id) === sessionUserId)
+
+    if (member) {
+      return member
+    }
+
+    return meeting?.isLeader
+      ? displayedMembers.find((item) => item.isLeader) ?? null
+      : null
+  }, [displayedMembers, meeting?.isLeader, sessionUserId])
+  const currentPositionId = useMemo(() => {
+    const positionName = currentMember?.positionName
+
+    if (!positionName || !meeting) {
+      return null
+    }
+
+    return meeting.positions.find((position) => position.job === positionName)?.id ?? null
+  }, [currentMember?.positionName, meeting])
+  const isMeetingParticipant = Boolean(currentMember || meeting?.isLeader)
   const canJoinByStatus = !meeting?.status || meeting.status === "RECRUITING"
   const joinMutation = useMutation({
-    mutationFn: (positionId: number) => applyMeeting(meetingId as number, { positionId }),
+    mutationFn: (positionId: number) =>
+      isMeetingParticipant
+        ? updateMyMeetingPosition(meetingId as number, { positionId })
+        : applyMeeting(meetingId as number, { positionId }),
     onSuccess: async () => {
-      notify.success("모임 참여가 완료되었습니다.")
+      notify.success(
+        isMeetingParticipant
+          ? "참여 포지션이 수정되었습니다."
+          : "모임 참여가 완료되었습니다.",
+      )
       setJoinDialogOpen(false)
       setSelectedPositionId(null)
       setJoinErrorMessage(null)
@@ -374,7 +427,11 @@ export function MeetingDetail({ meetingId }: MeetingDetailProps) {
     },
     onError: (error) => {
       setJoinErrorMessage(
-        error instanceof ApiFetchError ? errorMessage(error) : "모임 참여에 실패했습니다.",
+        error instanceof ApiFetchError
+          ? errorMessage(error)
+          : isMeetingParticipant
+            ? "참여 포지션 수정에 실패했습니다."
+            : "모임 참여에 실패했습니다.",
       )
     },
   })
@@ -418,7 +475,7 @@ export function MeetingDetail({ meetingId }: MeetingDetailProps) {
     }
 
     setJoinErrorMessage(null)
-    setSelectedPositionId(openPositions[0]?.id ?? null)
+    setSelectedPositionId(currentPositionId ?? openPositions[0]?.id ?? null)
     setJoinDialogOpen(true)
   }
 
@@ -434,6 +491,21 @@ export function MeetingDetail({ meetingId }: MeetingDetailProps) {
   function handleJoinSubmit() {
     if (selectedPositionId === null) {
       setJoinErrorMessage("참여할 포지션을 선택해주세요.")
+      return
+    }
+
+    if (isMeetingParticipant && selectedPositionId === currentPositionId) {
+      setJoinDialogOpen(false)
+      setSelectedPositionId(null)
+      setJoinErrorMessage(null)
+      return
+    }
+
+    if (
+      selectedPositionId !== currentPositionId &&
+      openPositions.every((position) => position.id !== selectedPositionId)
+    ) {
+      setJoinErrorMessage("모집 중인 포지션을 선택해주세요.")
       return
     }
 
@@ -614,11 +686,13 @@ export function MeetingDetail({ meetingId }: MeetingDetailProps) {
                 <Button
                   className="h-14 w-full rounded-lg bg-[#1abcfe] text-lg font-medium text-white shadow-lg shadow-[#1abcfe]/18 hover:bg-[#0eaeea] hover:shadow-xl hover:shadow-[#1abcfe]/23"
                   onClick={handleJoinClick}
-                  disabled={openPositions.length === 0 || !canJoinByStatus}
+                  disabled={(!isMeetingParticipant && openPositions.length === 0) || !canJoinByStatus}
                 >
                   {!canJoinByStatus
                     ? "모집 마감"
-                    : openPositions.length === 0
+                    : isMeetingParticipant
+                      ? "참여 포지션 변경"
+                      : openPositions.length === 0
                       ? "모집 완료"
                       : "참가하기"}
                 </Button>
@@ -653,10 +727,12 @@ export function MeetingDetail({ meetingId }: MeetingDetailProps) {
 
       <JoinMeetingDialog
         open={joinDialogOpen}
-        positions={openPositions}
+        positions={meeting.positions}
         selectedPositionId={selectedPositionId}
+        currentPositionId={currentPositionId}
         errorMessage={joinErrorMessage}
         isPending={joinMutation.isPending}
+        submitLabel={isMeetingParticipant ? "변경 완료" : "참가 완료"}
         onOpenChange={handleJoinDialogOpenChange}
         onSelectPosition={setSelectedPositionId}
         onSubmit={handleJoinSubmit}

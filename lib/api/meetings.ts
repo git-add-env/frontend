@@ -166,6 +166,13 @@ export function applyMeeting(meetingId: number, payload: ApplyMeetingPayload) {
   })
 }
 
+export function updateMyMeetingPosition(meetingId: number, payload: ApplyMeetingPayload) {
+  return apiClient<void>(`/api/meetings/${meetingId}/members/me/position`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  })
+}
+
 export function createMeeting(payload: MeetingUpsertPayload) {
   return apiClient<MeetingMutationResponse>("/api/meetings", {
     method: "POST",
