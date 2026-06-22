@@ -30,7 +30,7 @@ export function MembersTab({ meetingId }: MembersTabProps) {
           <h2 className="mb-3 text-base font-semibold">모임장</h2>
           <MemberItem
             name={leader.nickname}
-            role={leader.job ?? "직군 미설정"}
+            role={leader.positionName ?? leader.job ?? "역할 미정"}
             profileImage={leader.profileImage}
             isLeader
             onClick={() => setProfileUserId(leader.id)}
@@ -51,7 +51,7 @@ export function MembersTab({ meetingId }: MembersTabProps) {
               <MemberItem
                 key={member.id}
                 name={member.nickname}
-                role={member.job ?? "직군 미설정"}
+                role={member.positionName ?? member.job ?? "역할 미정"}
                 profileImage={member.profileImage}
                 onClick={() => setProfileUserId(member.id)}
               />
