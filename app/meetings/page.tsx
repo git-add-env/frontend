@@ -17,6 +17,7 @@ import { ApiFetchError } from "@/lib/api/api-fetch"
 import { errorMessage } from "@/lib/api/error"
 import {
   fetchMeetings,
+  normalizeMeetingPositions,
   type MeetingListParams,
   type MeetingSummary,
 } from "@/lib/api/meetings"
@@ -335,6 +336,15 @@ function getMeetingListParams(
 }
 
 function mapMeetingSummaryToCardMeeting(meeting: MeetingSummary): Meeting {
+  const positions = normalizeMeetingPositions(meeting.positions)
+  const recruitSummary = positions.reduce(
+    (summary, position) => ({
+      currentCount: summary.currentCount + position.currentCount,
+      totalCount: summary.totalCount + position.recruitCount,
+    }),
+    { currentCount: 0, totalCount: 0 },
+  )
+
   return {
     id: String(meeting.meetingId),
     title: meeting.title,
@@ -343,10 +353,10 @@ function mapMeetingSummaryToCardMeeting(meeting: MeetingSummary): Meeting {
     deadlineDate: meeting.deadline,
     status: getCardStatus(meeting.status),
     category: CATEGORY_LABEL[meeting.category] ?? meeting.category,
-    memberCount: meeting.recruitSummary.currentCount,
-    maxMembers: meeting.recruitSummary.totalCount,
+    memberCount: recruitSummary.currentCount,
+    maxMembers: recruitSummary.totalCount,
     techStacks: meeting.techStacks,
-    jobs: meeting.positions.map((position) => ({
+    jobs: positions.map((position) => ({
       job: position.name,
       current: position.currentCount,
       max: position.recruitCount,
