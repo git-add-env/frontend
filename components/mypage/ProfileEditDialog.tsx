@@ -52,6 +52,8 @@ export function ProfileEditDialog({
     <Dialog
       open={open}
       onOpenChange={(next) => {
+        // 저장 중에는 X/ESC/외부클릭으로 닫히지 않게 막는다(폼 리셋·요청 충돌 방지).
+        if (edit.submitting) return
         if (!next) onCancel()
       }}
     >
