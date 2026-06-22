@@ -35,9 +35,15 @@ export function useProfileEdit(profile: Profile) {
 
   const filteredSkills = useMemo(() => {
     const query = skillQuery.trim().toLowerCase()
-    return query
-      ? ONBOARDING_TECH_STACK_OPTIONS.filter((skill) => skill.toLowerCase().includes(query))
+    const list = query
+      ? ONBOARDING_TECH_STACK_OPTIONS.filter((skill) =>
+          skill.toLowerCase().includes(query),
+        )
       : ONBOARDING_TECH_STACK_OPTIONS
+    // A-Z 정렬(대소문자 무시) — 목록에서 원하는 스택을 찾기 쉽게.
+    return [...list].sort((a, b) =>
+      a.localeCompare(b, undefined, { sensitivity: "base" }),
+    )
   }, [skillQuery])
 
   function toggleSkill(skill: string) {
