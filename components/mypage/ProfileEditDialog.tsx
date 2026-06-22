@@ -1,6 +1,6 @@
 import { useRef } from "react"
 
-import { ChevronDown } from "lucide-react"
+import { ChevronDown, X } from "lucide-react"
 
 import { ProfileAvatar } from "@/components/common/ProfileAvatar"
 import { Button } from "@/components/ui/button"
@@ -12,8 +12,15 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
-import { ONBOARDING_CAREER_OPTIONS, ONBOARDING_JOB_OPTIONS } from "@/constants/onboarding"
-import { INTRO_MAX, NICKNAME_MAX, type ProfileEditState } from "@/hooks/mypage/use-profile-edit"
+import {
+  ONBOARDING_CAREER_OPTIONS,
+  ONBOARDING_JOB_OPTIONS,
+} from "@/constants/onboarding"
+import {
+  INTRO_MAX,
+  NICKNAME_MAX,
+  type ProfileEditState,
+} from "@/hooks/mypage/use-profile-edit"
 import type { Profile } from "@/lib/api/mypage"
 import { cn } from "@/lib/utils"
 
@@ -30,7 +37,13 @@ type ProfileEditDialogProps = {
   onSave: () => void
 }
 
-export function ProfileEditDialog({ profile, edit, open, onCancel, onSave }: ProfileEditDialogProps) {
+export function ProfileEditDialog({
+  profile,
+  edit,
+  open,
+  onCancel,
+  onSave,
+}: ProfileEditDialogProps) {
   // 숨겨진 파일 input은 이 다이얼로그의 UI 관심사라 여기서 ref를 소유한다.
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -45,17 +58,32 @@ export function ProfileEditDialog({ profile, edit, open, onCancel, onSave }: Pro
       <DialogContent className="max-h-[85vh] max-w-2xl gap-6 overflow-y-auto">
         <DialogHeader>
           <DialogTitle>프로필 수정</DialogTitle>
-          <DialogDescription>프로필 이미지와 정보를 수정한 뒤 저장하세요.</DialogDescription>
+          <DialogDescription>
+            프로필 이미지와 정보를 수정한 뒤 저장하세요.
+          </DialogDescription>
         </DialogHeader>
 
         <div className="mb-2 flex items-center gap-4">
-          <ProfileAvatar
-            profileImage={edit.previewImage}
-            // 이미지 없을 때 fallback 이니셜이 편집 중 닉네임을 따라가도록(비면 기존 닉네임).
-            nickname={edit.nickname || profile.nickname}
-            className="size-24"
-            fallbackClassName="text-3xl"
-          />
+          <div className="relative">
+            <ProfileAvatar
+              profileImage={edit.previewImage}
+              // 이미지 없을 때 fallback 이니셜이 편집 중 닉네임을 따라가도록(비면 기존 닉네임).
+              nickname={edit.nickname || profile.nickname}
+              className="size-24"
+              fallbackClassName="text-3xl"
+            />
+            {edit.canRemoveImage && (
+              <button
+                type="button"
+                onClick={edit.removeCurrentImage}
+                disabled={edit.submitting}
+                aria-label="이미지 제거"
+                className="absolute top-0.5 right-0.5 flex size-6 items-center justify-center rounded-full border border-border bg-background text-muted-foreground shadow-sm transition-colors hover:bg-destructive hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <X className="size-3.5" />
+              </button>
+            )}
+          </div>
           <div className="flex flex-col gap-1">
             <input
               ref={fileInputRef}
@@ -73,16 +101,6 @@ export function ProfileEditDialog({ profile, edit, open, onCancel, onSave }: Pro
               >
                 이미지 변경
               </Button>
-              {edit.canRemoveImage && (
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={edit.removeCurrentImage}
-                  disabled={edit.submitting}
-                >
-                  이미지 제거
-                </Button>
-              )}
             </div>
             <span className="text-xs text-muted-foreground">
               {edit.removeImage
@@ -102,14 +120,16 @@ export function ProfileEditDialog({ profile, edit, open, onCancel, onSave }: Pro
             </p>
           </div>
           <label className="grid gap-1">
-            <span className="text-xs text-muted-foreground">닉네임 (1-10자)</span>
+            <span className="text-xs text-muted-foreground">
+              닉네임 (1-10자)
+            </span>
             <Input
               value={edit.nickname}
               onChange={(e) => edit.setNickname(e.target.value)}
               aria-invalid={edit.nicknameEmpty || edit.nicknameOver}
               className={cn(
                 (edit.nicknameEmpty || edit.nicknameOver) &&
-                  "border-red-400 focus:border-red-500 focus:ring-red-100",
+                  "border-red-400 focus:border-red-500 focus:ring-red-100"
               )}
             />
             <div className="flex items-center justify-between pr-2 text-xs">
@@ -122,8 +142,8 @@ export function ProfileEditDialog({ profile, edit, open, onCancel, onSave }: Pro
               </span>
               <span
                 className={cn(
-                  "text-right tabular-nums text-muted-foreground",
-                  (edit.nicknameEmpty || edit.nicknameOver) && "text-red-500",
+                  "text-right text-muted-foreground tabular-nums",
+                  (edit.nicknameEmpty || edit.nicknameOver) && "text-red-500"
                 )}
               >
                 {edit.nickname.length}/{NICKNAME_MAX}
@@ -131,13 +151,16 @@ export function ProfileEditDialog({ profile, edit, open, onCancel, onSave }: Pro
             </div>
           </label>
           <label className="grid gap-1">
-            <span className="text-xs text-muted-foreground">소개 한줄 (최대 50자)</span>
+            <span className="text-xs text-muted-foreground">
+              소개 한줄 (최대 50자)
+            </span>
             <Input
               value={edit.introduction}
               onChange={(e) => edit.setIntroduction(e.target.value)}
               aria-invalid={edit.introOver}
               className={cn(
-                edit.introOver && "border-red-400 focus:border-red-500 focus:ring-red-100",
+                edit.introOver &&
+                  "border-red-400 focus:border-red-500 focus:ring-red-100"
               )}
             />
             <div className="flex items-center justify-between pr-2 text-xs">
@@ -146,8 +169,8 @@ export function ProfileEditDialog({ profile, edit, open, onCancel, onSave }: Pro
               </span>
               <span
                 className={cn(
-                  "text-right tabular-nums text-muted-foreground",
-                  edit.introOver && "text-red-500",
+                  "text-right text-muted-foreground tabular-nums",
+                  edit.introOver && "text-red-500"
                 )}
               >
                 {edit.introduction.length}/{INTRO_MAX}
@@ -191,7 +214,9 @@ export function ProfileEditDialog({ profile, edit, open, onCancel, onSave }: Pro
             </div>
           </label>
           <div className="grid gap-2">
-            <span className="text-xs text-muted-foreground">기술 스택 (1개 이상)</span>
+            <span className="text-xs text-muted-foreground">
+              기술 스택 (1개 이상)
+            </span>
             <Input
               value={edit.skillQuery}
               onChange={(e) => edit.setSkillQuery(e.target.value)}
@@ -211,7 +236,7 @@ export function ProfileEditDialog({ profile, edit, open, onCancel, onSave }: Pro
                         "min-h-8 rounded-md border px-2 py-1 text-xs font-medium transition-colors",
                         selected
                           ? "border-foreground bg-foreground text-background"
-                          : "bg-background hover:bg-muted",
+                          : "bg-background hover:bg-muted"
                       )}
                     >
                       {skill}
@@ -226,12 +251,14 @@ export function ProfileEditDialog({ profile, edit, open, onCancel, onSave }: Pro
             )}
             <div className="flex items-center justify-between text-xs">
               <span role="alert" className="text-red-500">
-                {edit.techStacksEmpty ? "기술 스택을 1개 이상 선택해주세요." : ""}
+                {edit.techStacksEmpty
+                  ? "기술 스택을 1개 이상 선택해주세요."
+                  : ""}
               </span>
               <span
                 className={cn(
-                  "tabular-nums text-muted-foreground",
-                  edit.techStacksEmpty && "text-red-500",
+                  "text-muted-foreground tabular-nums",
+                  edit.techStacksEmpty && "text-red-500"
                 )}
               >
                 {edit.techStacks.length}개 선택됨
