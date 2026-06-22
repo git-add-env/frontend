@@ -15,7 +15,7 @@ export default async function MeetingConferencePage({
   return (
     <MeetingConferenceRoom
       meetingId={
-        Number.isFinite(parsedMeetingId) && parsedMeetingId > 0
+        Number.isInteger(parsedMeetingId) && parsedMeetingId > 0
           ? parsedMeetingId
           : null
       }

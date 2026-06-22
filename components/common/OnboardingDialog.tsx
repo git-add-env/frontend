@@ -145,8 +145,7 @@ export default function OnboardingDialog({
         throw new Error(result?.message ?? "온보딩에 실패했습니다.")
       }
 
-      // 세션 플래그가 해제되더라도 완료 화면은 사용자가 직접 닫을 때까지 유지한다.
-      setStep(5)
+      // 세션 플래그가 해제되더라도 다이얼로그는 완료 화면 전환까지 유지한다.
       setInternalOpen(true)
 
       await update({
@@ -155,6 +154,7 @@ export default function OnboardingDialog({
         onboardingRequired: false,
       })
 
+      setStep(5)
       notify.success("회원가입이 완료되었습니다.", {
         description: "이제 관심사에 맞는 모임을 찾아볼 수 있어요.",
       })
