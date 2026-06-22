@@ -78,7 +78,7 @@ export function ProfileEditDialog({
                 onClick={edit.removeCurrentImage}
                 disabled={edit.submitting}
                 aria-label="이미지 제거"
-                className="absolute top-0.5 right-0.5 flex size-6 items-center justify-center rounded-full border border-border bg-background text-muted-foreground shadow-sm transition-colors hover:bg-destructive hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+                className="absolute top-0.5 right-0.5 flex size-6 items-center justify-center rounded-full border border-border bg-background text-muted-foreground shadow-sm transition-colors outline-none hover:bg-destructive hover:text-white focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <X className="size-3.5" />
               </button>
