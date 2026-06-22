@@ -225,7 +225,7 @@ function JoinMeetingDialog({
                 key={position.id}
                 className={cn(
                   "flex items-start gap-3 rounded-lg border border-[#c3c6d7] p-4 transition-colors",
-                  isDisabled ? "cursor-not-allowed bg-[#f7f9fb] opacity-70" : "cursor-pointer",
+                  isDisabled ? "cursor-default bg-[#f7f9fb] opacity-70" : "cursor-pointer",
                   selected && "border-[#1abcfe] bg-[#1abcfe]/10",
                 )}
               >
@@ -234,9 +234,12 @@ function JoinMeetingDialog({
                   name="meeting-position"
                   value={position.id}
                   checked={selected}
-                  onChange={() => onSelectPosition(position.id)}
+                  onChange={() => {
+                    if (!isDisabled) onSelectPosition(position.id)
+                  }}
                   className="sr-only"
-                  disabled={isDisabled}
+                  aria-disabled={isDisabled}
+                  tabIndex={isDisabled ? -1 : undefined}
                 />
                 <span
                   aria-hidden="true"
@@ -282,7 +285,7 @@ function JoinMeetingDialog({
 
         <div className="pt-2">
           <Button
-            className="h-12 w-full rounded-lg bg-[#1abcfe] text-base font-medium text-white hover:bg-[#0eaeea]"
+            className="h-12 w-full rounded-lg bg-[#1abcfe] text-base font-medium text-white hover:bg-[#0eaeea] disabled:cursor-default"
             onClick={onSubmit}
             disabled={isPending || selectedPositionId === null}
           >
@@ -685,7 +688,7 @@ export function MeetingDetail({ meetingId }: MeetingDetailProps) {
                 </div>
 
                 <Button
-                  className="h-14 w-full rounded-lg bg-[#1abcfe] text-lg font-medium text-white shadow-lg shadow-[#1abcfe]/18 hover:bg-[#0eaeea] hover:shadow-xl hover:shadow-[#1abcfe]/23"
+                  className="h-14 w-full rounded-lg bg-[#1abcfe] text-lg font-medium text-white shadow-lg shadow-[#1abcfe]/18 hover:bg-[#0eaeea] hover:shadow-xl hover:shadow-[#1abcfe]/23 disabled:cursor-default"
                   onClick={handleJoinClick}
                   disabled={(!isMeetingParticipant && openPositions.length === 0) || !canJoinByStatus}
                 >

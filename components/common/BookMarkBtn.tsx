@@ -38,7 +38,7 @@ export function BookMarkBtn({
       aria-label={bookmarked ? "북마크 해제" : "북마크 추가"}
       aria-pressed={bookmarked}
       className={cn(
-        "flex size-12 items-center justify-center rounded-full border bg-white p-2 transition-transform duration-200 hover:scale-110 hover:shadow-md active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:scale-100 disabled:hover:shadow-none",
+        "flex size-12 items-center justify-center rounded-full border bg-white p-2 transition-transform duration-200 hover:scale-110 hover:shadow-md active:scale-95 disabled:cursor-default disabled:opacity-60 disabled:hover:scale-100 disabled:hover:shadow-none",
         className,
       )}
     >
