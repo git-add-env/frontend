@@ -153,10 +153,11 @@ function PositionRequirement({ position }: PositionRequirementProps) {
         <div className="flex flex-wrap items-center gap-2">
           <p className="text-base font-bold text-[#191c1e]">{position.job}</p>
           <Badge
-            variant={isFull ? "muted" : "outline"}
             className={cn(
               "h-auto rounded-full px-2 py-1 text-xs",
-              !isFull && "border-blue-100 bg-blue-50 text-blue-600",
+              isFull
+                ? "border border-[#d7dae5] bg-white text-[#737686]"
+                : "border border-blue-100 bg-blue-50 text-blue-600",
             )}
           >
             {isFull ? "모집 완료" : `${remainingCount}명 모집 중`}
@@ -170,7 +171,7 @@ function PositionRequirement({ position }: PositionRequirementProps) {
           isFull ? "text-[#737686]" : "text-blue-500",
         )}
       >
-        모집 인원: {position.max}명
+        {position.current} / {position.max}명
       </p>
     </div>
   )
