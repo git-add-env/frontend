@@ -41,6 +41,11 @@ export function VideoConference({
       variant={canUseVideo ? "default" : "secondary"}
       disabled={!canUseVideo || busy}
       onClick={onClick}
+      className={
+        canUseVideo
+          ? "h-12 bg-blue-500 font-semibold text-white hover:bg-blue-600"
+          : "h-12 bg-blue-200 font-semibold text-blue-700 disabled:opacity-100"
+      }
     >
       {canUseVideo ? <Video /> : <VideoOff />}
       {busy

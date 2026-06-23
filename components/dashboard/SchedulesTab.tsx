@@ -22,6 +22,9 @@ import { cn } from "@/lib/utils"
 
 import { ListSkeleton } from "./DashboardStates"
 
+// 일정 제목 최대 길이 (백엔드 제약 확정 시 맞춰 조정)
+const TITLE_MAX = 30
+
 type SchedulesTabProps = {
   meetingId: number
   isLeader: boolean
@@ -45,6 +48,22 @@ export function SchedulesTab({ meetingId, isLeader }: SchedulesTabProps) {
   const [isMeeting, setIsMeeting] = useState(false)
   const [dateOpen, setDateOpen] = useState(false)
 
+  // 폼 입력값 초기화 (등록 성공·취소 공용).
+  function resetForm() {
+    setTitle("")
+    setDate("")
+    setTime("")
+    setDescription("")
+    setIsMeeting(false)
+    setError(null)
+  }
+
+  // 취소: 입력 기록을 비우고 폼을 닫는다.
+  function cancelAdd() {
+    resetForm()
+    setAdding(false)
+  }
+
   async function add() {
     setError(null)
     try {
@@ -55,11 +74,7 @@ export function SchedulesTab({ meetingId, isLeader }: SchedulesTabProps) {
         description: description || null,
         isMeeting,
       })
-      setTitle("")
-      setDate("")
-      setTime("")
-      setDescription("")
-      setIsMeeting(false)
+      resetForm()
       setAdding(false)
     } catch (e) {
       setError(e instanceof ApiFetchError ? errorMessage(e) : "일정 추가에 실패했습니다.")
@@ -111,72 +126,82 @@ export function SchedulesTab({ meetingId, isLeader }: SchedulesTabProps) {
               )}
             </div>
           </div>
-          {isLeader && (
-            <Button
-              size="sm"
-              variant="outline"
-              className="shrink-0 rounded-full"
-              onClick={() => setAdding(true)}
-            >
-              <Plus /> 일정 추가
-            </Button>
-          )}
         </div>
       </div>
 
       <div className="rounded-2xl border border-border bg-card p-6">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-base font-semibold">예정 일정</h2>
-          {isLeader && (
+          {isLeader && !adding && (
             <Button
               size="sm"
               variant="outline"
               className="rounded-full"
-              onClick={() => setAdding((v) => !v)}
+              onClick={() => setAdding(true)}
             >
-              {adding ? (
-                "취소"
-              ) : (
-                <>
-                  <Plus /> 일정 추가
-                </>
-              )}
+              <Plus /> 추가
             </Button>
           )}
         </div>
 
         {adding && (
           <div className="mb-4 flex flex-col gap-2 rounded-lg border border-border p-3">
-            <input
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="일정 제목"
-              className="h-9 rounded-md border bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            />
-            <div className="flex gap-2">
-              <Popover open={dateOpen} onOpenChange={setDateOpen}>
-                <PopoverTrigger asChild>
-                  <button
-                    type="button"
-                    className="flex h-9 flex-1 items-center gap-2 rounded-md border bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                  >
-                    <Calendar className="size-4 shrink-0 text-muted-foreground" />
-                    <span className={cn(!date && "text-muted-foreground")}>
-                      {date || "날짜 선택"}
-                    </span>
-                  </button>
-                </PopoverTrigger>
-                <PopoverContent align="start">
-                  <Calendars
-                    selected={date ? new Date(`${date}T00:00:00`) : undefined}
-                    onSelect={(d) => {
-                      if (d) setDate(format(d, "yyyy-MM-dd"))
-                      setDateOpen(false)
-                    }}
-                  />
-                </PopoverContent>
-              </Popover>
-              <TimePicker value={time} onChange={setTime} className="flex-1" />
+            <div>
+              <input
+                value={title}
+                // maxLength는 한글 IME에서 1자 초과될 수 있어 onChange에서 잘라 보강.
+                onChange={(e) => setTitle(e.target.value.slice(0, TITLE_MAX))}
+                maxLength={TITLE_MAX}
+                placeholder="일정 제목"
+                className="h-9 w-full rounded-md border bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              />
+              <div className="mt-1 flex items-center justify-between pr-1 text-xs">
+                <span role="alert" className="text-destructive">
+                  {!title.trim() ? "일정 제목을 입력해주세요." : ""}
+                </span>
+                <span className="text-muted-foreground tabular-nums">
+                  {title.length}/{TITLE_MAX}
+                </span>
+              </div>
+            </div>
+            <div className="flex items-start gap-2">
+              <div className="flex-1">
+                <Popover open={dateOpen} onOpenChange={setDateOpen}>
+                  <PopoverTrigger asChild>
+                    <button
+                      type="button"
+                      className="flex h-9 w-full items-center gap-2 rounded-md border bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    >
+                      <Calendar className="size-4 shrink-0 text-muted-foreground" />
+                      <span className={cn(!date && "text-muted-foreground")}>
+                        {date || "날짜 선택"}
+                      </span>
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent align="start">
+                    <Calendars
+                      selected={date ? new Date(`${date}T00:00:00`) : undefined}
+                      onSelect={(d) => {
+                        if (d) setDate(format(d, "yyyy-MM-dd"))
+                        setDateOpen(false)
+                      }}
+                    />
+                  </PopoverContent>
+                </Popover>
+                {title.trim() !== "" && !date && (
+                  <p role="alert" className="mt-1 text-xs text-destructive">
+                    날짜를 선택해주세요.
+                  </p>
+                )}
+              </div>
+              <div className="flex-1">
+                <TimePicker value={time} onChange={setTime} className="w-full" />
+                {title.trim() !== "" && !time && (
+                  <p role="alert" className="mt-1 text-xs text-destructive">
+                    시간을 선택해주세요.
+                  </p>
+                )}
+              </div>
             </div>
             <input
               value={description}
@@ -192,16 +217,15 @@ export function SchedulesTab({ meetingId, isLeader }: SchedulesTabProps) {
               />
               화상 회의 일정
             </label>
-            {!canSubmit && (
-              <p className="text-xs text-muted-foreground">
-                {!title.trim()
-                  ? "일정 제목을 입력해주세요."
-                  : !date
-                    ? "날짜를 선택해주세요."
-                    : "시간을 선택해주세요."}
-              </p>
-            )}
-            <div className="flex justify-end">
+            <div className="flex justify-end gap-2">
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={cancelAdd}
+                disabled={createSchedule.isPending}
+              >
+                취소
+              </Button>
               <Button
                 size="sm"
                 onClick={add}
@@ -309,7 +333,7 @@ function ScheduleItem({ schedule, isLeader, onRemove, muted }: ScheduleItemProps
   return (
     <li
       className={cn(
-        "flex items-start justify-between gap-2 rounded-lg border border-border p-3",
+        "flex items-center justify-between gap-2 rounded-lg border border-border p-3",
         muted && "bg-muted/30",
       )}
     >
@@ -317,12 +341,16 @@ function ScheduleItem({ schedule, isLeader, onRemove, muted }: ScheduleItemProps
         <div className="flex min-w-0 items-center gap-2">
           <p className="min-w-0 truncate text-sm font-bold">{schedule.title}</p>
           {schedule.isMeeting && (
-            <span className="shrink-0 rounded-full bg-accent px-2 py-0.5 text-xs">화상 회의</span>
+            <span className="shrink-0 rounded-full bg-blue-500 px-2 py-0.5 text-xs font-medium text-white">화상 회의</span>
           )}
         </div>
-        <p className="mt-1 break-words text-xs text-muted-foreground">
+        {schedule.description && (
+          <p className="mt-1 wrap-break-word text-xs text-muted-foreground">
+            {schedule.description}
+          </p>
+        )}
+        <p className="mt-1 text-xs text-muted-foreground">
           {schedule.date} {schedule.time}
-          {schedule.description ? ` · ${schedule.description}` : ""}
         </p>
       </div>
       {isLeader && (
