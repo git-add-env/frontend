@@ -40,6 +40,7 @@ type MeetingCardProps = {
   bookmarkDisabled?: boolean
   showEmptyPreviewHints?: boolean
   showBookmark?: boolean
+  showCategoryBadge?: boolean
 }
 
 type MeetingCardImageProps = {
@@ -109,6 +110,7 @@ export default function MeetingCard({
   bookmarkDisabled = false,
   showEmptyPreviewHints = false,
   showBookmark = true,
+  showCategoryBadge = true,
 }: MeetingCardProps) {
   function handleBookmarkToggle(bookmarked: boolean) {
     onBookmarkToggle?.(meeting.id, bookmarked)
@@ -142,10 +144,12 @@ export default function MeetingCard({
 
       <CardContent className="flex h-[276px] flex-1 flex-col gap-3 p-4">
         <div className="flex min-h-0 flex-col gap-1.5">
-          <CategoryBadge
-            category={meeting.category}
-            className="h-5 px-2.5 text-xs font-medium"
-          />
+          {showCategoryBadge ? (
+            <CategoryBadge
+              category={meeting.category}
+              className="h-5 px-2.5 text-xs font-medium"
+            />
+          ) : null}
           <h3 className="line-clamp-2 min-h-7 pt-1 text-base font-semibold leading-snug text-[#191c1e] transition group-hover:text-blue-500">
             {meeting.title}
           </h3>

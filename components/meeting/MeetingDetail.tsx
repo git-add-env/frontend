@@ -58,8 +58,6 @@ import {
 import { notify } from "@/lib/notify"
 import { cn } from "@/lib/utils"
 
-const FALLBACK_MEETING_IMAGE_URL = "https://images.unsplash.com/photo-1516321318423-f06f85e504b3"
-
 type MeetingDetailProps = {
   meetingId?: number
 }
@@ -90,7 +88,8 @@ type MeetingView = {
   startDate: string
   duration: string
   meetingSchedule: string
-  heroImage: string
+  imageCategory: string
+  heroImage: string | null
   description: string
   additionalNotice: string | null
   techStacks: string[]
@@ -579,6 +578,7 @@ export function MeetingDetail({ meetingId }: MeetingDetailProps) {
             <CardContent className="p-0">
               <div className="relative flex flex-col xl:flex-row">
                 <MeetingCardImage
+                  category={meeting.imageCategory}
                   imageUrl={meeting.heroImage}
                   title={meeting.title}
                   sizes="(min-width: 1280px) 300px, (min-width: 1024px) 36vw, 100vw"
@@ -763,7 +763,8 @@ function mapMeetingDetailToView(meeting: MeetingDetailData, members: MeetingMemb
     startDate: formatDisplayDate(meeting.startDate),
     duration: meeting.expectedDuration ?? meeting.duration ?? "-",
     meetingSchedule: meeting.meetingSchedule ?? meeting.meetingType ?? "-",
-    heroImage: meeting.thumbnailUrl ?? FALLBACK_MEETING_IMAGE_URL,
+    imageCategory: meeting.category ?? "PROJECT",
+    heroImage: meeting.thumbnailUrl,
     description,
     additionalNotice: meeting.additionalNotice?.trim() || null,
     techStacks: meeting.techStacks ?? [],

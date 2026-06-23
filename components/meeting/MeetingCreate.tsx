@@ -86,17 +86,18 @@ const SECTION_NAV_ITEMS = [
   { id: "schedule", label: "진행 방식", icon: CalendarDays },
   { id: "positions", label: "모집 포지션", icon: Users },
 ] as const
+const SECTION_SCROLL_OFFSET = 160
 
 type SectionId = (typeof SECTION_NAV_ITEMS)[number]["id"]
 
 const INITIAL_FORM: MeetingFormState = {
   title: "",
-  category: "PROJECT",
+  category: "",
   thumbnailUrl: "",
   deadline: "",
   startDate: "",
-  expectedDuration: "1개월 미만",
-  meetingSchedule: "주 1회",
+  expectedDuration: "",
+  meetingSchedule: "",
   description: "",
   techStackInput: "",
   techStacks: [],
@@ -213,11 +214,10 @@ function MeetingCreateForm({ initialForm, isEditMode, meetingId }: MeetingCreate
     }
 
     function updateActiveSection() {
-      const activationLine = 180
       const currentSection = sections.reduce<HTMLElement | null>((current, section) => {
         const sectionTop = section.getBoundingClientRect().top
 
-        if (sectionTop <= activationLine) {
+        if (sectionTop <= SECTION_SCROLL_OFFSET) {
           return section
         }
 
@@ -391,6 +391,23 @@ function MeetingCreateForm({ initialForm, isEditMode, meetingId }: MeetingCreate
     )
   }
 
+  function handleSectionSelect(sectionId: SectionId) {
+    setActiveSectionId(sectionId)
+
+    const section = document.getElementById(sectionId)
+
+    if (!section) {
+      return
+    }
+
+    const sectionTop = section.getBoundingClientRect().top + window.scrollY
+
+    window.scrollTo({
+      top: sectionTop - SECTION_SCROLL_OFFSET,
+      behavior: "smooth",
+    })
+  }
+
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
 
@@ -403,7 +420,10 @@ function MeetingCreateForm({ initialForm, isEditMode, meetingId }: MeetingCreate
       return
     }
 
-    const payload = getPayload(form, { includePositionIds: isEditMode })
+    const payload = getPayload(form, {
+      includePositionIds: isEditMode,
+      clearEmptyThumbnail: isEditMode,
+    })
     const error = validatePayload(payload)
 
     if (error) {
@@ -417,8 +437,16 @@ function MeetingCreateForm({ initialForm, isEditMode, meetingId }: MeetingCreate
 
   return (
     <div className="flex gap-6 px-0 py-0 lg:items-start lg:gap-10 xl:gap-12">
-      <aside className="hidden w-[300px] shrink-0 self-stretch lg:block">
-        <div className="sticky top-24">
+      <aside className="hidden w-[256px] shrink-0 lg:sticky lg:top-24 lg:self-start lg:block">
+        <div className="w-full space-y-4">
+          <FormStatusBar
+            activeSectionId={activeSectionId}
+            completion={completion}
+            isEditMode={isEditMode}
+            isSubmitting={isSubmitting}
+            onSectionSelect={handleSectionSelect}
+            variant="sidebar"
+          />
           <CoverImageCardPreview
             category={form.category}
             deadline={form.deadline}
@@ -430,14 +458,21 @@ function MeetingCreateForm({ initialForm, isEditMode, meetingId }: MeetingCreate
         </div>
       </aside>
 
-      <form id={FORM_ID} onSubmit={handleSubmit} className="min-w-0 flex-1 space-y-10 pb-32">
-        <FormStatusBar
-          activeSectionId={activeSectionId}
-          completion={completion}
-          isEditMode={isEditMode}
-          isSubmitting={isSubmitting}
-          onSectionSelect={setActiveSectionId}
-        />
+      <form
+        id={FORM_ID}
+        onSubmit={handleSubmit}
+        className="min-w-0 flex-1 space-y-10 pb-80 lg:pb-[30rem]"
+      >
+        <div className="lg:hidden">
+          <FormStatusBar
+            activeSectionId={activeSectionId}
+            completion={completion}
+            isEditMode={isEditMode}
+            isSubmitting={isSubmitting}
+            onSectionSelect={handleSectionSelect}
+            variant="top"
+          />
+        </div>
 
         {fieldError ? (
           <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
@@ -608,6 +643,7 @@ function MeetingCreateForm({ initialForm, isEditMode, meetingId }: MeetingCreate
               <SelectField
                 value={form.expectedDuration}
                 options={DURATION_OPTIONS}
+                placeholder="예상 기간 선택"
                 onChange={(value) => updateField("expectedDuration", value)}
               />
             </Field>
@@ -615,6 +651,7 @@ function MeetingCreateForm({ initialForm, isEditMode, meetingId }: MeetingCreate
               <SelectField
                 value={form.meetingSchedule}
                 options={SCHEDULE_OPTIONS}
+                placeholder="회의 일정 선택"
                 onChange={(value) => updateField("meetingSchedule", value)}
               />
             </Field>
@@ -655,7 +692,7 @@ function MeetingCreateForm({ initialForm, isEditMode, meetingId }: MeetingCreate
                   <Trash2 className="size-4" aria-hidden="true" />
                 </button>
                 <div className="grid gap-6 pr-8 md:grid-cols-[minmax(220px,1.4fr)_96px_minmax(260px,2fr)]">
-                  <Field label="포지션명" muted>
+                  <Field label="포지션명" muted required>
                     <PositionSelect
                       value={position.name}
                       options={ONBOARDING_JOB_OPTIONS}
@@ -663,7 +700,7 @@ function MeetingCreateForm({ initialForm, isEditMode, meetingId }: MeetingCreate
                       onChange={(value) => handlePositionChange(position.id, "name", value)}
                     />
                   </Field>
-                  <Field label="인원수" muted>
+                  <Field label="인원수" muted required>
                     <Input
                       type="number"
                       min={1}
@@ -705,6 +742,7 @@ type FormStatusBarProps = {
   isEditMode: boolean
   isSubmitting: boolean
   onSectionSelect: (sectionId: SectionId) => void
+  variant?: "sidebar" | "top"
 }
 
 function FormStatusBar({
@@ -713,30 +751,59 @@ function FormStatusBar({
   isEditMode,
   isSubmitting,
   onSectionSelect,
+  variant = "sidebar",
 }: FormStatusBarProps) {
+  const isTopVariant = variant === "top"
+
   return (
-    <div className="sticky top-10 z-20 rounded-xl border border-[#c3c6d7] bg-white p-4 shadow-sm">
-      <div className="grid gap-3 xl:grid-cols-[1fr_auto_1fr] xl:items-center">
-        <div className="flex min-w-0 items-center gap-3 xl:contents">
-          <div className="w-44 shrink-0 xl:w-52">
-            <div className="mb-2 flex items-center justify-between gap-3">
-              <span className="text-sm font-medium text-[#191c1e]">완성도</span>
-              <span className="font-mono text-sm font-medium text-blue-500">{completion}%</span>
-            </div>
-            <div className="h-2 overflow-hidden rounded-full bg-[#e6e8ea]">
-              <div className="h-full bg-blue-400" style={{ width: `${completion}%` }} />
-            </div>
+    <div
+      className={cn(
+        "w-full rounded-xl border border-[#c3c6d7] bg-white shadow-sm",
+        isTopVariant ? "p-3 sm:p-4" : "p-2.5",
+      )}
+    >
+      <div
+        className={cn(
+          isTopVariant
+            ? "grid gap-3 sm:grid-cols-[minmax(160px,1fr)_auto_minmax(140px,180px)] sm:items-center"
+            : "space-y-2",
+        )}
+      >
+        <div className={cn(isTopVariant && "min-w-0")}>
+          <div className="mb-2 flex items-center justify-between gap-3">
+            <span
+              className={cn(
+                "font-medium text-[#191c1e]",
+                isTopVariant ? "text-sm" : "text-[11px]",
+              )}
+            >
+              완성도
+            </span>
+            <span
+              className={cn(
+                "font-mono font-medium text-blue-500",
+                isTopVariant ? "text-sm" : "text-[11px]",
+              )}
+            >
+              {completion}%
+            </span>
           </div>
-          <HorizontalProgressNav
-            activeSectionId={activeSectionId}
-            onSectionSelect={onSectionSelect}
-          />
+          <div className="h-2 overflow-hidden rounded-full bg-[#e6e8ea]">
+            <div className="h-full bg-blue-400" style={{ width: `${completion}%` }} />
+          </div>
         </div>
+        <HorizontalProgressNav
+          activeSectionId={activeSectionId}
+          onSectionSelect={onSectionSelect}
+        />
         <Button
           type="submit"
           form={FORM_ID}
           disabled={isSubmitting}
-          className="h-11 w-full shrink-0 rounded-lg bg-blue-400 px-6 text-base text-white hover:bg-blue-500 xl:ml-auto xl:h-12 xl:w-52"
+          className={cn(
+            "w-full rounded-lg bg-blue-400 px-4 text-white hover:bg-blue-500",
+            isTopVariant ? "h-10 text-sm sm:h-11" : "h-9 text-xs xl:h-10",
+          )}
         >
           {isEditMode ? "모임 수정하기" : "모임 생성하기"}
         </Button>
@@ -753,7 +820,7 @@ type HorizontalProgressNavProps = {
 function HorizontalProgressNav({ activeSectionId, onSectionSelect }: HorizontalProgressNavProps) {
   return (
     <nav
-      className="flex min-w-0 flex-1 justify-end gap-1 overflow-hidden xl:justify-center"
+      className="flex min-w-0 justify-center gap-0.5 overflow-hidden"
       aria-label="모임 작성 단계"
     >
       {SECTION_NAV_ITEMS.map((item) => {
@@ -764,22 +831,25 @@ function HorizontalProgressNav({ activeSectionId, onSectionSelect }: HorizontalP
           <a
             key={item.id}
             href={`#${item.id}`}
-            onClick={() => onSectionSelect(item.id)}
+            onClick={(event) => {
+              event.preventDefault()
+              onSectionSelect(item.id)
+            }}
             aria-current={isActive ? "step" : undefined}
             aria-label={item.label}
             title={item.label}
             className={cn(
-              "flex h-10 min-w-10 shrink items-center justify-center gap-2 rounded-lg px-3 text-sm font-medium transition-colors",
+              "flex h-[34px] min-w-[34px] shrink items-center justify-center rounded-lg px-[6px] transition-colors",
               isActive ? "text-blue-500" : "text-[#565e74] hover:bg-[#f7f9fb] hover:text-blue-500",
             )}
           >
             <span
               className={cn(
-                "flex size-8 items-center justify-center rounded-full transition-colors",
+                "flex size-[26px] items-center justify-center rounded-full transition-colors",
                 isActive ? "bg-blue-100 text-blue-500" : "text-[#565e74]",
               )}
             >
-              <Icon className="size-5" aria-hidden="true" />
+              <Icon className="size-[14px]" aria-hidden="true" />
             </span>
           </a>
         )
@@ -836,10 +906,11 @@ function CoverImageCardPreview({
   return (
     <div>
       <p className="mb-2 text-sm font-medium text-[#565e74]">모임 카드 미리보기</p>
-      <div className="h-[501px] overflow-hidden rounded-lg">
+      <div className="w-full overflow-hidden rounded-lg">
         <MeetingCard
           meeting={previewMeeting}
           disableLink
+          showCategoryBadge={Boolean(category)}
           showBookmark={false}
           showEmptyPreviewHints
         />
@@ -1118,17 +1189,24 @@ function TechStackPicker({
 type SelectFieldProps = {
   value: string
   options: readonly string[]
+  placeholder: string
   onChange: (value: string) => void
 }
 
-function SelectField({ value, options, onChange }: SelectFieldProps) {
+function SelectField({ value, options, placeholder, onChange }: SelectFieldProps) {
   return (
     <div className="relative">
       <select
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        className="h-14 w-full appearance-none rounded-lg border border-[#c3c6d7] bg-white px-4 pr-11 text-base text-[#191c1e] outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20"
+        className={cn(
+          "h-14 w-full appearance-none rounded-lg border border-[#c3c6d7] bg-white px-4 pr-11 text-base outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20",
+          value ? "text-[#191c1e]" : "text-[#737686]",
+        )}
       >
+        <option value="" disabled hidden>
+          {placeholder}
+        </option>
         {options.map((option) => (
           <option key={option}>{option}</option>
         ))}
@@ -1143,15 +1221,18 @@ function SelectField({ value, options, onChange }: SelectFieldProps) {
 
 type GetPayloadOptions = {
   includePositionIds?: boolean
+  clearEmptyThumbnail?: boolean
 }
 
 function getPayload(form: MeetingFormState, options: GetPayloadOptions = {}): MeetingUpsertPayload {
+  const thumbnailUrl = form.thumbnailUrl.trim() || (options.clearEmptyThumbnail ? "" : null)
+
   return {
     title: form.title.trim(),
     category: form.category,
     description: form.description.trim(),
     additionalNotice: form.referenceNote.trim() || null,
-    thumbnailUrl: form.thumbnailUrl.trim() || null,
+    thumbnailUrl,
     techStacks: form.techStacks,
     deadline: form.deadline,
     startDate: form.startDate,
@@ -1175,6 +1256,7 @@ function getPayload(form: MeetingFormState, options: GetPayloadOptions = {}): Me
 
 function validatePayload(payload: MeetingUpsertPayload) {
   if (!payload.title) return "모임 제목을 입력해주세요."
+  if (!payload.category) return "모임 카테고리를 선택해주세요."
   if (!payload.description) return "모임 소개를 입력해주세요."
   if (!payload.deadline) return "모집 마감일을 선택해주세요."
   if (!payload.startDate) return "시작 예정일을 선택해주세요."
@@ -1201,17 +1283,14 @@ function hasDuplicatePositionNames(names: string[]) {
 
 function getCompletion(form: MeetingFormState) {
   const checks = [
-    form.category,
-    form.thumbnailUrl,
     form.title,
+    form.category,
     form.deadline,
-    form.description,
-    form.techStacks.length > 0,
-    form.referenceNote,
     form.startDate,
     form.expectedDuration,
     form.meetingSchedule,
-    form.positions.length > 0,
+    form.description,
+    form.techStacks.length > 0,
     form.positions.every(
       (position) => position.name && isValidRecruitCount(position.recruitCount),
     ),
