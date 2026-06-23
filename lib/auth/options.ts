@@ -1,7 +1,6 @@
 import type { Account, NextAuthOptions, User } from "next-auth"
 import CredentialsProvider from "next-auth/providers/credentials"
 import GitHubProvider from "next-auth/providers/github"
-import GoogleProvider from "next-auth/providers/google"
 
 import { extractBackendAuthCookies } from "@/lib/auth/backend-cookies"
 import {
@@ -45,14 +44,6 @@ export const authOptions: NextAuthOptions = {
     strategy: "jwt",
   },
   providers: [
-    GoogleProvider({
-      clientId: getEnvValue("GOOGLE_CLIENT_ID", "AUTH_GOOGLE_ID", "GOOGLE_ID"),
-      clientSecret: getEnvValue(
-        "GOOGLE_CLIENT_SECRET",
-        "AUTH_GOOGLE_SECRET",
-        "GOOGLE_SECRET"
-      ),
-    }),
     GitHubProvider({
       clientId: getEnvValue("GITHUB_CLIENT_ID", "AUTH_GITHUB_ID", "GITHUB_ID"),
       clientSecret: getEnvValue(

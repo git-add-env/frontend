@@ -2,39 +2,298 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
+.conference-active .site-header,
+.conference-active .site-footer {
+  display: none;
+}
+
+.conference-prejoin {
+  position: relative;
+  width: min(100%, 480px);
+  margin-inline: auto;
+}
+
 .conference-prejoin .lk-prejoin {
-  gap: 1rem;
+  position: relative;
+  gap: 0.875rem;
+  overflow: visible;
   padding: 0;
   background: transparent;
+  --lk-control-fg: #111827;
+  --lk-control-bg: #ffffff;
+  --lk-control-hover-bg: #f3f4f6;
+  --lk-control-active-bg: #e8f7fe;
+  --lk-control-active-hover-bg: #d7f2fe;
+  --lk-border-color: #e5e7eb;
 }
 
 .conference-prejoin .lk-video-container {
   overflow: hidden;
-  border: 1px solid var(--border);
-  border-radius: 0.875rem;
+  border: 0;
+  border-radius: 1rem;
   background: #0d1119;
+  box-shadow: 0 12px 30px rgb(15 23 42 / 12%);
 }
 
-.conference-prejoin .lk-button,
-.conference-prejoin .lk-form-control {
-  border-radius: 0.75rem;
+.conference-prejoin .lk-button-group-container {
+  position: relative;
+  z-index: 10;
+  overflow: visible;
+  gap: 0.75rem;
+}
+
+.conference-prejoin .lk-button-group {
+  min-width: 0;
+  height: 3rem;
+  overflow: visible;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.875rem;
+  background: #ffffff;
+  box-shadow: 0 2px 8px rgb(15 23 42 / 5%);
+}
+
+.conference-prejoin .lk-button-group > .lk-button:first-child {
+  min-width: 0;
+  border-radius: 0.8125rem 0 0 0.8125rem;
+  padding-inline: 0.875rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.conference-prejoin .lk-button-group-menu {
+  position: relative;
+  overflow: visible;
+  border-left: 1px solid #e5e7eb;
+}
+
+.conference-prejoin .lk-button-group-menu > .lk-button {
+  width: 2.75rem;
+  border-radius: 0 0.8125rem 0.8125rem 0;
+  padding: 0;
+}
+
+.conference-prejoin .lk-button[aria-pressed="true"] {
+  color: #0369a1;
+}
+
+.conference-prejoin .lk-device-menu {
+  top: calc(100% + 0.5rem);
+  right: 0;
+  bottom: auto;
+  left: auto;
+  z-index: 100;
+  max-width: min(20rem, calc(100vw - 3rem));
+  overflow: hidden;
+  border-color: #e5e7eb;
+  background: #ffffff;
+  color: #111827;
+  box-shadow: 0 16px 40px rgb(15 23 42 / 16%);
+}
+
+.conference-prejoin-card,
+.conference-prejoin,
+.conference-prejoin .lk-prejoin,
+.conference-prejoin .lk-button-group-container,
+.conference-prejoin .lk-button-group,
+.conference-prejoin .lk-button-group-menu {
+  overflow: visible !important;
+}
+
+.conference-prejoin .lk-media-device-select .lk-button {
+  overflow: hidden;
+  border-radius: 0.625rem;
+  color: #374151;
+  text-overflow: ellipsis;
+}
+
+.conference-prejoin
+  .lk-media-device-select
+  li:not([data-lk-active="true"])
+  > .lk-button:not(:disabled):hover {
+  background: #e0f2fe;
+  color: #0369a1;
+}
+
+.conference-prejoin
+  .lk-media-device-select
+  li[data-lk-active="true"]
+  > .lk-button {
+  background: #bae6fd;
+  color: #075985;
+}
+
+.conference-prejoin .lk-username-container {
+  gap: 0;
+}
+
+.conference-prejoin .lk-username-container .lk-form-control {
+  display: none;
 }
 
 .conference-prejoin .lk-join-button {
-  min-height: 2.75rem;
-  border: 0;
-  background: var(--primary);
-  color: var(--primary-foreground);
-  font-weight: 700;
+  min-height: 3rem !important;
+  border: 0 !important;
+  border-radius: 0.375rem !important;
+  background-color: #3b82f6 !important;
+  background-image: none !important;
+  color: #ffffff !important;
+  font-size: 0.875rem !important;
+  font-weight: 600 !important;
+  box-shadow: none !important;
+  transition: background-color 150ms ease;
 }
 
-.conference-prejoin .lk-join-button:hover {
-  opacity: 0.9;
+.conference-prejoin .lk-join-button:not(:disabled):hover {
+  background-color: #2563eb !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+@media (max-width: 480px) {
+  .conference-prejoin .lk-button-group-container {
+    flex-wrap: wrap;
+  }
+
+  .conference-prejoin .lk-button-group-container > .lk-button-group {
+    width: 100%;
+  }
 }
 
 .conference-room .lk-video-conference,
 .conference-room .lk-video-conference-inner {
   min-height: 0;
+}
+
+.conference-room .lk-video-conference-inner {
+  flex: 1;
+  width: auto;
+}
+
+.conference-room .conference-chat {
+  display: flex;
+  width: min(22rem, 32vw);
+  min-width: 18rem;
+  flex-direction: column;
+  border-left: 1px solid rgb(255 255 255 / 8%);
+  background: #11141c;
+}
+
+.conference-room .conference-chat-header {
+  display: flex;
+  min-height: 4.25rem;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.875rem 1rem;
+  border-bottom: 1px solid rgb(255 255 255 / 8%);
+}
+
+.conference-room .conference-chat-close {
+  display: inline-flex;
+  width: 2rem;
+  height: 2rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.5rem;
+  color: rgb(255 255 255 / 60%);
+}
+
+.conference-room .conference-chat-close:hover {
+  background: rgb(255 255 255 / 8%);
+  color: #ffffff;
+}
+
+.conference-room .conference-chat-messages {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.75rem;
+  overflow-y: auto;
+  padding: 1rem;
+}
+
+.conference-room .conference-chat-empty {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  color: rgb(255 255 255 / 35%);
+  font-size: 0.75rem;
+}
+
+.conference-room .conference-chat-message {
+  padding: 0.625rem 0.75rem;
+  border-radius: 0.75rem;
+  background: rgb(255 255 255 / 6%);
+  color: rgb(255 255 255 / 85%);
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  word-break: break-word;
+}
+
+.conference-room .conference-chat-message-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.3rem;
+  color: rgb(255 255 255 / 45%);
+  font-size: 0.6875rem;
+}
+
+.conference-room .conference-chat-message-meta span {
+  overflow: hidden;
+  color: #7dd3fc;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.conference-room .conference-chat-form {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  border-top: 1px solid rgb(255 255 255 / 8%);
+}
+
+.conference-room .conference-chat-form input {
+  min-width: 0;
+  height: 2.5rem;
+  flex: 1;
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: 0.625rem;
+  background: rgb(255 255 255 / 6%);
+  padding-inline: 0.75rem;
+  color: #ffffff;
+  font-size: 0.8125rem;
+  outline: none;
+}
+
+.conference-room .conference-chat-form input:focus {
+  border-color: rgb(56 189 248 / 60%);
+  box-shadow: 0 0 0 3px rgb(56 189 248 / 10%);
+}
+
+.conference-room .conference-chat-form button {
+  display: inline-flex;
+  width: 2.5rem;
+  height: 2.5rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.625rem;
+  background: #3b82f6;
+  color: #ffffff;
+}
+
+.conference-room .conference-chat-form button:hover:not(:disabled) {
+  background: #2563eb;
+}
+
+.conference-room .conference-chat-form button:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
 }
 
 .conference-room .lk-grid-layout,
@@ -70,6 +329,53 @@
   backdrop-filter: blur(8px);
 }
 
+.conference-room .conference-participant-meta {
+  position: absolute;
+  bottom: 0.625rem;
+  left: 0.625rem;
+  z-index: 2;
+  display: inline-flex;
+  max-width: calc(100% - 1.25rem);
+  align-items: center;
+  gap: 0.375rem;
+  min-height: 1.625rem;
+  padding: 0.3rem 0.55rem;
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: 9999px;
+  background: rgb(0 0 0 / 58%);
+  color: rgb(255 255 255 / 88%);
+  font-size: 0.75rem;
+  line-height: 1;
+  box-shadow: 0 4px 14px rgb(0 0 0 / 18%);
+  backdrop-filter: blur(10px);
+}
+
+.conference-room .conference-participant-meta .lk-participant-name {
+  overflow: hidden;
+  max-width: 9rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.conference-room
+  .conference-participant-meta
+  .lk-track-muted-indicator-microphone {
+  width: 0.875rem;
+  height: 0.875rem;
+  margin: 0;
+  opacity: 0.9;
+}
+
+.conference-room .conference-host-badge {
+  padding: 0.2rem 0.375rem;
+  border-radius: 9999px;
+  background: rgb(56 189 248 / 18%);
+  color: #7dd3fc;
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
 .conference-room .lk-control-bar {
   width: fit-content;
   max-width: calc(100% - 1.5rem);
@@ -89,7 +395,46 @@
   border-radius: 0.625rem;
 }
 
+.conference-room .conference-control-divider {
+  width: 1px;
+  height: 1.75rem;
+  margin-inline: 0.125rem;
+  flex: 0 0 auto;
+  background: rgb(255 255 255 / 14%);
+}
+
+.conference-room .conference-leave-button {
+  border: 1px solid rgb(255 255 255 / 12%);
+  background: rgb(255 255 255 / 7%);
+  color: rgb(255 255 255 / 82%);
+}
+
+.conference-room .conference-leave-button:not(:disabled):hover {
+  background: rgb(255 255 255 / 13%);
+  color: #ffffff;
+}
+
+.conference-room .conference-end-button {
+  border: 1px solid rgb(248 113 113 / 30%);
+  background: rgb(239 68 68 / 14%);
+  color: #fca5a5;
+}
+
+.conference-room .conference-end-button:not(:disabled):hover {
+  background: rgb(239 68 68 / 24%);
+  color: #fecaca;
+}
+
 @media (max-width: 640px) {
+  .conference-room .conference-chat {
+    position: absolute;
+    inset: 0;
+    z-index: 40;
+    width: 100%;
+    min-width: 0;
+    border-left: 0;
+  }
+
   .conference-room .lk-grid-layout,
   .conference-room .lk-focus-layout {
     gap: 0.375rem;
@@ -98,6 +443,15 @@
 
   .conference-room .lk-participant-tile {
     border-radius: 0.625rem;
+  }
+
+  .conference-room .conference-participant-meta {
+    bottom: 0.375rem;
+    left: 0.375rem;
+    max-width: calc(100% - 0.75rem);
+    min-height: 1.5rem;
+    padding: 0.25rem 0.45rem;
+    font-size: 0.6875rem;
   }
 
   .conference-room .lk-control-bar {
