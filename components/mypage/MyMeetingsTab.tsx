@@ -13,7 +13,6 @@ import {
 } from "@/components/ui/dialog"
 import {
   useCancelMembership,
-  useCompleteMeeting,
   useDeleteMeeting,
   useMyMeetings,
 } from "@/hooks/mypage/use-my-meetings"
@@ -24,7 +23,7 @@ import { EmptyOrError } from "./EmptyOrError"
 import { MeetingCardSkeletonGrid } from "./MeetingCardSkeleton"
 import { MeetingCard } from "./MeetingCard"
 
-type ConfirmAction = "cancel" | "delete" | "complete"
+type ConfirmAction = "cancel" | "delete"
 
 type ConfirmState = {
   meetingId: number
@@ -66,19 +65,13 @@ export function MyMeetingsTab({ status }: MyMeetingsTabProps) {
   const [confirmError, setConfirmError] = useState<string | null>(null)
 
   const cancelMembership = useCancelMembership()
-  const completeMeeting = useCompleteMeeting()
   const deleteMeeting = useDeleteMeeting()
-  const busy = cancelMembership.isPending || completeMeeting.isPending || deleteMeeting.isPending
+  const busy = cancelMembership.isPending || deleteMeeting.isPending
 
   async function runConfirm() {
     if (!confirm) return
     setConfirmError(null)
-    const mutation =
-      confirm.action === "cancel"
-        ? cancelMembership
-        : confirm.action === "complete"
-          ? completeMeeting
-          : deleteMeeting
+    const mutation = confirm.action === "cancel" ? cancelMembership : deleteMeeting
     try {
       await mutation.mutateAsync(confirm.meetingId)
       setConfirm(null)
@@ -105,7 +98,7 @@ export function MyMeetingsTab({ status }: MyMeetingsTabProps) {
     <>
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {meetings.map((meeting) => {
-          // 모집중: (모임장)삭제 / (멤버)참여취소, 활동중: (모임장)종료. ⋯ 메뉴에 들어간다.
+          // 모집중: (모임장)삭제 / (멤버)참여취소. 활동중 종료는 대시보드에서 처리한다. ⋯ 메뉴에 들어간다.
           let menuItem: React.ReactNode = null
           if (meeting.isLeader && meeting.status === "RECRUITING") {
             menuItem = (
@@ -116,16 +109,6 @@ export function MyMeetingsTab({ status }: MyMeetingsTabProps) {
                 }
               >
                 삭제
-              </MenuItem>
-            )
-          } else if (meeting.isLeader && meeting.status === "ACTIVE") {
-            menuItem = (
-              <MenuItem
-                onClick={() =>
-                  setConfirm({ meetingId: meeting.meetingId, title: meeting.title, action: "complete" })
-                }
-              >
-                종료
               </MenuItem>
             )
           } else if (!meeting.isLeader && meeting.status === "RECRUITING") {
@@ -170,18 +153,12 @@ export function MyMeetingsTab({ status }: MyMeetingsTabProps) {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {confirm?.action === "delete"
-                ? "모임 삭제"
-                : confirm?.action === "complete"
-                  ? "모임 종료"
-                  : "참여 취소"}
+              {confirm?.action === "delete" ? "모임 삭제" : "참여 취소"}
             </DialogTitle>
             <DialogDescription>
               {confirm?.action === "delete"
                 ? `'${confirm?.title}' 모임을 삭제하시겠어요? 참여 멤버가 있으면 취소 알림이 전송됩니다.`
-                : confirm?.action === "complete"
-                  ? `'${confirm?.title}' 모임을 종료하시겠어요? 완료된 모임으로 이동하며 멤버에게 종료 알림이 전송됩니다.`
-                  : `'${confirm?.title}' 모임 참여를 취소하시겠어요?`}
+                : `'${confirm?.title}' 모임 참여를 취소하시겠어요?`}
             </DialogDescription>
           </DialogHeader>
           {confirmError && (
@@ -209,9 +186,7 @@ export function MyMeetingsTab({ status }: MyMeetingsTabProps) {
                 ? "처리 중..."
                 : confirm?.action === "delete"
                   ? "삭제"
-                  : confirm?.action === "complete"
-                    ? "종료"
-                    : "참여 취소"}
+                  : "참여 취소"}
             </Button>
           </div>
         </DialogContent>
