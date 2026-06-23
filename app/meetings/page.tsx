@@ -26,7 +26,6 @@ import {
 } from "@/lib/api/meetings"
 import { notify } from "@/lib/notify"
 
-const FALLBACK_MEETING_IMAGE_URL = "https://images.unsplash.com/photo-1516321318423-f06f85e504b3"
 const CATEGORY_QUERY_VALUE: Record<string, string> = {
   전체: "ALL",
   프로젝트: "PROJECT",
@@ -396,7 +395,8 @@ function mapMeetingSummaryToCardMeeting(meeting: MeetingSummary): Meeting {
       current: position.currentCount,
       max: position.recruitCount,
     })),
-    imageUrl: meeting.thumbnailUrl ?? FALLBACK_MEETING_IMAGE_URL,
+    imageCategory: meeting.category,
+    imageUrl: meeting.thumbnailUrl,
     isBookmarked: meeting.isBookmarked,
     isClosingToday: meeting.isDeadlineToday,
   }

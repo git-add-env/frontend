@@ -1,7 +1,7 @@
 import * as React from "react"
 import { cva, type VariantProps } from "class-variance-authority"
 import { Slot } from "radix-ui"
-import { Crown, Users } from "lucide-react"
+import { Crown, Users, X } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 const badgeVariants = cva(
@@ -86,8 +86,13 @@ function HostBadge({
 function TechStackBadge({
   className,
   children,
+  onRemove,
+  removeLabel,
   ...props
-}: React.ComponentProps<typeof Badge>) {
+}: React.ComponentProps<typeof Badge> & {
+  onRemove?: () => void
+  removeLabel?: string
+}) {
   return (
     <Badge
       variant="muted"
@@ -97,7 +102,17 @@ function TechStackBadge({
       )}
       {...props}
     >
-      #{children}
+      <span>#{children}</span>
+      {onRemove ? (
+        <button
+          type="button"
+          onClick={onRemove}
+          aria-label={removeLabel ?? `${children} 삭제`}
+          className="-mr-1 inline-flex size-6 cursor-pointer items-center justify-center rounded-full transition hover:bg-[`#1abcfe`]/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[`#1abcfe`]/25"
+        >
+          <X className="size-3" aria-hidden="true" />
+        </button>
+      ) : null}
     </Badge>
   )
 }

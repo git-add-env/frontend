@@ -58,8 +58,6 @@ import {
 import { notify } from "@/lib/notify"
 import { cn } from "@/lib/utils"
 
-const FALLBACK_MEETING_IMAGE_URL = "https://images.unsplash.com/photo-1516321318423-f06f85e504b3"
-
 type MeetingDetailProps = {
   meetingId?: number
 }
@@ -90,7 +88,8 @@ type MeetingView = {
   startDate: string
   duration: string
   meetingSchedule: string
-  heroImage: string
+  imageCategory: string
+  heroImage: string | null
   description: string
   additionalNotice: string | null
   techStacks: string[]
@@ -579,6 +578,7 @@ export function MeetingDetail({ meetingId }: MeetingDetailProps) {
             <CardContent className="p-0">
               <div className="relative flex flex-col xl:flex-row">
                 <MeetingCardImage
+                  category={meeting.imageCategory}
                   imageUrl={meeting.heroImage}
                   title={meeting.title}
                   sizes="(min-width: 1280px) 300px, (min-width: 1024px) 36vw, 100vw"
@@ -629,7 +629,7 @@ export function MeetingDetail({ meetingId }: MeetingDetailProps) {
           </Card>
 
           <Card className="rounded-xl border-0 bg-white shadow-md ring-0">
-            <CardContent className="space-y-4 p-5">
+            <CardContent className="space-y-4 px-5 py-3">
               <SectionTitle title="모임소개" />
               <div className="space-y-3 text-base leading-7 text-[#434655]">
                 {meeting.description.split("\n").map((paragraph, index) => (
@@ -641,7 +641,7 @@ export function MeetingDetail({ meetingId }: MeetingDetailProps) {
 
           {meeting.additionalNotice ? (
             <Card className="rounded-xl border-0 bg-white shadow-md ring-0">
-              <CardContent className="space-y-4 p-5">
+              <CardContent className="space-y-4 px-5 py-3">
                 <SectionTitle title="추가 안내" />
                 <div className="space-y-3 text-base leading-7 text-[#434655]">
                   {meeting.additionalNotice.split("\n").map((paragraph, index) => (
@@ -653,7 +653,7 @@ export function MeetingDetail({ meetingId }: MeetingDetailProps) {
           ) : null}
 
           <Card className="rounded-xl border-0 bg-white shadow-md ring-0">
-            <CardContent className="space-y-4 p-5">
+            <CardContent className="space-y-4 px-5 py-3">
               <SectionTitle title="상세 모집 요건" />
               <div className="space-y-3">
                 {meeting.positions.map((position) => (
@@ -667,7 +667,7 @@ export function MeetingDetail({ meetingId }: MeetingDetailProps) {
         <aside className="flex flex-col gap-6 lg:col-span-4">
           <div className="sticky top-6 flex flex-col gap-6">
             <Card className="rounded-xl border-0 bg-white shadow-md ring-0">
-              <CardContent className="space-y-4 p-5">
+              <CardContent className="space-y-4 px-5 py-3">
                 <h2 className="text-lg font-bold tracking-normal text-[#191c1e]">진행 정보</h2>
                 <div>
                   <InfoRow
@@ -704,7 +704,7 @@ export function MeetingDetail({ meetingId }: MeetingDetailProps) {
             </Card>
 
             <Card className="rounded-xl border-0 bg-white shadow-md ring-0">
-              <CardContent className="space-y-3 p-5">
+              <CardContent className="space-y-3 px-5 py-3">
                 <SectionTitle title="참여 멤버" />
                 <div className="space-y-2">
                   {showMembersLoading ? (
@@ -763,7 +763,8 @@ function mapMeetingDetailToView(meeting: MeetingDetailData, members: MeetingMemb
     startDate: formatDisplayDate(meeting.startDate),
     duration: meeting.expectedDuration ?? meeting.duration ?? "-",
     meetingSchedule: meeting.meetingSchedule ?? meeting.meetingType ?? "-",
-    heroImage: meeting.thumbnailUrl ?? FALLBACK_MEETING_IMAGE_URL,
+    imageCategory: meeting.category ?? "PROJECT",
+    heroImage: meeting.thumbnailUrl,
     description,
     additionalNotice: meeting.additionalNotice?.trim() || null,
     techStacks: meeting.techStacks ?? [],

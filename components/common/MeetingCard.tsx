@@ -6,6 +6,7 @@ import { Users } from "lucide-react"
 
 import { PositionJobCountBadges } from "@/components/common/Badges"
 import { BookMarkBtn } from "@/components/common/BookMarkBtn"
+import { CategoryThumbnailPlaceholder } from "@/components/common/CategoryThumbnailPlaceholder"
 import { MeetingDeadlineBadge } from "@/components/common/MeetingDeadlineBadge"
 import { MemberCountBar } from "@/components/common/MemberCountBar"
 import {
@@ -26,19 +27,25 @@ export type Meeting = {
   maxMembers: number
   techStacks?: string[]
   jobs?: { job: string; current: number; max: number }[]
-  imageUrl: string
+  imageCategory?: string
+  imageUrl?: string | null
   isBookmarked?: boolean
   isClosingToday?: boolean
 }
 
 type MeetingCardProps = {
   meeting: Meeting
+  disableLink?: boolean
   onBookmarkToggle?: (meetingId: string, bookmarked: boolean) => void
   bookmarkDisabled?: boolean
+  showEmptyPreviewHints?: boolean
+  showBookmark?: boolean
+  showCategoryBadge?: boolean
 }
 
 type MeetingCardImageProps = {
-  imageUrl: string
+  category?: string
+  imageUrl?: string | null
   title: string
   deadline?: string
   isBookmarked?: boolean
@@ -52,6 +59,7 @@ type MeetingCardImageProps = {
 
 export function MeetingCardImage({
   imageUrl,
+  category,
   title,
   deadline,
   isBookmarked,
@@ -64,14 +72,18 @@ export function MeetingCardImage({
 }: MeetingCardImageProps) {
   return (
     <div className={className}>
-      <Image
-        src={imageUrl}
-        alt={title}
-        fill
-        unoptimized
-        sizes={sizes}
-        className="object-cover"
-      />
+      {imageUrl ? (
+        <Image
+          src={imageUrl}
+          alt={title}
+          fill
+          unoptimized
+          sizes={sizes}
+          className="object-cover"
+        />
+      ) : (
+        <CategoryThumbnailPlaceholder category={category ?? ""} className="size-full" />
+      )}
       {isClosingToday && deadline ? (
         <MeetingDeadlineBadge
           deadline={deadline}
@@ -93,8 +105,12 @@ export function MeetingCardImage({
 
 export default function MeetingCard({
   meeting,
+  disableLink = false,
   onBookmarkToggle,
   bookmarkDisabled = false,
+  showEmptyPreviewHints = false,
+  showBookmark = true,
+  showCategoryBadge = true,
 }: MeetingCardProps) {
   function handleBookmarkToggle(bookmarked: boolean) {
     onBookmarkToggle?.(meeting.id, bookmarked)
@@ -102,15 +118,18 @@ export default function MeetingCard({
 
   return (
     <Card className="group relative h-full gap-0 overflow-hidden rounded-lg border-0 bg-white py-0 shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg">
-      <Link
-        href={`/meetings/${meeting.id}`}
-        aria-label={`${meeting.title} 상세보기`}
-        className="absolute inset-0 z-10 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1abcfe] focus-visible:ring-offset-2"
-      >
-        <span className="sr-only">{meeting.title} 상세보기</span>
-      </Link>
+      {!disableLink ? (
+        <Link
+          href={`/meetings/${meeting.id}`}
+          aria-label={`${meeting.title} 상세보기`}
+          className="absolute inset-0 z-10 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1abcfe] focus-visible:ring-offset-2"
+        >
+          <span className="sr-only">{meeting.title} 상세보기</span>
+        </Link>
+      ) : null}
 
       <MeetingCardImage
+        category={meeting.imageCategory ?? meeting.category}
         imageUrl={meeting.imageUrl}
         title={meeting.title}
         deadline={meeting.deadlineDate ?? meeting.deadline}
@@ -118,16 +137,19 @@ export default function MeetingCard({
         isClosingToday={meeting.isClosingToday}
         onBookmarkToggle={handleBookmarkToggle}
         bookmarkDisabled={bookmarkDisabled}
+        showBookmark={showBookmark}
         className="relative aspect-[4/3] w-full overflow-hidden bg-[#e6e8ea]"
         sizes="(min-width: 1280px) 280px, (min-width: 768px) 50vw, 100vw"
       />
 
       <CardContent className="flex h-[276px] flex-1 flex-col gap-3 p-4">
         <div className="flex min-h-0 flex-col gap-1.5">
-          <CategoryBadge
-            category={meeting.category}
-            className="h-5 px-2.5 text-xs font-medium"
-          />
+          {showCategoryBadge ? (
+            <CategoryBadge
+              category={meeting.category}
+              className="h-5 px-2.5 text-xs font-medium"
+            />
+          ) : null}
           <h3 className="line-clamp-2 min-h-7 pt-1 text-base font-semibold leading-snug text-[#191c1e] transition group-hover:text-blue-500">
             {meeting.title}
           </h3>
@@ -137,6 +159,10 @@ export default function MeetingCard({
               techStacks={meeting.techStacks}
               className="mt-1 max-h-11 min-h-11 overflow-hidden gap-1 [&_[data-slot=badge]]:h-5 [&_[data-slot=badge]]:px-1.5 [&_[data-slot=badge]]:text-[10px]"
             />
+          ) : showEmptyPreviewHints ? (
+            <p className="mt-1 min-h-11 text-xs leading-5 text-[#737686]">
+              기술스택이 여기에 표시됩니다.
+            </p>
           ) : null}
 
           {meeting.jobs?.length ? (
@@ -145,6 +171,10 @@ export default function MeetingCard({
               className="mt-2 flex max-h-[52px] min-h-[52px] flex-wrap gap-1 overflow-hidden"
               badgeClassName="h-6 px-2 text-[11px] font-medium [&>svg]:hidden [&_.meeting-job-count]:hidden"
             />
+          ) : showEmptyPreviewHints ? (
+            <p className="mt-2 min-h-[52px] text-xs leading-5 text-[#737686]">
+              포지션이 여기에 표시됩니다.
+            </p>
           ) : null}
         </div>
 
