@@ -108,7 +108,7 @@ function TechStackBadge({
           type="button"
           onClick={onRemove}
           aria-label={removeLabel ?? `${children} 삭제`}
-          className="-mr-0.5 inline-flex size-3.5 cursor-pointer items-center justify-center rounded-full transition hover:bg-[#1abcfe]/15"
+          className="-mr-1 inline-flex size-6 cursor-pointer items-center justify-center rounded-full transition hover:bg-[`#1abcfe`]/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[`#1abcfe`]/25"
         >
           <X className="size-3" aria-hidden="true" />
         </button>

@@ -1,31 +1,46 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { type FormEvent, useEffect, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
-import type { LocalUserChoices } from "@livekit/components-core"
-import { useQuery } from "@tanstack/react-query"
 import {
+  isTrackReference,
+  supportsScreenSharing,
+  type LocalUserChoices,
+} from "@livekit/components-core"
+import { useQuery } from "@tanstack/react-query"
+import { MediaDeviceFailure, Track } from "livekit-client"
+import {
+  ConnectionStateToast,
+  GridLayout,
   LiveKitRoom,
+  MediaDeviceMenu,
+  ParticipantName,
+  ParticipantPlaceholder,
+  ParticipantTile,
   PreJoin,
-  VideoConference as LiveKitVideoConference,
+  RoomAudioRenderer,
+  StartMediaButton,
+  TrackToggle,
+  TrackMutedIndicator,
+  VideoTrack,
   useConnectionState,
+  useChat,
   useParticipants,
+  useTrackRefContext,
+  useTracks,
 } from "@livekit/components-react"
 import {
   Loader2,
-  LockKeyhole,
   LogOut,
-  Mic2,
+  MessageCircle,
   PhoneOff,
-  Settings2,
+  Send,
   Users,
-  Video,
   VideoOff,
-  Wifi,
+  X,
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
 import { ConfirmDialog } from "@/components/common/ConfirmDialog"
 import {
   Card,
@@ -42,12 +57,38 @@ import {
 } from "@/hooks/dashboard/use-meeting-room"
 import { useAuthUser } from "@/hooks/useAuthUser"
 import { ApiFetchError } from "@/lib/api/api-fetch"
-import { fetchMeetingDetail } from "@/lib/api/meetings"
+import { fetchMeetingDetail, fetchMeetingMembers } from "@/lib/api/meetings"
 import { notify } from "@/lib/notify"
 import { useConferenceStore } from "@/stores/conference-store"
 
 type MeetingConferenceRoomProps = {
   meetingId: number | null
+}
+
+function getMediaDeviceErrorMessage(
+  failure?: MediaDeviceFailure,
+  kind?: MediaDeviceKind
+) {
+  const deviceName =
+    kind === "videoinput"
+      ? "카메라"
+      : kind === "audioinput"
+        ? "마이크"
+        : "카메라 또는 마이크"
+
+  if (failure === MediaDeviceFailure.PermissionDenied) {
+    return `${deviceName} 권한이 차단되어 꺼진 상태로 입장했습니다. 브라우저 권한을 허용한 뒤 아래 버튼으로 다시 켤 수 있습니다.`
+  }
+
+  if (failure === MediaDeviceFailure.NotFound) {
+    return `${deviceName} 장치를 찾지 못해 꺼진 상태로 입장했습니다.`
+  }
+
+  if (failure === MediaDeviceFailure.DeviceInUse) {
+    return `${deviceName}가 다른 앱에서 사용 중이라 꺼진 상태로 입장했습니다.`
+  }
+
+  return `${deviceName}를 사용할 수 없어 꺼진 상태로 입장했습니다.`
 }
 
 export function MeetingConferenceRoom({
@@ -73,6 +114,7 @@ export function MeetingConferenceRoom({
   const [userChoices, setUserChoices] = useState<LocalUserChoices | null>(null)
   const [connectionError, setConnectionError] = useState<string | null>(null)
   const [previewError, setPreviewError] = useState<string | null>(null)
+  const [mediaDeviceError, setMediaDeviceError] = useState<string | null>(null)
   const [endDialogOpen, setEndDialogOpen] = useState(false)
   const [endError, setEndError] = useState<string | null>(null)
 
@@ -85,7 +127,26 @@ export function MeetingConferenceRoom({
     queryFn: () => fetchMeetingDetail(meetingId as number, { auth: true }),
     enabled: meetingId !== null && authStatus === "authenticated",
   })
+  const { data: meetingMembers } = useQuery({
+    queryKey: queryKeys.meetings.members(meetingId ?? 0),
+    queryFn: () => fetchMeetingMembers(meetingId as number),
+    enabled: meetingId !== null && authStatus === "authenticated",
+    select: (data) => data.members,
+  })
   const isLeader = meetingDetail?.isLeader ?? false
+  const hostUserId = meetingMembers?.find((member) => member.isLeader)?.id
+
+  useEffect(() => {
+    const isActiveConference = Boolean(
+      userChoices && currentConnection && !connectionError
+    )
+
+    document.body.classList.toggle("conference-active", isActiveConference)
+
+    return () => {
+      document.body.classList.remove("conference-active")
+    }
+  }, [connectionError, currentConnection, userChoices])
 
   useEffect(() => {
     if (
@@ -204,15 +265,14 @@ export function MeetingConferenceRoom({
     (user && !currentConnection && !connectionError)
   ) {
     return (
-      <section className="flex min-h-[70vh] items-center justify-center bg-muted/30 px-6">
-        <div className="flex flex-col items-center gap-4">
-          <div className="flex size-14 items-center justify-center rounded-2xl border bg-background shadow-sm">
+      <section className="flex min-h-[70vh] items-center justify-center bg-[#f5f6f8] px-6">
+        <div className="flex flex-col items-center gap-3">
+          <div className="flex size-12 items-center justify-center rounded-full bg-background shadow-sm ring-1 ring-border">
             <Loader2 className="size-6 animate-spin text-primary" aria-hidden />
           </div>
-          <div className="space-y-1 text-center">
-            <p className="font-medium">화상회의를 준비하고 있습니다</p>
-            <p className="text-sm text-muted-foreground">잠시만 기다려주세요</p>
-          </div>
+          <p className="text-sm font-medium text-muted-foreground">
+            회의 준비 중
+          </p>
         </div>
       </section>
     )
@@ -235,48 +295,22 @@ export function MeetingConferenceRoom({
   if (!userChoices) {
     return (
       <>
-        <section className="flex min-h-[calc(100svh-8rem)] flex-col bg-muted/30">
-          <ConferenceHeader
-            meetingId={meetingId}
-            roomName={currentConnection.roomId}
-            isLeader={isLeader}
-            busy={leaveMeeting.isPending || endMeeting.isPending}
-            onLeave={() => void handleLeave()}
-            onEnd={() => setEndDialogOpen(true)}
-          />
-          <div className="mx-auto grid w-full max-w-6xl flex-1 items-center gap-6 px-6 py-10 lg:grid-cols-[0.75fr_1.25fr] lg:px-10">
-            <Card className="h-fit border-border/70 shadow-sm">
-              <CardHeader className="space-y-3">
-                <div className="flex size-11 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-                  <Video className="size-5" aria-hidden />
-                </div>
-                <div className="space-y-1.5">
-                  <CardTitle className="text-2xl">
-                    참여할 준비가 되셨나요?
-                  </CardTitle>
-                  <CardDescription className="leading-6">
-                    회의에 입장하기 전 카메라와 마이크 상태를 확인해주세요.
-                  </CardDescription>
-                </div>
+        <section className="relative flex min-h-[calc(100svh-4.5rem)] flex-col bg-[#f5f6f8]">
+          <div className="mx-auto flex w-full max-w-4xl flex-1 items-center px-4 py-8 sm:px-6">
+            <Card
+              className="conference-prejoin-card w-full gap-4 rounded-2xl py-5 shadow-sm ring-black/8"
+              style={{ overflow: "visible" }}
+            >
+              <CardHeader className="text-center">
+                <CardTitle className="text-xl font-semibold">입장 준비</CardTitle>
+                <CardDescription>
+                  카메라와 마이크를 확인하세요.
+                </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-5">
-                <div className="space-y-2.5">
-                  <PreviewGuide icon={Video} text="카메라 화면 확인" />
-                  <PreviewGuide icon={Mic2} text="마이크 입력 확인" />
-                  <PreviewGuide icon={Settings2} text="사용할 장치 선택" />
-                </div>
-                <div className="flex items-start gap-3 rounded-xl border bg-muted/50 p-3 text-xs leading-5 text-muted-foreground">
-                  <LockKeyhole className="mt-0.5 size-4 shrink-0" aria-hidden />
-                  입장 전에는 영상과 음성이 다른 참여자에게 전송되지 않습니다.
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="overflow-hidden border-border/70 shadow-sm">
-              <CardContent className="p-3 sm:p-5">
+              <CardContent className="px-3 sm:px-5">
                 <div
                   data-lk-theme="default"
-                  className="conference-prejoin overflow-hidden rounded-xl border bg-muted/20 p-3 sm:p-4"
+                  className="conference-prejoin overflow-visible rounded-xl bg-muted/30"
                 >
                   <PreJoin
                     defaults={{
@@ -301,7 +335,7 @@ export function MeetingConferenceRoom({
                   />
                 </div>
                 {previewError && (
-                  <p className="mt-4 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2.5 text-sm text-amber-700 dark:text-amber-300">
+                  <p className="mt-3 rounded-lg bg-amber-500/10 px-3 py-2.5 text-sm text-amber-700 dark:text-amber-300">
                     {previewError}
                   </p>
                 )}
@@ -326,17 +360,17 @@ export function MeetingConferenceRoom({
 
   return (
     <>
-      <section className="flex h-[calc(100svh-4.25rem)] min-h-[620px] flex-col overflow-hidden bg-muted/30">
-        <ConferenceHeader
-          meetingId={meetingId}
-          roomName={currentConnection.roomId}
-          isLeader={isLeader}
-          busy={leaveMeeting.isPending || endMeeting.isPending}
-          onLeave={() => void handleLeave()}
-          onEnd={() => setEndDialogOpen(true)}
-        />
-        <div className="min-h-0 flex-1 sm:p-3 lg:p-4">
-          <div className="h-full overflow-hidden border-y bg-[#0b0d12] shadow-sm sm:rounded-2xl sm:border">
+      <section className="relative flex h-svh min-h-[620px] flex-col overflow-hidden bg-[#080a0f]">
+        <div className="min-h-0 flex-1 p-2 sm:p-3">
+          <div className="relative h-full overflow-hidden bg-[#0b0d12] sm:rounded-2xl sm:ring-1 sm:ring-white/10">
+            {mediaDeviceError && (
+              <div
+                role="status"
+                className="absolute left-1/2 top-16 z-20 w-[calc(100%-1.5rem)] max-w-xl -translate-x-1/2 rounded-xl bg-amber-950/95 px-4 py-3 text-sm text-amber-100 shadow-xl ring-1 ring-amber-300/20 backdrop-blur"
+              >
+                {mediaDeviceError}
+              </div>
+            )}
             <LiveKitRoom
               token={currentConnection.token}
               serverUrl={currentConnection.url}
@@ -357,9 +391,35 @@ export function MeetingConferenceRoom({
                 activateConference(meetingId, currentConnection.userId)
               }}
               onDisconnected={() => void handleLeave()}
-              onError={(error) => setConnectionError(error.message)}
+              onMediaDeviceFailure={(failure, kind) => {
+                setMediaDeviceError(getMediaDeviceErrorMessage(failure, kind))
+              }}
+              onError={(error) => {
+                const mediaFailure = MediaDeviceFailure.getFailure(error)
+
+                if (mediaFailure) {
+                  setMediaDeviceError(
+                    getMediaDeviceErrorMessage(mediaFailure)
+                  )
+                  return
+                }
+
+                setConnectionError(error.message)
+              }}
             >
-              <ConferenceRoomContent />
+              <ConferenceRoomContent
+                hostIdentity={
+                  hostUserId !== undefined
+                    ? String(hostUserId)
+                    : isLeader
+                      ? currentConnection.userId
+                      : null
+                }
+                isLeader={isLeader}
+                busy={leaveMeeting.isPending || endMeeting.isPending}
+                onLeave={() => void handleLeave()}
+                onEnd={() => setEndDialogOpen(true)}
+              />
             </LiveKitRoom>
           </div>
         </div>
@@ -379,113 +439,260 @@ export function MeetingConferenceRoom({
   )
 }
 
-function ConferenceRoomContent() {
-  const participants = useParticipants()
-  const connectionState = useConnectionState()
-  const isConnected = connectionState === "connected"
-
-  return (
-    <div className="flex h-full min-h-0 flex-col bg-[#0b0d12] text-white">
-      <div className="flex h-11 shrink-0 items-center justify-between border-b border-white/8 px-3 sm:px-5">
-        <div className="flex items-center gap-2 text-xs text-white/55">
-          <span className="flex items-center gap-1.5">
-            <span
-              className={`size-1.5 rounded-full ${isConnected ? "bg-emerald-400" : "bg-amber-400"}`}
-            />
-            {isConnected ? "연결됨" : "연결 중"}
-          </span>
-          <span className="h-3 w-px bg-white/10" />
-          <span className="flex items-center gap-1.5">
-            <Users className="size-3.5" aria-hidden />
-            참여자 {participants.length}명
-          </span>
-        </div>
-        <span className="hidden items-center gap-1.5 text-xs text-white/40 sm:flex">
-          <Wifi className="size-3.5" aria-hidden />
-          안정적인 네트워크 환경을 권장합니다
-        </span>
-      </div>
-      <div className="min-h-0 flex-1">
-        <LiveKitVideoConference />
-      </div>
-    </div>
-  )
-}
-
-type ConferenceHeaderProps = {
-  meetingId: number
-  roomName: string
+type ConferenceRoomContentProps = {
+  hostIdentity: string | null
   isLeader: boolean
   busy: boolean
   onLeave: () => void
   onEnd: () => void
 }
 
-function ConferenceHeader({
-  meetingId,
-  roomName,
+function ConferenceRoomContent({
+  hostIdentity,
   isLeader,
   busy,
   onLeave,
   onEnd,
-}: ConferenceHeaderProps) {
+}: ConferenceRoomContentProps) {
+  const [isChatOpen, setIsChatOpen] = useState(false)
+  const participants = useParticipants()
+  const connectionState = useConnectionState()
+  const isConnected = connectionState === "connected"
+  const tracks = useTracks(
+    [
+      { source: Track.Source.Camera, withPlaceholder: true },
+      { source: Track.Source.ScreenShare, withPlaceholder: false },
+    ],
+    { onlySubscribed: false }
+  )
+
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3 border-b bg-background px-5 py-4 sm:px-8">
-      <div className="flex min-w-0 items-center gap-3">
-        <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-          <Video className="size-5" aria-hidden />
-        </div>
-        <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            <p className="truncate text-sm font-semibold sm:text-base">
-              화상회의
-            </p>
-            <Badge
-              variant="outline"
-              className="h-6 rounded-full px-2 text-[10px] font-medium"
-            >
-              MEETING {meetingId}
-            </Badge>
-          </div>
-          <p className="mt-0.5 truncate text-xs text-muted-foreground">
-            {roomName}
-          </p>
-        </div>
+    <div className="relative h-full min-h-0 bg-[#0b0d12] text-white">
+      <div className="pointer-events-none absolute left-3 top-3 z-10 flex items-center gap-2 rounded-full bg-black/55 px-3 py-2 text-xs text-white/80 shadow-lg backdrop-blur-md">
+        <span
+          className={`size-2 rounded-full ${isConnected ? "bg-emerald-400" : "bg-amber-400"}`}
+        />
+        <span>{isConnected ? "연결됨" : "연결 중"}</span>
+        <span className="h-3 w-px bg-white/20" />
+        <Users className="size-3.5" aria-hidden />
+        <span>{participants.length}</span>
       </div>
-      <div className="flex items-center gap-2">
-        <Button variant="outline" size="sm" onClick={onLeave} disabled={busy}>
-          <LogOut className="size-4" aria-hidden />
-          나가기
-        </Button>
-        {isLeader && (
-          <Button
-            variant="destructive"
-            size="sm"
-            onClick={onEnd}
-            disabled={busy}
-          >
-            <PhoneOff className="size-4" aria-hidden />
-            회의 종료
-          </Button>
-        )}
+      <div className="h-full min-h-0">
+        <div className="lk-video-conference">
+          <div className="lk-video-conference-inner">
+            <div className="lk-grid-layout-wrapper">
+              <GridLayout tracks={tracks}>
+                <ConferenceParticipantTile hostIdentity={hostIdentity} />
+              </GridLayout>
+            </div>
+            <ConferenceControlBar
+              isChatOpen={isChatOpen}
+              onChatToggle={() => setIsChatOpen((open) => !open)}
+              isLeader={isLeader}
+              busy={busy}
+              onLeave={onLeave}
+              onEnd={onEnd}
+            />
+          </div>
+          {isChatOpen && (
+            <ConferenceChatPanel onClose={() => setIsChatOpen(false)} />
+          )}
+          <RoomAudioRenderer />
+          <ConnectionStateToast />
+        </div>
       </div>
     </div>
   )
 }
 
-type PreviewGuideProps = {
-  icon: typeof Video
-  text: string
+type ConferenceParticipantTileProps = {
+  hostIdentity: string | null
 }
 
-function PreviewGuide({ icon: Icon, text }: PreviewGuideProps) {
+function ConferenceParticipantTile({
+  hostIdentity,
+}: ConferenceParticipantTileProps) {
+  const trackRef = useTrackRefContext()
+  const participant = trackRef.participant
+  const isHost =
+    hostIdentity !== null && String(participant.identity) === hostIdentity
+
   return (
-    <div className="flex items-center gap-3 rounded-lg px-1 py-1.5 text-sm text-foreground">
-      <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-        <Icon className="size-4" aria-hidden />
-      </span>
-      {text}
+    <ParticipantTile trackRef={trackRef}>
+      {isTrackReference(trackRef) && <VideoTrack trackRef={trackRef} />}
+      <div className="lk-participant-placeholder">
+        <ParticipantPlaceholder />
+      </div>
+      <div className="conference-participant-meta">
+        <TrackMutedIndicator
+          trackRef={{ participant, source: Track.Source.Microphone }}
+          show="always"
+        />
+        <ParticipantName participant={participant} />
+        {isHost && <span className="conference-host-badge">호스트</span>}
+      </div>
+    </ParticipantTile>
+  )
+}
+
+type ConferenceControlBarProps = {
+  isChatOpen: boolean
+  onChatToggle: () => void
+  isLeader: boolean
+  busy: boolean
+  onLeave: () => void
+  onEnd: () => void
+}
+
+function ConferenceControlBar({
+  isChatOpen,
+  onChatToggle,
+  isLeader,
+  busy,
+  onLeave,
+  onEnd,
+}: ConferenceControlBarProps) {
+  const [isScreenShareEnabled, setIsScreenShareEnabled] = useState(false)
+
+  return (
+    <div className="lk-control-bar">
+      <div className="lk-button-group">
+        <TrackToggle source={Track.Source.Microphone}>마이크</TrackToggle>
+        <div className="lk-button-group-menu">
+          <MediaDeviceMenu kind="audioinput" />
+        </div>
+      </div>
+      <div className="lk-button-group">
+        <TrackToggle source={Track.Source.Camera}>카메라</TrackToggle>
+        <div className="lk-button-group-menu">
+          <MediaDeviceMenu kind="videoinput" />
+        </div>
+      </div>
+      {supportsScreenSharing() && (
+        <TrackToggle
+          source={Track.Source.ScreenShare}
+          captureOptions={{ audio: true, selfBrowserSurface: "include" }}
+          onChange={setIsScreenShareEnabled}
+        >
+          {isScreenShareEnabled ? "공유 중지" : "화면 공유"}
+        </TrackToggle>
+      )}
+      <button
+        type="button"
+        className="lk-button"
+        aria-pressed={isChatOpen}
+        onClick={onChatToggle}
+      >
+        <MessageCircle className="size-4" aria-hidden />
+        채팅
+      </button>
+      <span className="conference-control-divider" aria-hidden="true" />
+      <button
+        type="button"
+        className="lk-button conference-leave-button"
+        onClick={onLeave}
+        disabled={busy}
+      >
+        <LogOut className="size-4" aria-hidden />
+        나가기
+      </button>
+      {isLeader && (
+        <button
+          type="button"
+          className="lk-button conference-end-button"
+          onClick={onEnd}
+          disabled={busy}
+        >
+          <PhoneOff className="size-4" aria-hidden />
+          회의 종료
+        </button>
+      )}
+      <StartMediaButton label="미디어 재생" />
     </div>
+  )
+}
+
+type ConferenceChatPanelProps = {
+  onClose: () => void
+}
+
+function ConferenceChatPanel({ onClose }: ConferenceChatPanelProps) {
+  const { chatMessages, send, isSending } = useChat()
+  const [message, setMessage] = useState("")
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    const nextMessage = message.trim()
+
+    if (!nextMessage || isSending) return
+
+    await send(nextMessage)
+    setMessage("")
+  }
+
+  return (
+    <aside className="conference-chat" aria-label="회의 채팅">
+      <div className="conference-chat-header">
+        <div>
+          <p className="font-semibold">채팅</p>
+          <p className="text-xs text-white/45">현재 참여자에게만 보여요</p>
+        </div>
+        <button
+          type="button"
+          className="conference-chat-close"
+          aria-label="채팅 닫기"
+          onClick={onClose}
+        >
+          <X className="size-4" aria-hidden />
+        </button>
+      </div>
+      <div className="conference-chat-messages" aria-live="polite">
+        {chatMessages.length === 0 ? (
+          <div className="conference-chat-empty">
+            <MessageCircle className="size-5" aria-hidden />
+            <span>첫 메시지를 남겨보세요</span>
+          </div>
+        ) : (
+          chatMessages.map((chatMessage, index) => (
+            <div
+              key={chatMessage.id ?? `${chatMessage.timestamp}-${index}`}
+              className="conference-chat-message"
+            >
+              <div className="conference-chat-message-meta">
+                <span>
+                  {chatMessage.from?.name ??
+                    chatMessage.from?.identity ??
+                    "참가자"}
+                </span>
+                <time>
+                  {new Date(chatMessage.timestamp).toLocaleTimeString("ko-KR", {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </time>
+              </div>
+              <p>{chatMessage.message}</p>
+            </div>
+          ))
+        )}
+      </div>
+      <form className="conference-chat-form" onSubmit={handleSubmit}>
+        <input
+          value={message}
+          onChange={(event) => setMessage(event.target.value)}
+          placeholder="메시지 입력"
+          aria-label="채팅 메시지"
+          disabled={isSending}
+        />
+        <button
+          type="submit"
+          aria-label="메시지 보내기"
+          disabled={!message.trim() || isSending}
+        >
+          <Send className="size-4" aria-hidden />
+        </button>
+      </form>
+    </aside>
   )
 }
 

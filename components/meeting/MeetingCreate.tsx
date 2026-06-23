@@ -183,6 +183,17 @@ const meetingPayloadSchema = z.object({
       MEETING_POSITION_MAX_COUNT,
       `모집 포지션은 ${MEETING_POSITION_MAX_COUNT}개까지 추가할 수 있습니다.`,
     ),
+    }).superRefine((payload, context) => {
+  const deadline = parseDateValue(payload.deadline)
+  const startDate = parseDateValue(payload.startDate)
+
+  if (deadline && startDate && deadline > startDate) {
+    context.addIssue({
+      code: "custom",
+      path: ["deadline"],
+      message: "모집 마감일은 시작 예정일 이전이어야 합니다.",
+    })
+  }
 })
 
 export function MeetingCreate({ meetingId }: MeetingCreateProps) {
@@ -382,7 +393,6 @@ function MeetingCreateForm({ initialForm, isEditMode, meetingId }: MeetingCreate
       return
     }
 
-    setFieldErrors({})
     setThumbnailUploading(true)
 
     try {
@@ -1722,9 +1732,9 @@ function formatDisplayDate(date: string) {
     return "선택"
   }
 
-  const parsedDate = new Date(date)
+  const parsedDate = parseDateValue(date.slice(0, 10))
 
-  if (Number.isNaN(parsedDate.getTime())) {
+  if (!parsedDate) {
     return date
   }
 

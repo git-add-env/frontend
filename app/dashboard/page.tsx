@@ -7,6 +7,7 @@ import { DashboardContentSkeleton } from "@/components/dashboard/DashboardStates
 import { DashboardSidebar } from "@/components/dashboard/DashboardSidebar"
 import { DashboardTabs } from "@/components/dashboard/DashboardTabs"
 import { MeetingHeader } from "@/components/dashboard/MeetingHeader"
+import { MeetingProgressInfo } from "@/components/dashboard/MeetingProgressInfo"
 import { MembersTab } from "@/components/dashboard/MembersTab"
 import { NoticesTab } from "@/components/dashboard/NoticesTab"
 import { ResourceCard } from "@/components/dashboard/ResourceCard"
@@ -22,7 +23,7 @@ type TabKey = "notices" | "schedules" | "resources" | "members"
 const tabs: { key: TabKey; label: string }[] = [
   { key: "notices", label: "공지" },
   { key: "schedules", label: "일정" },
-  { key: "resources", label: "참고 링크" },
+  { key: "resources", label: "링크" },
   { key: "members", label: "멤버" },
 ]
 
@@ -64,6 +65,9 @@ function DashboardContent() {
     } catch {
       /* 저장 실패는 무시 (선택 자체는 동작) */
     }
+    // 선택한 모임 컨텐츠가 위에서 보이도록 맨 위로 스크롤 (데스크탑·모바일 공통).
+    // smooth 애니메이션 중 컨텐츠 리렌더로 sticky 사이드바가 튀어서 즉시 이동으로 처리.
+    window.scrollTo({ top: 0 })
   }
 
   // 마이페이지 "내 모임" 버튼이 ?meetingId= 로 넘긴 모임을 초기 선택으로 사용.
@@ -100,7 +104,7 @@ function DashboardContent() {
   const isLeader = selectedGroup?.isLeader ?? false
 
   return (
-    <div className="dashboard-borders mx-auto flex w-full max-w-[1280px] gap-6 px-6 py-8">
+    <div className="dashboard-borders mx-auto flex w-full max-w-[1280px] flex-col gap-4 px-6 py-8 lg:flex-row lg:gap-10">
       <DashboardSidebar
         groups={groups}
         groupsError={groupsError}
@@ -118,10 +122,17 @@ function DashboardContent() {
 
             {effectiveGroupId !== null && selectedGroup && (
               <VideoConferenceBanner
-                key={effectiveGroupId}
+                key={`conference-${effectiveGroupId}`}
                 meetingId={effectiveGroupId}
                 isLeader={isLeader}
                 status={selectedGroup.status}
+              />
+            )}
+
+            {effectiveGroupId !== null && (
+              <MeetingProgressInfo
+                key={`progress-${effectiveGroupId}`}
+                meetingId={effectiveGroupId}
               />
             )}
 

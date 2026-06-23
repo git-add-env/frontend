@@ -17,10 +17,10 @@ function GithubIcon({ className }: { className?: string }) {
 // Footer _ Desktop 디자인 (모여ON 푸터)
 export function Footer() {
   return (
-    <footer className="w-full border-t border-border bg-background/95 backdrop-blur">
-      <div className="mx-auto flex w-full max-w-[1280px] flex-col items-center gap-4 px-6 py-12 text-center">
-        {/* 브랜드 + 태그라인 (세로) */}
-        <div className="flex flex-col items-center gap-1">
+    <footer className="site-footer w-full border-t border-border bg-background/95 backdrop-blur">
+      <div className="mx-auto flex w-full max-w-[1280px] flex-col gap-6 px-6 py-10 sm:flex-row sm:items-center sm:justify-between">
+        {/* 왼쪽: 브랜드 + 태그라인 + 저작권 */}
+        <div className="flex flex-col items-start gap-1">
           <Link
             href="/landing"
             className="inline-flex items-start gap-1 text-lg font-bold"
@@ -36,24 +36,22 @@ export function Footer() {
           <p className="text-sm text-muted-foreground">
             비대면 협업을 위한 개발자 팀 매칭 &amp; 화상회의 플랫폼.
           </p>
+          <p className="mt-2 text-xs text-muted-foreground">
+            © 2026 모여ON. All rights reserved.
+          </p>
         </div>
 
-        {/* GitHub 링크 (긴 버튼) */}
+        {/* 오른쪽: GitHub 링크 */}
         <Link
           href="https://github.com/git-add-env/frontend"
           target="_blank"
           rel="noopener noreferrer"
           aria-label="GitHub 저장소"
-          className="mt-3 inline-flex items-center gap-2 rounded-full border-2 border-border bg-background px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+          className="inline-flex shrink-0 items-center gap-2 rounded-full border-2 border-border bg-background px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
         >
           <GithubIcon className="size-4" />
           GitHub
         </Link>
-
-        {/* 저작권 */}
-        <p className="text-xs text-muted-foreground">
-          © 2026 모여ON. All rights reserved.
-        </p>
       </div>
     </footer>
   )

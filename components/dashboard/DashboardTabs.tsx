@@ -24,11 +24,15 @@ export function DashboardTabs<T extends string>({
             type="button"
             onClick={() => onChange(tab.key)}
             className={cn(
-              "border-b-2 border-transparent px-4 py-2 text-sm text-muted-foreground transition-colors hover:text-foreground",
-              isActive && "border-foreground font-medium text-foreground",
+              "relative flex shrink-0 items-center gap-1.5 px-4 py-2.5 text-sm font-medium whitespace-nowrap text-muted-foreground transition-colors hover:text-foreground",
+              isActive && "font-semibold text-foreground",
             )}
           >
             {tab.label}
+            {/* 활성 탭 밑줄 — 마이페이지와 동일한 양끝 둥근 막대 */}
+            {isActive && (
+              <span className="absolute inset-x-3 -bottom-px h-[3px] rounded-full bg-brand" />
+            )}
           </button>
         )
       })}

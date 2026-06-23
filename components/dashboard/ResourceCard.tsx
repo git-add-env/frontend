@@ -60,7 +60,7 @@ export function ResourceCard({ meetingId, isLeader }: ResourceCardProps) {
   return (
     <div className="rounded-2xl border border-border bg-card p-6">
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-base font-semibold">참고 링크</h2>
+        <h2 className="text-base font-semibold">링크</h2>
         {isLeader && (
           <Button
             size="sm"
@@ -72,7 +72,7 @@ export function ResourceCard({ meetingId, isLeader }: ResourceCardProps) {
               "취소"
             ) : (
               <>
-                <Plus /> 링크 추가
+                <Plus /> 추가
               </>
             )}
           </Button>

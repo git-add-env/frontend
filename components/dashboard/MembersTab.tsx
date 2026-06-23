@@ -4,6 +4,7 @@ import { useState } from "react"
 
 import { MemberProfileDialog } from "@/components/common/MemberProfileDialog"
 import { ProfileAvatar } from "@/components/common/ProfileAvatar"
+import { HostBadge } from "@/components/ui/badge"
 import { useMeetingMembers } from "@/hooks/dashboard/use-members"
 
 import { EmptyState, ListSkeleton } from "./DashboardStates"
@@ -91,11 +92,7 @@ function MemberItem({
       <div className="flex flex-col">
         <div className="flex items-center gap-2">
           <p className="text-sm font-bold">{name}</p>
-          {isLeader && (
-            <span className="rounded-full bg-foreground px-2 py-0.5 text-xs text-background">
-              모임장
-            </span>
-          )}
+          {isLeader && <HostBadge />}
         </div>
         <p className="text-xs text-muted-foreground">{role}</p>
       </div>

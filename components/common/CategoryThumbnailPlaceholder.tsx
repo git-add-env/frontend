@@ -1,5 +1,3 @@
-"use client"
-
 import { FolderGit2, Trophy, Zap, type LucideIcon } from "lucide-react"
 
 import { cn } from "@/lib/utils"
