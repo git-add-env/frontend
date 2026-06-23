@@ -17,7 +17,7 @@ function GithubIcon({ className }: { className?: string }) {
 // Footer _ Desktop 디자인 (모여ON 푸터)
 export function Footer() {
   return (
-    <footer className="w-full border-t border-border bg-background/95 backdrop-blur">
+    <footer className="site-footer w-full border-t border-border bg-background/95 backdrop-blur">
       <div className="mx-auto flex w-full max-w-[1280px] flex-col gap-6 px-6 py-10 sm:flex-row sm:items-center sm:justify-between">
         {/* 왼쪽: 브랜드 + 태그라인 + 저작권 */}
         <div className="flex flex-col items-start gap-1">
