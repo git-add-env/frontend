@@ -158,14 +158,6 @@ export default function MeetingsPage() {
     <main className="min-h-screen bg-[#f7f9fb]">
       <div className="mx-auto flex w-full max-w-[1280px] flex-col gap-18 px-6 pb-0 pt-10">
         <section className="flex flex-col gap-6">
-          {/* <div>
-            <h1 className="text-[32px] font-medium leading-10 tracking-normal text-[#191c1e]">
-              함께 성장할 팀원을 찾아보세요
-            </h1>
-            <p className="mt-1 text-lg leading-7 text-[#434655]">
-              당신의 열정을 함께 나눌 프로젝트와 동료들이 기다리고 있습니다.
-            </p>
-          </div> */}
 
           <div className="flex flex-col gap-6 rounded-xl border-0 bg-white p-6 shadow-md">
             <div className="flex flex-col gap-3 sm:flex-row">
