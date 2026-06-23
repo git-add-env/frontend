@@ -2,6 +2,8 @@
 
 import { useState } from "react"
 
+import { Power } from "lucide-react"
+
 import { Button } from "@/components/ui/button"
 import { CategoryBadge, HostBadge } from "@/components/ui/badge"
 import {
@@ -67,10 +69,11 @@ export function MeetingHeader({ group }: MeetingHeaderProps) {
           <Button
             variant="outline"
             size="sm"
-            className="shrink-0"
+            className="shrink-0 border-destructive text-destructive hover:bg-destructive/10 hover:text-destructive"
             onClick={() => setConfirmOpen(true)}
           >
-            종료
+            <Power />
+            모임 종료하기
           </Button>
         )}
       </div>
@@ -107,7 +110,11 @@ export function MeetingHeader({ group }: MeetingHeaderProps) {
             >
               닫기
             </Button>
-            <Button onClick={runComplete} disabled={completeMeeting.isPending}>
+            <Button
+              variant="destructive"
+              onClick={runComplete}
+              disabled={completeMeeting.isPending}
+            >
               {completeMeeting.isPending ? "처리 중..." : "종료"}
             </Button>
           </div>
