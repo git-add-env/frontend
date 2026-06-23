@@ -21,13 +21,14 @@ import {
   Info,
   LoaderCircle,
   Plus,
-  Save,
   Trash2,
   Upload,
   Users,
+  X,
 } from "lucide-react"
 
 import { Calendars } from "@/components/common/Calendars"
+import MeetingCard, { type Meeting as MeetingCardPreview } from "@/components/common/MeetingCard"
 import { Button } from "@/components/ui/button"
 import { TechStackBadge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
@@ -98,7 +99,7 @@ const INITIAL_FORM: MeetingFormState = {
   meetingSchedule: "주 1회",
   description: "",
   techStackInput: "",
-  techStacks: ["React", "TypeScript", "Tailwind CSS"],
+  techStacks: [],
   referenceNote: "",
   positions: [
     {
@@ -168,10 +169,6 @@ function MeetingCreateForm({ initialForm, isEditMode, meetingId }: MeetingCreate
   const [thumbnailUploading, setThumbnailUploading] = useState(false)
 
   const completion = useMemo(() => getCompletion(form), [form])
-  const totalRecruitCount = useMemo(
-    () => form.positions.reduce((total, position) => total + position.recruitCount, 0),
-    [form.positions],
-  )
   const selectedPositionNames = useMemo(
     () => form.positions.map((position) => position.name).filter(Boolean),
     [form.positions],
@@ -215,29 +212,35 @@ function MeetingCreateForm({ initialForm, isEditMode, meetingId }: MeetingCreate
       return
     }
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const visibleEntry = entries
-          .filter((entry) => entry.isIntersecting)
-          .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0]
+    function updateActiveSection() {
+      const activationLine = 180
+      const currentSection = sections.reduce<HTMLElement | null>((current, section) => {
+        const sectionTop = section.getBoundingClientRect().top
 
-        if (!visibleEntry) {
-          return
+        if (sectionTop <= activationLine) {
+          return section
         }
 
-        const nextSectionId = visibleEntry.target.id as SectionId
+        return current
+      }, sections[0])
 
-        setActiveSectionId((prev) => (prev === nextSectionId ? prev : nextSectionId))
-      },
-      {
-        rootMargin: "-25% 0px -55% 0px",
-        threshold: [0.1, 0.25, 0.5, 0.75],
-      },
-    )
+      if (!currentSection) {
+        return
+      }
 
-    sections.forEach((section) => observer.observe(section))
+      const nextSectionId = currentSection.id as SectionId
 
-    return () => observer.disconnect()
+      setActiveSectionId((prev) => (prev === nextSectionId ? prev : nextSectionId))
+    }
+
+    updateActiveSection()
+    window.addEventListener("scroll", updateActiveSection, { passive: true })
+    window.addEventListener("resize", updateActiveSection)
+
+    return () => {
+      window.removeEventListener("scroll", updateActiveSection)
+      window.removeEventListener("resize", updateActiveSection)
+    }
   }, [])
 
   function updateField<K extends keyof MeetingFormState>(key: K, value: MeetingFormState[K]) {
@@ -247,12 +250,24 @@ function MeetingCreateForm({ initialForm, isEditMode, meetingId }: MeetingCreate
 
   function handleAddTechStack(stack: string) {
     const nextStack = stack.trim()
+    const matchedStack = ONBOARDING_TECH_STACK_OPTIONS.find(
+      (option) => option.toLowerCase() === nextStack.toLowerCase(),
+    )
 
-    if (!nextStack || form.techStacks.includes(nextStack)) {
+    if (!nextStack) {
       return
     }
 
-    updateField("techStacks", [...form.techStacks, nextStack])
+    if (!matchedStack) {
+      setFieldError("검색 결과에 있는 기술 스택만 추가할 수 있습니다.")
+      return
+    }
+
+    if (form.techStacks.includes(matchedStack)) {
+      return
+    }
+
+    updateField("techStacks", [...form.techStacks, matchedStack])
     updateField("techStackInput", "")
   }
 
@@ -401,49 +416,28 @@ function MeetingCreateForm({ initialForm, isEditMode, meetingId }: MeetingCreate
   }
 
   return (
-    <div className="flex gap-6 px-0 py-0 lg:items-start">
-      <aside className="hidden w-64 shrink-0 self-stretch lg:block">
-        <div className="sticky top-24 flex flex-col gap-6">
-          <CompletionCard completion={completion} />
-          <ProgressNav
-            activeSectionId={activeSectionId}
-            onSectionSelect={setActiveSectionId}
+    <div className="flex gap-6 px-0 py-0 lg:items-start lg:gap-10 xl:gap-12">
+      <aside className="hidden w-[300px] shrink-0 self-stretch lg:block">
+        <div className="sticky top-24">
+          <CoverImageCardPreview
+            category={form.category}
+            deadline={form.deadline}
+            imageUrl={form.thumbnailUrl}
+            positions={form.positions}
+            techStacks={form.techStacks}
+            title={form.title}
           />
-          <div className="flex flex-col gap-4 border-t border-[#c3c6d7] pt-6">
-            <Button
-              type="submit"
-              form={FORM_ID}
-              disabled={isSubmitting}
-              className="h-14 rounded-lg bg-blue-400 text-base text-white hover:bg-blue-500"
-            >
-              {isSubmitting ? (
-                <LoaderCircle className="size-4 animate-spin" aria-hidden="true" />
-              ) : (
-                <Save className="size-4" aria-hidden="true" />
-              )}
-              {isEditMode ? "모임 수정하기" : "모임 생성하기"}
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => notify.info("임시 저장은 추후 연결 예정입니다.")}
-              className="h-14 rounded-lg border-[#c3c6d7] text-base text-blue-500"
-            >
-              임시 저장
-            </Button>
-          </div>
         </div>
       </aside>
 
       <form id={FORM_ID} onSubmit={handleSubmit} className="min-w-0 flex-1 space-y-10 pb-32">
-        <header className="space-y-1">
-          <h1 className="text-base font-medium leading-6 text-[#191c1e]">
-            {isEditMode ? "모임 정보 수정하기" : "새로운 모임 만들기"}
-          </h1>
-          <p className="text-base leading-6 text-[#434655]">
-            함께 성장할 동료를 찾기 위한 정보를 입력해주세요.
-          </p>
-        </header>
+        <FormStatusBar
+          activeSectionId={activeSectionId}
+          completion={completion}
+          isEditMode={isEditMode}
+          isSubmitting={isSubmitting}
+          onSectionSelect={setActiveSectionId}
+        />
 
         {fieldError ? (
           <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
@@ -451,7 +445,7 @@ function MeetingCreateForm({ initialForm, isEditMode, meetingId }: MeetingCreate
           </p>
         ) : null}
 
-        <FormSection id="basic-info" number={1} title="기본 정보">
+        <FormSection id="basic-info" title="기본 정보">
           <Field label="모임 카테고리" required>
             <PillControl
               value={form.category}
@@ -462,12 +456,7 @@ function MeetingCreateForm({ initialForm, isEditMode, meetingId }: MeetingCreate
 
           <Field label="커버 이미지">
             <div
-              onDrop={handleThumbnailDrop}
-              onDragOver={(event) => event.preventDefault()}
-              className={cn(
-                "flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-[#c3c6d7] bg-[#f7f9fb] p-10 text-center transition",
-                thumbnailUploading ? "opacity-80" : "hover:border-blue-400 hover:bg-blue-50",
-              )}
+              className="rounded-xl border border-[#c3c6d7] bg-[#f7f9fb] p-3"
             >
               <input
                 ref={thumbnailInputRef}
@@ -476,36 +465,59 @@ function MeetingCreateForm({ initialForm, isEditMode, meetingId }: MeetingCreate
                 onChange={handleThumbnailInputChange}
                 className="hidden"
               />
-              {form.thumbnailUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={form.thumbnailUrl}
-                  alt=""
-                  className="mb-4 aspect-[1200/630] max-h-52 w-full rounded-lg object-cover"
-                />
-              ) : thumbnailUploading ? (
-                <LoaderCircle className="mb-3 size-10 animate-spin text-blue-400" aria-hidden="true" />
-              ) : (
-                <ImagePlus className="mb-3 size-10 text-[#737686]" aria-hidden="true" />
-              )}
-              <span className="text-base text-[#565e74]">
-                이미지를 드래그하여 업로드하세요
-              </span>
-              <span className="mt-1 text-base text-[#737686]">1200 x 630px 권장, 최대 5MB</span>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => thumbnailInputRef.current?.click()}
-                disabled={isSubmitting}
-                className="mt-4 h-11 rounded-lg border-[#c3c6d7] bg-white text-blue-500"
-              >
-                {thumbnailUploading ? (
-                  <LoaderCircle className="size-4 animate-spin" aria-hidden="true" />
-                ) : (
-                  <Upload className="size-4" aria-hidden="true" />
+              <div
+                onDrop={handleThumbnailDrop}
+                onDragOver={(event) => event.preventDefault()}
+                className={cn(
+                  "relative flex min-h-24 flex-col items-center justify-center rounded-lg border-2 border-dashed border-[#c3c6d7] bg-white px-4 py-3 text-center transition",
+                  thumbnailUploading ? "opacity-80" : "hover:border-blue-400 hover:bg-blue-50",
                 )}
-                {thumbnailUploading ? "업로드 중" : form.thumbnailUrl ? "이미지 변경" : "이미지 추가"}
-              </Button>
+              >
+                {form.thumbnailUrl ? (
+                  <button
+                    type="button"
+                    onClick={() => updateField("thumbnailUrl", "")}
+                    aria-label="커버 이미지 삭제"
+                    title="커버 이미지 삭제"
+                    className="absolute right-2 top-2 inline-flex size-7 items-center justify-center rounded-full bg-[#f7f9fb] text-[#565e74] transition hover:bg-white hover:text-red-600"
+                  >
+                    <X className="size-4" aria-hidden="true" />
+                  </button>
+                ) : null}
+                {thumbnailUploading ? (
+                  <LoaderCircle className="mb-1.5 size-5 animate-spin text-blue-400" aria-hidden="true" />
+                ) : (
+                  <ImagePlus className="mb-1.5 size-6 text-[#737686]" aria-hidden="true" />
+                )}
+                <span className="text-sm text-[#565e74]">
+                  이미지를 드래그하여 업로드하세요
+                </span>
+                <span className="mt-1 text-xs text-[#737686]">
+                  정사각형 이미지 권장, 최대 5MB
+                </span>
+                <span className="mt-1 text-xs text-[#737686]">
+                  이미지를 추가하지 않으면 선택한 카테고리의 기본 이미지가 사용됩니다.
+                </span>
+                {form.thumbnailUrl ? (
+                  <span className="mt-1 text-xs font-medium text-blue-500">
+                    이미지가 추가되었습니다.
+                  </span>
+                ) : null}
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => thumbnailInputRef.current?.click()}
+                  disabled={isSubmitting}
+                  className="mt-2 h-9 rounded-lg border-[#c3c6d7] bg-white text-blue-500"
+                >
+                  {thumbnailUploading ? (
+                    <LoaderCircle className="size-4 animate-spin" aria-hidden="true" />
+                  ) : (
+                    <Upload className="size-4" aria-hidden="true" />
+                  )}
+                  {thumbnailUploading ? "업로드 중" : form.thumbnailUrl ? "이미지 변경" : "이미지 추가"}
+                </Button>
+              </div>
             </div>
           </Field>
 
@@ -531,7 +543,7 @@ function MeetingCreateForm({ initialForm, isEditMode, meetingId }: MeetingCreate
           </div>
         </FormSection>
 
-        <FormSection id="introduction" number={2} title="모집 소개">
+        <FormSection id="introduction" title="모집 소개">
           <Field label="모임 목표 및 소개" required>
             <textarea
               value={form.description}
@@ -583,7 +595,7 @@ function MeetingCreateForm({ initialForm, isEditMode, meetingId }: MeetingCreate
           </Field>
         </FormSection>
 
-        <FormSection id="schedule" number={3} title="진행 정보">
+        <FormSection id="schedule" title="진행 정보">
           <div className="grid gap-6 md:grid-cols-3">
             <Field label="시작 예정일" required>
               <DatePickerField
@@ -611,7 +623,6 @@ function MeetingCreateForm({ initialForm, isEditMode, meetingId }: MeetingCreate
 
         <FormSection
           id="positions"
-          number={4}
           title="모집 포지션"
           action={
             <button
@@ -683,65 +694,68 @@ function MeetingCreateForm({ initialForm, isEditMode, meetingId }: MeetingCreate
             ))}
           </div>
         </FormSection>
-
-        <div className="rounded-xl border border-[#c3c6d7] bg-white p-4 shadow-sm lg:hidden">
-          <p className="mb-3 text-sm text-[#565e74]">
-            완성도 {completion}% · 총 모집 인원 {totalRecruitCount}명
-          </p>
-          <div className="flex gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => notify.info("임시 저장은 추후 연결 예정입니다.")}
-              className="h-12 flex-1 rounded-lg border-[#c3c6d7] text-blue-500"
-            >
-              임시 저장
-            </Button>
-            <Button
-              type="submit"
-              disabled={isSubmitting}
-              className="h-12 flex-1 rounded-lg bg-blue-400 text-white hover:bg-blue-500"
-            >
-              {isSubmitting ? (
-                <LoaderCircle className="size-4 animate-spin" aria-hidden="true" />
-              ) : (
-                <Save className="size-4" aria-hidden="true" />
-              )}
-              {isEditMode ? "수정하기" : "생성하기"}
-            </Button>
-          </div>
-        </div>
       </form>
     </div>
   )
 }
 
-type CompletionCardProps = {
+type FormStatusBarProps = {
+  activeSectionId: SectionId
   completion: number
+  isEditMode: boolean
+  isSubmitting: boolean
+  onSectionSelect: (sectionId: SectionId) => void
 }
 
-function CompletionCard({ completion }: CompletionCardProps) {
+function FormStatusBar({
+  activeSectionId,
+  completion,
+  isEditMode,
+  isSubmitting,
+  onSectionSelect,
+}: FormStatusBarProps) {
   return (
-    <div className="rounded-xl border border-[#c3c6d7] bg-white p-6 shadow-sm">
-      <div className="mb-2 flex items-end justify-between">
-        <p className="text-base font-medium text-[#191c1e]">완성도</p>
-        <p className="font-mono text-base font-medium text-blue-500">{completion}%</p>
-      </div>
-      <div className="h-2 overflow-hidden rounded-full bg-[#e6e8ea]">
-        <div className="h-full bg-blue-400" style={{ width: `${completion}%` }} />
+    <div className="sticky top-10 z-20 rounded-xl border border-[#c3c6d7] bg-white p-4 shadow-sm">
+      <div className="grid gap-3 xl:grid-cols-[1fr_auto_1fr] xl:items-center">
+        <div className="flex min-w-0 items-center gap-3 xl:contents">
+          <div className="w-44 shrink-0 xl:w-52">
+            <div className="mb-2 flex items-center justify-between gap-3">
+              <span className="text-sm font-medium text-[#191c1e]">완성도</span>
+              <span className="font-mono text-sm font-medium text-blue-500">{completion}%</span>
+            </div>
+            <div className="h-2 overflow-hidden rounded-full bg-[#e6e8ea]">
+              <div className="h-full bg-blue-400" style={{ width: `${completion}%` }} />
+            </div>
+          </div>
+          <HorizontalProgressNav
+            activeSectionId={activeSectionId}
+            onSectionSelect={onSectionSelect}
+          />
+        </div>
+        <Button
+          type="submit"
+          form={FORM_ID}
+          disabled={isSubmitting}
+          className="h-11 w-full shrink-0 rounded-lg bg-blue-400 px-6 text-base text-white hover:bg-blue-500 xl:ml-auto xl:h-12 xl:w-52"
+        >
+          {isEditMode ? "모임 수정하기" : "모임 생성하기"}
+        </Button>
       </div>
     </div>
   )
 }
 
-type ProgressNavProps = {
+type HorizontalProgressNavProps = {
   activeSectionId: SectionId
   onSectionSelect: (sectionId: SectionId) => void
 }
 
-function ProgressNav({ activeSectionId, onSectionSelect }: ProgressNavProps) {
+function HorizontalProgressNav({ activeSectionId, onSectionSelect }: HorizontalProgressNavProps) {
   return (
-    <nav className="flex flex-col gap-2" aria-label="모임 작성 단계">
+    <nav
+      className="flex min-w-0 flex-1 justify-end gap-1 overflow-hidden xl:justify-center"
+      aria-label="모임 작성 단계"
+    >
       {SECTION_NAV_ITEMS.map((item) => {
         const Icon = item.icon
         const isActive = activeSectionId === item.id
@@ -752,15 +766,21 @@ function ProgressNav({ activeSectionId, onSectionSelect }: ProgressNavProps) {
             href={`#${item.id}`}
             onClick={() => onSectionSelect(item.id)}
             aria-current={isActive ? "step" : undefined}
+            aria-label={item.label}
+            title={item.label}
             className={cn(
-              "flex items-center gap-4 rounded-lg py-4 pr-4 text-base transition-colors",
-              isActive
-                ? "border-l-[3px] border-blue-400 pl-[19px] font-medium text-[#191c1e]"
-                : "pl-4 text-[#434655] hover:text-blue-500",
+              "flex h-10 min-w-10 shrink items-center justify-center gap-2 rounded-lg px-3 text-sm font-medium transition-colors",
+              isActive ? "text-blue-500" : "text-[#565e74] hover:bg-[#f7f9fb] hover:text-blue-500",
             )}
           >
-            <Icon className="size-4" aria-hidden="true" />
-            {item.label}
+            <span
+              className={cn(
+                "flex size-8 items-center justify-center rounded-full transition-colors",
+                isActive ? "bg-blue-100 text-blue-500" : "text-[#565e74]",
+              )}
+            >
+              <Icon className="size-5" aria-hidden="true" />
+            </span>
           </a>
         )
       })}
@@ -768,24 +788,85 @@ function ProgressNav({ activeSectionId, onSectionSelect }: ProgressNavProps) {
   )
 }
 
+type CoverImageCardPreviewProps = {
+  category: string
+  deadline: string
+  imageUrl: string
+  positions: PositionForm[]
+  title: string
+  techStacks: string[]
+}
+
+function CoverImageCardPreview({
+  category,
+  deadline,
+  imageUrl,
+  positions,
+  title,
+  techStacks,
+}: CoverImageCardPreviewProps) {
+  const categoryLabel =
+    MEETING_CATEGORY_OPTIONS.find((option) => option.value === category)?.label ?? "프로젝트"
+  const previewTitle = title.trim() || "모임 제목이 여기에 표시됩니다"
+  const maxMembers = positions.reduce((total, position) => total + position.recruitCount, 0)
+  const previewMeeting: MeetingCardPreview = {
+    id: "preview",
+    title: previewTitle,
+    date: formatDisplayDate(deadline),
+    deadline: formatDisplayDate(deadline),
+    deadlineDate: deadline,
+    status: "모집중",
+    category: categoryLabel,
+    memberCount: 0,
+    maxMembers,
+    techStacks,
+    jobs: positions
+      .filter((position) => position.name)
+      .map((position) => ({
+        job: position.name,
+        current: 0,
+        max: position.recruitCount,
+      })),
+    imageCategory: category,
+    imageUrl,
+    isBookmarked: false,
+    isClosingToday: false,
+  }
+
+  return (
+    <div>
+      <p className="mb-2 text-sm font-medium text-[#565e74]">모임 카드 미리보기</p>
+      <div className="h-[501px] overflow-hidden rounded-lg">
+        <MeetingCard
+          meeting={previewMeeting}
+          disableLink
+          showBookmark={false}
+          showEmptyPreviewHints
+        />
+      </div>
+    </div>
+  )
+}
+
 type FormSectionProps = {
-  id: string
-  number: number
+  id: SectionId
   title: string
   children: ReactNode
   action?: ReactNode
 }
 
-function FormSection({ id, number, title, children, action }: FormSectionProps) {
+function FormSection({ id, title, children, action }: FormSectionProps) {
+  const Icon = SECTION_NAV_ITEMS.find((item) => item.id === id)?.icon ?? Info
+
   return (
     <section
       id={id}
-      className="scroll-mt-24 rounded-xl border border-[#c3c6d7] bg-white p-6 shadow-sm"
+      className="scroll-mt-40 rounded-xl border border-[#c3c6d7] bg-white p-6 shadow-sm"
     >
       <div className="mb-6 flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
-          <span className="flex size-8 items-center justify-center rounded-full bg-blue-50 text-base font-bold text-blue-500">
-            {number}
+          <span className="flex size-8 items-center justify-center rounded-full bg-blue-50 text-blue-500">
+            <Icon className="size-4" aria-hidden="true" />
           </span>
           <h2 className="text-base font-medium leading-6 text-[#191c1e]">{title}</h2>
         </div>
@@ -917,7 +998,7 @@ function PositionSelect({ value, options, disabledOptions, onChange }: PositionS
             value ? "text-[#191c1e]" : "text-[#737686]",
           )}
         >
-          <span className="min-w-0 truncate">{value || "포지션을 선택해주세요"}</span>
+          <span className="min-w-0 truncate">{value || "포지션 선택"}</span>
           <ChevronDown className="size-4 shrink-0 text-[#565e74]" aria-hidden="true" />
         </button>
       </PopoverTrigger>
@@ -1042,15 +1123,21 @@ type SelectFieldProps = {
 
 function SelectField({ value, options, onChange }: SelectFieldProps) {
   return (
-    <select
-      value={value}
-      onChange={(event) => onChange(event.target.value)}
-      className="h-14 w-full rounded-lg border border-[#c3c6d7] bg-white px-4 text-base text-[#191c1e] outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20"
-    >
-      {options.map((option) => (
-        <option key={option}>{option}</option>
-      ))}
-    </select>
+    <div className="relative">
+      <select
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        className="h-14 w-full appearance-none rounded-lg border border-[#c3c6d7] bg-white px-4 pr-11 text-base text-[#191c1e] outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20"
+      >
+        {options.map((option) => (
+          <option key={option}>{option}</option>
+        ))}
+      </select>
+      <ChevronDown
+        className="pointer-events-none absolute right-4 top-1/2 size-4 -translate-y-1/2 text-[#565e74]"
+        aria-hidden="true"
+      />
+    </div>
   )
 }
 
@@ -1187,6 +1274,24 @@ function getDateInputValue(value?: string | null) {
   }
 
   return value.slice(0, 10)
+}
+
+function formatDisplayDate(date: string) {
+  if (!date) {
+    return "선택"
+  }
+
+  const parsedDate = new Date(date)
+
+  if (Number.isNaN(parsedDate.getTime())) {
+    return date
+  }
+
+  const year = parsedDate.getFullYear()
+  const month = String(parsedDate.getMonth() + 1).padStart(2, "0")
+  const day = String(parsedDate.getDate()).padStart(2, "0")
+
+  return `${year}.${month}.${day}`
 }
 
 function parseDateValue(value: string) {
