@@ -20,7 +20,7 @@ import {
 import { ApiFetchError } from "@/lib/api/api-fetch"
 import { errorMessage } from "@/lib/api/error"
 
-import { EmptyOrError, FindMeetingsButton } from "./EmptyOrError"
+import { EmptyOrError } from "./EmptyOrError"
 import { MeetingCardSkeletonGrid } from "./MeetingCardSkeleton"
 import { MeetingCard } from "./MeetingCard"
 
@@ -98,7 +98,6 @@ export function MyMeetingsTab({ status }: MyMeetingsTabProps) {
         message={
           status === "recruiting" ? "모집중인 모임이 없습니다." : "활동중인 모임이 없습니다."
         }
-        action={<FindMeetingsButton />}
       />
     )
 
@@ -147,8 +146,13 @@ export function MyMeetingsTab({ status }: MyMeetingsTabProps) {
               key={meeting.meetingId}
               meeting={meeting}
               menu={menuItem}
-              // 내 모임(모집중·활동중)은 이미 참여 중이라 카드 전체를 대시보드로 보낸다. ⋯ 메뉴는 z-10으로 그 위에서 동작.
-              href={`/dashboard?meetingId=${meeting.meetingId}`}
+              // 모집중은 아직 모집 단계라 모집글 상세로, 활동중은 협업 공간인 대시보드로 보낸다.
+              // (⋯ 메뉴는 z-10으로 카드 링크 위에서 동작)
+              href={
+                meeting.status === "RECRUITING"
+                  ? `/meetings/${meeting.meetingId}`
+                  : `/dashboard?meetingId=${meeting.meetingId}`
+              }
             />
           )
         })}

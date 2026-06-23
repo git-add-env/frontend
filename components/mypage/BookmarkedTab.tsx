@@ -3,7 +3,7 @@
 import { BookMarkBtn } from "@/components/common/BookMarkBtn"
 import { useMyBookmarks, useDeleteBookmark } from "@/hooks/mypage/use-bookmarks"
 
-import { EmptyOrError, FindMeetingsButton } from "./EmptyOrError"
+import { EmptyOrError } from "./EmptyOrError"
 import { MeetingCard } from "./MeetingCard"
 import { MeetingCardSkeletonGrid } from "./MeetingCardSkeleton"
 
@@ -15,7 +15,7 @@ export function BookmarkedTab() {
   if (isPending || !bookmarks)
     return <MeetingCardSkeletonGrid className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3" />
   if (bookmarks.length === 0)
-    return <EmptyOrError message="찜한 모임이 없습니다." action={<FindMeetingsButton />} />
+    return <EmptyOrError message="찜한 모임이 없습니다." />
 
   return (
     <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">

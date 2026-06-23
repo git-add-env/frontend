@@ -2,7 +2,7 @@
 
 import { useMyMeetings } from "@/hooks/mypage/use-my-meetings"
 
-import { EmptyOrError, FindMeetingsButton } from "./EmptyOrError"
+import { EmptyOrError } from "./EmptyOrError"
 import { MeetingCard } from "./MeetingCard"
 import { MeetingCardSkeletonGrid } from "./MeetingCardSkeleton"
 
@@ -13,7 +13,7 @@ export function CompletedTab() {
   if (isPending || !meetings)
     return <MeetingCardSkeletonGrid className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3" />
   if (meetings.length === 0)
-    return <EmptyOrError message="완료된 모임이 없습니다." action={<FindMeetingsButton />} />
+    return <EmptyOrError message="완료된 모임이 없습니다." />
 
   return (
     <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
