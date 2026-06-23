@@ -1,28 +1,25 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useState } from "react"
 
 import { MemberProfileDialog } from "@/components/common/MemberProfileDialog"
 import { ProfileAvatar } from "@/components/common/ProfileAvatar"
-import { fetchMeetingMembers, type MeetingMember } from "@/lib/api/meetings"
+import { HostBadge } from "@/components/ui/badge"
+import { useMeetingMembers } from "@/hooks/dashboard/use-members"
+
+import { EmptyState, ListSkeleton } from "./DashboardStates"
 
 type MembersTabProps = {
   meetingId: number
 }
 
 export function MembersTab({ meetingId }: MembersTabProps) {
-  const [members, setMembers] = useState<MeetingMember[] | null>(null)
-  const [error, setError] = useState<string | null>(null)
+  const { data: members, isError } = useMeetingMembers(meetingId)
   const [profileUserId, setProfileUserId] = useState<number | null>(null)
 
-  useEffect(() => {
-    fetchMeetingMembers(meetingId)
-      .then((res) => setMembers(res.members))
-      .catch(() => setError("멤버 목록을 불러오지 못했습니다."))
-  }, [meetingId])
-
-  if (error) return <p className="text-sm text-destructive">{error}</p>
-  if (!members) return <p className="text-sm text-muted-foreground">불러오는 중...</p>
+  if (isError)
+    return <p className="text-sm text-destructive">멤버 목록을 불러오지 못했습니다.</p>
+  if (!members) return <ListSkeleton rows={4} />
 
   const leader = members.find((m) => m.isLeader)
   const others = members.filter((m) => !m.isLeader)
@@ -31,10 +28,10 @@ export function MembersTab({ meetingId }: MembersTabProps) {
     <div className="flex flex-col gap-4">
       {leader && (
         <div className="rounded-2xl border border-border bg-card p-6">
-          <p className="mb-3 text-sm text-muted-foreground">모임장</p>
+          <h2 className="mb-3 text-base font-semibold">모임장</h2>
           <MemberItem
             name={leader.nickname}
-            role={leader.job ?? "직군 미설정"}
+            role={leader.positionName ?? leader.job ?? "역할 미정"}
             profileImage={leader.profileImage}
             isLeader
             onClick={() => setProfileUserId(leader.id)}
@@ -43,18 +40,19 @@ export function MembersTab({ meetingId }: MembersTabProps) {
       )}
 
       <div className="rounded-2xl border border-border bg-card p-6">
-        <p className="mb-3 text-sm text-muted-foreground">
-          참여 멤버 ({others.length})
-        </p>
+        <h2 className="mb-3 text-base font-semibold">
+          참여 멤버{" "}
+          <span className="text-sm font-normal text-muted-foreground">{others.length}</span>
+        </h2>
         {others.length === 0 ? (
-          <p className="text-sm text-muted-foreground">참여 멤버가 없습니다.</p>
+          <EmptyState message="참여 멤버가 없습니다." />
         ) : (
           <div className="grid gap-3 sm:grid-cols-2">
             {others.map((member) => (
               <MemberItem
                 key={member.id}
                 name={member.nickname}
-                role={member.job ?? "직군 미설정"}
+                role={member.positionName ?? member.job ?? "역할 미정"}
                 profileImage={member.profileImage}
                 onClick={() => setProfileUserId(member.id)}
               />
@@ -88,17 +86,13 @@ function MemberItem({
     <button
       type="button"
       onClick={onClick}
-      className="flex w-full items-center gap-3 rounded-xl border border-border p-3 text-left transition-colors hover:bg-accent"
+      className="flex w-full items-center gap-3 rounded-xl border border-border bg-muted/30 p-4 text-left transition-colors hover:bg-muted/50"
     >
       <ProfileAvatar profileImage={profileImage} nickname={name} className="size-10" />
       <div className="flex flex-col">
         <div className="flex items-center gap-2">
-          <p className="text-sm font-medium">{name}</p>
-          {isLeader && (
-            <span className="rounded-full bg-foreground px-2 py-0.5 text-xs text-background">
-              모임장
-            </span>
-          )}
+          <p className="text-sm font-bold">{name}</p>
+          {isLeader && <HostBadge />}
         </div>
         <p className="text-xs text-muted-foreground">{role}</p>
       </div>

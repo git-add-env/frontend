@@ -20,13 +20,12 @@ export function UserAvatar() {
 
     return (
         <Avatar>
-            {user?.profileImage && (
-                <AvatarImage
-                    src={user.profileImage}
-                    alt={user.nickname ?? ""}
-                    className="grayscale"
-                />
-            )}
+            {/* src 조건부 제거 시 radix가 폴백을 안 띄우므로 항상 렌더하고 src만 토글 */}
+            <AvatarImage
+                src={user?.profileImage ?? undefined}
+                alt={user?.nickname ?? ""}
+                className="grayscale"
+            />
             <AvatarFallback>{initial}</AvatarFallback>
         </Avatar>
     )

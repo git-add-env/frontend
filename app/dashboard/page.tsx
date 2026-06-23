@@ -1,164 +1,194 @@
 "use client"
 
-import { Crown } from "lucide-react"
-import { useEffect, useState } from "react"
+import { Suspense, useMemo, useState } from "react"
+import { useSearchParams } from "next/navigation"
 
+import { DashboardContentSkeleton } from "@/components/dashboard/DashboardStates"
+import { DashboardSidebar } from "@/components/dashboard/DashboardSidebar"
+import { DashboardTabs } from "@/components/dashboard/DashboardTabs"
+import { MeetingHeader } from "@/components/dashboard/MeetingHeader"
+import { MeetingProgressInfo } from "@/components/dashboard/MeetingProgressInfo"
 import { MembersTab } from "@/components/dashboard/MembersTab"
-import { OverviewTab } from "@/components/dashboard/OverviewTab"
+import { NoticesTab } from "@/components/dashboard/NoticesTab"
+import { ResourceCard } from "@/components/dashboard/ResourceCard"
 import { SchedulesTab } from "@/components/dashboard/SchedulesTab"
-import { Badge, CategoryBadge, HostBadge } from "@/components/ui/badge"
-import { CATEGORY_LABEL } from "@/constants/category"
-import { fetchMyMeetings, type Meeting } from "@/lib/api/mypage"
-import { cn } from "@/lib/utils"
+import { VideoConferenceBanner } from "@/components/dashboard/VideoConferenceBanner"
+import { useMyMeetings } from "@/hooks/mypage/use-my-meetings"
 
-type TabKey = "overview" | "schedules" | "members"
+// 새로고침해도 마지막으로 본 모임을 유지하기 위한 localStorage 키.
+const SELECTED_MEETING_KEY = "dashboard:selectedMeetingId"
+
+type TabKey = "notices" | "schedules" | "resources" | "members"
 
 const tabs: { key: TabKey; label: string }[] = [
-  { key: "overview", label: "개요" },
+  { key: "notices", label: "공지" },
   { key: "schedules", label: "일정" },
+  { key: "resources", label: "링크" },
   { key: "members", label: "멤버" },
 ]
 
-export default function DashboardPage() {
-  const [groups, setGroups] = useState<Meeting[] | null>(null)
-  const [groupsError, setGroupsError] = useState<string | null>(null)
+function DashboardContent() {
+  // 대시보드는 참여 중인 모임(모집중 + 활동중)을 함께 보여준다.
+  // 백엔드 status 필터가 한 번에 하나라 두 번 조회 후 합친다. (완료는 제외)
+  const recruiting = useMyMeetings("recruiting")
+  const active = useMyMeetings("active")
+  const groups = useMemo(
+    () =>
+      recruiting.data && active.data
+        ? [...recruiting.data, ...active.data]
+        : null,
+    [recruiting.data, active.data]
+  )
+  const groupsError = recruiting.isError || active.isError
+  // 사이드바(groups) 로딩 중이면 컨텐츠도 같이 스켈레톤 → 좌→우 두 번 스켈레톤 어색함 제거.
+  const groupsLoading = !groups && !groupsError
   const [selectedGroupId, setSelectedGroupId] = useState<number | null>(null)
-  const [activeTab, setActiveTab] = useState<TabKey>("overview")
+  const [activeTab, setActiveTab] = useState<TabKey>("notices")
 
-  useEffect(() => {
-    // 대시보드는 참여 중인 모임(모집중 + 활동중)을 함께 보여준다.
-    // 백엔드 status 필터가 한 번에 하나라 두 번 호출 후 합친다. (완료는 제외)
-    Promise.all([fetchMyMeetings("recruiting"), fetchMyMeetings("active")])
-      .then(([recruiting, active]) => {
-        const merged = [...recruiting.meetings, ...active.meetings]
-        setGroups(merged)
-        if (merged.length > 0) {
-          setSelectedGroupId(merged[0].meetingId)
-        }
-      })
-      .catch(() => setGroupsError("참여중인 모임을 불러오지 못했습니다."))
-  }, [])
+  // 새로고침 시 마지막 선택 모임 복원. lazy 초기화로 localStorage를 1회만 읽는다.
+  // (선택 UI는 groups 로드 후에만 그려져서 SSR(null)/클라 첫 렌더가 동일 → 하이드레이션 안전)
+  const [storedGroupId] = useState<number | null>(() => {
+    if (typeof window === "undefined") return null
+    try {
+      const id = Number(localStorage.getItem(SELECTED_MEETING_KEY))
+      return id > 0 ? id : null
+    } catch {
+      return null
+    }
+  })
 
-  const selectedGroup = groups?.find((g) => g.meetingId === selectedGroupId) ?? null
-  // TODO: 백엔드 MeetingSummary에 isLeader 추가되면 selectedGroup?.isLeader로 교체. 현재 임시로 모임장 취급.
-  const isOwner = true
+  // 모임 선택 시 상태 + localStorage 동시 갱신.
+  function handleSelect(meetingId: number) {
+    setSelectedGroupId(meetingId)
+    try {
+      localStorage.setItem(SELECTED_MEETING_KEY, String(meetingId))
+    } catch {
+      /* 저장 실패는 무시 (선택 자체는 동작) */
+    }
+    // 선택한 모임 컨텐츠가 위에서 보이도록 맨 위로 스크롤 (데스크탑·모바일 공통).
+    // smooth 애니메이션 중 컨텐츠 리렌더로 sticky 사이드바가 튀어서 즉시 이동으로 처리.
+    window.scrollTo({ top: 0 })
+  }
+
+  // 마이페이지 "내 모임" 버튼이 ?meetingId= 로 넘긴 모임을 초기 선택으로 사용.
+  // 단 내 모임 목록(groups)에 실제로 있을 때만 — 없으면 무시하고 첫 모임으로.
+  const searchParams = useSearchParams()
+  const meetingIdParam = Number(searchParams.get("meetingId"))
+  const urlGroupId =
+    meetingIdParam > 0 && groups?.some((g) => g.meetingId === meetingIdParam)
+      ? meetingIdParam
+      : null
+
+  // 세션 클릭값도 현재 목록에 있을 때만 사용 — 클릭 후 목록 갱신(탈퇴/삭제/완료)으로
+  // stale id가 남으면 존재하지 않는 meetingId가 탭 컴포넌트로 전달되는 것을 방지.
+  const validSelectedId =
+    selectedGroupId && groups?.some((g) => g.meetingId === selectedGroupId)
+      ? selectedGroupId
+      : null
+
+  // 저장된 모임도 현재 내 목록에 있을 때만 사용 (탈퇴·삭제된 id는 무시).
+  const validStoredId =
+    storedGroupId && groups?.some((g) => g.meetingId === storedGroupId)
+      ? storedGroupId
+      : null
+
+  // 선택 우선순위: 이번 세션 클릭 → URL 지정(마이페이지 진입) → 저장된 마지막 선택 → 첫 모임.
+  const effectiveGroupId =
+    validSelectedId ??
+    urlGroupId ??
+    validStoredId ??
+    groups?.[0]?.meetingId ??
+    null
+  const selectedGroup =
+    groups?.find((g) => g.meetingId === effectiveGroupId) ?? null
+  const isLeader = selectedGroup?.isLeader ?? false
 
   return (
-    <div className="dashboard-borders mx-auto flex w-full max-w-[1280px] gap-6 px-6 py-8">
-      <aside className="w-60 shrink-0">
-        <div className="sticky top-20 flex flex-col gap-1 rounded-lg border border-border p-2">
-          <p className="mb-1 border-b border-border px-3 pt-2 pb-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            참여 모임
-            {groups && (
-              <span className="ml-1 text-foreground">{groups.length}</span>
-            )}
-          </p>
+    <div className="dashboard-borders mx-auto flex w-full max-w-[1280px] flex-col gap-4 px-6 py-8 lg:flex-row lg:gap-10">
+      <DashboardSidebar
+        groups={groups}
+        groupsError={groupsError}
+        selectedId={effectiveGroupId}
+        onSelect={handleSelect}
+      />
 
-          {groupsError && (
-            <p className="px-3 text-xs text-destructive">{groupsError}</p>
-          )}
-          {!groups && !groupsError && (
-            <p className="px-3 text-xs text-muted-foreground">불러오는 중...</p>
-          )}
-          {groups && groups.length === 0 && (
-            <p className="px-3 text-xs text-muted-foreground">
-              참여중인 모임이 없습니다.
-            </p>
-          )}
-
-          {groups?.map((group) => {
-            const isActive = group.meetingId === selectedGroupId
-            return (
-              <button
-                key={group.meetingId}
-                type="button"
-                onClick={() => setSelectedGroupId(group.meetingId)}
-                title={group.title}
-                className={cn(
-                  "flex items-center gap-1.5 rounded-md border border-transparent px-3 py-2 text-left text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground",
-                  isActive && "border-muted-foreground font-medium text-foreground",
-                )}
-              >
-                {/* TODO: 백엔드 isLeader 추가 시 group.isLeader && 로 교체. 현재 목록 응답에 없어 임시로 항상 표시. */}
-                <Crown className="size-3.5 shrink-0 text-yellow-500" />
-                {/* 긴 이름은 한 줄 말줄임(…), 전체 이름은 버튼 title 속성으로 호버 시 노출 */}
-                <span className="min-w-0 flex-1 truncate">{group.title}</span>
-              </button>
-            )
-          })}
-        </div>
-      </aside>
-
-      <section className="flex flex-1 flex-col gap-4">
-        <div>
-          {selectedGroup && (
-            <div className="mb-2 flex items-center gap-2">
-              <CategoryBadge
-                category={CATEGORY_LABEL[selectedGroup.category] ?? selectedGroup.category}
-              />
-              {/* 상태 배지: 모집중(파랑) / 활동중(초록). 완료는 표시 없음 */}
-              {selectedGroup.status === "RECRUITING" && (
-                <Badge variant="recruiting" className="rounded-full">
-                  모집중
-                </Badge>
-              )}
-              {selectedGroup.status === "ACTIVE" && (
-                <Badge variant="active" className="rounded-full">
-                  활동중
-                </Badge>
-              )}
-              {isOwner && <HostBadge />}
-            </div>
-          )}
-          <h1 className="text-2xl font-semibold tracking-normal">
-            {selectedGroup?.title ?? "모임을 선택해주세요"}
-          </h1>
-        </div>
-
-        <div className="flex gap-1 border-b border-border">
-          {tabs.map((tab) => {
-            const isActive = activeTab === tab.key
-            return (
-              <button
-                key={tab.key}
-                type="button"
-                onClick={() => setActiveTab(tab.key)}
-                className={cn(
-                  "border-b-2 border-transparent px-4 py-2 text-sm text-muted-foreground transition-colors hover:text-foreground",
-                  isActive && "border-foreground font-medium text-foreground",
-                )}
-              >
-                {tab.label}
-              </button>
-            )
-          })}
-        </div>
-
-        {selectedGroupId === null ? (
-          <p className="text-sm text-muted-foreground">먼저 모임을 선택해주세요.</p>
+      {/* min-h: 탭/항목 수에 따라 컨텐츠 높이가 들쑥거려 Footer가 움직이는 것 방지(최소 높이 고정) */}
+      <section className="flex min-h-[1200px] min-w-0 flex-1 flex-col gap-4">
+        {groupsLoading ? (
+          <DashboardContentSkeleton />
         ) : (
           <>
-            {activeTab === "overview" && (
-              <OverviewTab
-                key={selectedGroupId}
-                meetingId={selectedGroupId}
-                isOwner={isOwner}
-                status={selectedGroup?.status ?? ""}
+            <MeetingHeader group={selectedGroup} />
+
+            {effectiveGroupId !== null && selectedGroup && (
+              <VideoConferenceBanner
+                key={`conference-${effectiveGroupId}`}
+                meetingId={effectiveGroupId}
+                isLeader={isLeader}
+                status={selectedGroup.status}
               />
             )}
-            {activeTab === "schedules" && (
-              <SchedulesTab
-                key={selectedGroupId}
-                meetingId={selectedGroupId}
-                isOwner={isOwner}
+
+            {effectiveGroupId !== null && (
+              <MeetingProgressInfo
+                key={`progress-${effectiveGroupId}`}
+                meetingId={effectiveGroupId}
               />
             )}
-            {activeTab === "members" && (
-              <MembersTab key={selectedGroupId} meetingId={selectedGroupId} />
+
+            <DashboardTabs
+              tabs={tabs}
+              active={activeTab}
+              onChange={setActiveTab}
+            />
+
+            {effectiveGroupId === null ? (
+              <p className="text-sm text-muted-foreground">
+                먼저 모임을 선택해주세요.
+              </p>
+            ) : (
+              <>
+                {activeTab === "notices" && (
+                  <NoticesTab
+                    key={effectiveGroupId}
+                    meetingId={effectiveGroupId}
+                    isLeader={isLeader}
+                  />
+                )}
+                {activeTab === "schedules" && (
+                  <SchedulesTab
+                    key={effectiveGroupId}
+                    meetingId={effectiveGroupId}
+                    isLeader={isLeader}
+                  />
+                )}
+                {activeTab === "resources" && (
+                  <ResourceCard
+                    key={effectiveGroupId}
+                    meetingId={effectiveGroupId}
+                    isLeader={isLeader}
+                  />
+                )}
+                {activeTab === "members" && (
+                  <MembersTab
+                    key={effectiveGroupId}
+                    meetingId={effectiveGroupId}
+                  />
+                )}
+              </>
             )}
           </>
         )}
       </section>
     </div>
+  )
+}
+
+export default function DashboardPage() {
+  // useSearchParams는 Suspense 경계 안에서 호출해야 한다(Next App Router 요구사항).
+  return (
+    <Suspense fallback={null}>
+      <DashboardContent />
+    </Suspense>
   )
 }

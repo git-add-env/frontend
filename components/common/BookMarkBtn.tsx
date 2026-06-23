@@ -10,9 +10,15 @@ type BookMarkBtnProps = {
   bookmarked?: boolean
   onToggle?: (next: boolean) => void
   className?: string
+  disabled?: boolean
 }
 
-export function BookMarkBtn({ bookmarked: controlled, onToggle, className }: BookMarkBtnProps = {}) {
+export function BookMarkBtn({
+  bookmarked: controlled,
+  onToggle,
+  className,
+  disabled = false,
+}: BookMarkBtnProps = {}) {
   // 찜 여부 상태 (비제어형일 때만 사용, 클릭 시 토글)
   const [internal, setInternal] = useState(false)
   const isControlled = controlled !== undefined
@@ -28,17 +34,19 @@ export function BookMarkBtn({ bookmarked: controlled, onToggle, className }: Boo
     <button
       type="button"
       onClick={handleClick}
+      disabled={disabled}
+      aria-label={bookmarked ? "북마크 해제" : "북마크 추가"}
       aria-pressed={bookmarked}
       className={cn(
-        "flex size-12 items-center justify-center rounded-full border bg-white p-2 transition-transform duration-200 hover:scale-110 hover:shadow-md active:scale-95",
+        "flex size-12 items-center justify-center rounded-full border bg-white p-2 transition-transform duration-200 hover:scale-110 hover:shadow-md active:scale-95 disabled:cursor-default disabled:opacity-60 disabled:hover:scale-100 disabled:hover:shadow-none",
         className,
       )}
     >
       <Bookmark
         className={
           bookmarked
-            ? "text-blue-400 fill-blue-400 transition-colors"
-            : "text-blue-400 transition-colors"
+            ? "fill-[#1abcfe] text-[#1abcfe] transition-colors"
+            : "text-[#1abcfe] transition-colors"
         }
       />
     </button>

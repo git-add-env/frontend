@@ -1,6 +1,7 @@
 // 마이페이지(MP-API 001~008) 호출 헬퍼. 각 함수는 명세서의 응답 스키마를 그대로 반환한다.
 
 import { apiClient } from "./api-client"
+import { requestImageUploadPresign, uploadImage } from "./uploads"
 
 export type Profile = {
   id: number
@@ -33,7 +34,7 @@ export type MeetingPosition = {
 
 // 백엔드 MeetingSummary 응답 그대로. status: "RECRUITING" | "ACTIVE" | "COMPLETED",
 // category: "PROJECT" | "HACKATHON" | "CONTEST" (영어 enum).
-// 주의: 목록 응답엔 isOwner/isLeader가 없음 → 모임장/참여자 구분 불가 (백엔드 추가 대기).
+// isLeader: 현재 로그인 유저가 이 모임의 모임장인지 여부.
 export type Meeting = {
   meetingId: number
   thumbnailUrl: string | null
@@ -42,18 +43,18 @@ export type Meeting = {
   techStacks: string[]
   isBookmarked: boolean
   isDeadlineToday: boolean
+  isLeader: boolean
   deadline: string
   recruitSummary: { currentCount: number; totalCount: number }
   positions: MeetingPosition[]
   status: string
 }
 
-export type Bookmark = {
+// 북마크 목록 응답(MP-API-006). 백엔드 BookmarkItemResponse = { id, ...MeetingSummary(@JsonUnwrapped) }.
+// 즉 Meeting 전체 필드(thumbnailUrl·status·isLeader 등) + 북마크 PK(id)가 그대로 내려온다.
+// (Swagger 스키마는 @JsonUnwrapped라 일부만 노출되지만 실제 JSON엔 모두 포함)
+export type Bookmark = Meeting & {
   id: number
-  meetingId: number
-  title: string
-  category: string
-  deadline: string
 }
 
 export async function fetchMyProfile(): Promise<Profile> {
@@ -69,28 +70,12 @@ export async function patchMyProfile(patch: ProfilePatch): Promise<Profile> {
   return res.user
 }
 
-// 공용 이미지 업로드 presign 엔드포인트(POST /api/uploads/images). 썸네일·프로필 공통.
-// 흐름: ① presign 발급 → ② uploadUrl로 S3 직접 PUT → ③ imageUrl을 patchMyProfile({ profileImage })로 저장.
 export function requestProfileImagePresign(fileName: string, fileType: string) {
-  return apiClient<{ uploadUrl: string; imageUrl: string }>(
-    "/api/uploads/images",
-    { method: "POST", body: JSON.stringify({ fileName, fileType }) },
-  )
+  return requestImageUploadPresign(fileName, fileType)
 }
 
-// presign + S3(PUT)까지 수행하고 저장용 imageUrl을 반환한다. 프로필 저장은 호출부에서 patchMyProfile로.
 export async function uploadProfileImage(file: File): Promise<string> {
-  const { uploadUrl, imageUrl } = await requestProfileImagePresign(file.name, file.type)
-  // S3는 우리 API가 아니므로 apiClient 대신 raw fetch로 PUT.
-  const res = await fetch(uploadUrl, {
-    method: "PUT",
-    headers: { "Content-Type": file.type },
-    body: file,
-  })
-  if (!res.ok) {
-    throw new Error("이미지 업로드에 실패했습니다. 다시 시도해주세요.")
-  }
-  return imageUrl
+  return uploadImage(file)
 }
 
 export function fetchMyMeetings(status?: "recruiting" | "active" | "completed") {
@@ -100,10 +85,6 @@ export function fetchMyMeetings(status?: "recruiting" | "active" | "completed") 
 
 export function fetchMyBookmarks() {
   return apiClient<{ bookmarks: Bookmark[] }>("/api/users/me/bookmarks")
-}
-
-export function deleteBookmark(meetingId: number) {
-  return apiClient<void>(`/api/bookmarks/${meetingId}`, { method: "DELETE" })
 }
 
 // MP-API-009 멤버 모임 참여 취소 (모집중에서만 가능).
@@ -121,5 +102,20 @@ export type DeleteMeetingResult =
 export function deleteMeeting(meetingId: number) {
   return apiClient<DeleteMeetingResult>(`/api/meetings/${meetingId}`, {
     method: "DELETE",
+  })
+}
+
+// MP-API-011 모임장 모임 종료 (활동중 → 완료). 요청 바디 없음.
+// 종료 시 멤버 전원에게 알림 발송, notifiedCount로 알림 받은 수 반환.
+export type CompleteMeetingResult = {
+  meetingId: number
+  status: "COMPLETED"
+  completedAt: string
+  notifiedCount: number
+}
+
+export function completeMeeting(meetingId: number) {
+  return apiClient<CompleteMeetingResult>(`/api/meetings/${meetingId}/complete`, {
+    method: "POST",
   })
 }

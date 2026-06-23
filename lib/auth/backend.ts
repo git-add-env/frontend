@@ -91,6 +91,13 @@ export async function exchangeSocialLogin(payload: SocialLoginPayload) {
   })
 }
 
+export async function exchangeSocialLoginWithMeta(payload: SocialLoginPayload) {
+  return requestBackendWithMeta<SocialLoginResponse>(SOCIAL_LOGIN_PATH, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  })
+}
+
 export async function completeSocialOnboarding(
   accessToken: string,
   payload: CompleteOnboardingPayload,

@@ -1,7 +1,6 @@
 "use client"
 
 import { XIcon } from "lucide-react"
-import { useEffect, useState } from "react"
 
 import { ProfileAvatar } from "@/components/common/ProfileAvatar"
 import {
@@ -11,7 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { fetchMemberProfile, type MemberProfile } from "@/lib/api/dashboard"
+import { useMemberProfile } from "@/hooks/dashboard/use-members"
 
 // DB-011 / DB-API-016: 멤버 프로필 조회 전용 모달.
 // userId를 주면 해당 유저 프로필을 모달로 띄운다. (어느 페이지에서든 재사용 가능)
@@ -24,7 +23,7 @@ export function MemberProfileDialog({
 }) {
   return (
     <Dialog open={userId !== null} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="py-12 sm:max-w-sm" showCloseButton={false}>
+      <DialogContent className="py-12 sm:max-w-md" showCloseButton={false}>
         {/* 제목은 화면에선 숨기고 스크린리더 접근성용으로만 유지 (Dialog는 title 필수) */}
         <DialogHeader className="sr-only">
           <DialogTitle>멤버 프로필</DialogTitle>
@@ -41,19 +40,11 @@ export function MemberProfileDialog({
 }
 
 function MemberProfileBody({ userId }: { userId: number }) {
-  const [profile, setProfile] = useState<MemberProfile | null>(null)
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    fetchMemberProfile(userId)
-      .then(setProfile)
-      .catch(() => setProfile(null))
-      .finally(() => setLoading(false))
-  }, [userId])
+  const { data: profile, isLoading } = useMemberProfile(userId)
 
   return (
     <>
-      {loading ? (
+      {isLoading ? (
         <p className="text-sm text-muted-foreground">불러오는 중...</p>
       ) : profile ? (
       <div className="flex flex-col items-center gap-3 text-center">
@@ -67,7 +58,7 @@ function MemberProfileBody({ userId }: { userId: number }) {
         <p className="mt-2 text-base font-semibold">{profile.nickname}</p>
 
         {/* 2. 소개글 */}
-        <p className="text-sm text-muted-foreground">
+        <p className="w-full wrap-break-word text-sm text-muted-foreground">
           {profile.introduction ?? "소개가 없습니다."}
         </p>
 

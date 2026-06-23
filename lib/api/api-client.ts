@@ -1,16 +1,13 @@
 import { getSession } from "next-auth/react"
 
 import { ApiFetchError, apiFetch } from "@/lib/api/api-fetch"
+import { notifyAccessTokenRefreshed, requestAccessTokenRefresh } from "@/lib/auth/refresh"
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_API_URL
 const REFRESH_PATH = "/api/auth/refresh"
 
 export type ApiClientOptions = RequestInit & {
   auth?: boolean
-}
-
-type RefreshResponse = {
-  accessToken: string
 }
 
 export async function apiClient<TResponse>(
@@ -35,11 +32,8 @@ export async function apiClient<TResponse>(
       throw error
     }
 
-    const refreshed = await apiFetch<RefreshResponse>(REFRESH_PATH, {
-      method: "POST",
-      baseUrl: API_BASE_URL,
-      credentials: "include",
-    })
+    const refreshed = await requestAccessTokenRefresh()
+    notifyAccessTokenRefreshed(refreshed.accessToken)
 
     return apiFetch<TResponse>(path, {
       ...init,

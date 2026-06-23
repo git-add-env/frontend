@@ -1,11 +1,30 @@
-export default function MeetingDetailPage() {
+import { MeetingDetail } from "@/components/meeting/MeetingDetail"
+
+type MeetingDetailPageProps = {
+  searchParams: Promise<{
+    meetingId?: string
+  }>
+}
+
+export default async function MeetingDetailPage({ searchParams }: MeetingDetailPageProps) {
+  const { meetingId } = await searchParams
+  const parsedMeetingId = parseMeetingId(meetingId)
+
   return (
-    <section className="mx-auto flex w-full max-w-6xl flex-col gap-4 px-6 py-12">
-      <p className="text-sm font-medium text-muted-foreground">Detail</p>
-      <h1 className="text-3xl font-semibold tracking-normal">상세페이지</h1>
-      <p className="max-w-2xl text-muted-foreground">
-        선택한 모임의 상세 정보를 보여줄 페이지입니다.
-      </p>
-    </section>
+    <main className="min-h-screen bg-[#f7f9fb] px-4 py-10 sm:px-6 lg:px-12">
+      <div className="mx-auto flex max-w-[1184px] flex-col gap-8">
+        <MeetingDetail meetingId={parsedMeetingId} />
+      </div>
+    </main>
   )
+}
+
+function parseMeetingId(value: string | undefined) {
+  if (!value) {
+    return undefined
+  }
+
+  const meetingId = Number(value)
+
+  return Number.isFinite(meetingId) ? meetingId : undefined
 }

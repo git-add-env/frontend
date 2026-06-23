@@ -2,11 +2,11 @@
 
 import type * as React from "react"
 import { useState } from "react"
-import { signIn } from "next-auth/react"
+import { signIn, useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
+import { useQueryClient } from "@tanstack/react-query"
 
 import { Button } from "@/components/ui/button"
-import OnboardingDialog from "@/components/common/OnboardingDialog"
 import { rememberLoginProvider } from "@/components/providers/toast-provider"
 import {
   Dialog,
@@ -16,30 +16,9 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
+import { queryKeys } from "@/hooks/api/query-keys"
+import { clearAuthScopedQueries } from "@/lib/auth/query-cache"
 import { notify } from "@/lib/notify"
-
-function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" {...props}>
-      <path
-        fill="#4285F4"
-        d="M21.6 12.23c0-.78-.07-1.53-.2-2.23H12v4.22h5.38a4.6 4.6 0 0 1-2 3.02v2.74h3.24c1.9-1.75 2.98-4.33 2.98-7.75z"
-      />
-      <path
-        fill="#34A853"
-        d="M12 22c2.7 0 4.96-.9 6.62-2.42l-3.24-2.74c-.9.6-2.04.96-3.38.96-2.6 0-4.8-1.76-5.59-4.12H3.06v2.83A10 10 0 0 0 12 22z"
-      />
-      <path
-        fill="#FBBC05"
-        d="M6.41 13.68a6 6 0 0 1 0-3.36V7.49H3.06a10 10 0 0 0 0 9.02l3.35-2.83z"
-      />
-      <path
-        fill="#EA4335"
-        d="M12 6.2c1.47 0 2.79.5 3.83 1.5l2.86-2.86C16.96 3.23 14.7 2.2 12 2.2a10 10 0 0 0-8.94 5.29l3.35 2.83C7.2 7.96 9.4 6.2 12 6.2z"
-      />
-    </svg>
-  )
-}
 
 function GitHubIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
@@ -49,23 +28,35 @@ function GitHubIcon(props: React.SVGProps<SVGSVGElement>) {
   )
 }
 
-export default function LoginDialog() {
-  const router = useRouter()
-  const [loginOpen, setLoginOpen] = useState(false)
-  const [onboardingPreviewOpen, setOnboardingPreviewOpen] = useState(false)
-  const [testLoginLoading, setTestLoginLoading] = useState(false)
+type LoginDialogProps = {
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
+  showTrigger?: boolean
+}
 
-  function openOnboardingPreview() {
-    setLoginOpen(false)
-    setOnboardingPreviewOpen(true)
+export default function LoginDialog({
+  open,
+  onOpenChange,
+  showTrigger = true,
+}: LoginDialogProps) {
+  const router = useRouter()
+  const { update } = useSession()
+  const queryClient = useQueryClient()
+  const [internalLoginOpen, setInternalLoginOpen] = useState(false)
+  const [testLoginLoading, setTestLoginLoading] = useState(false)
+  const loginOpen = open ?? internalLoginOpen
+
+  function setLoginOpen(nextOpen: boolean) {
+    onOpenChange?.(nextOpen)
+    setInternalLoginOpen(nextOpen)
   }
 
-  async function handleSocialLogin(provider: "google" | "github") {
+  async function handleGitHubLogin() {
     try {
-      rememberLoginProvider(provider)
-      await signIn(provider)
+      rememberLoginProvider("github")
+      await signIn("github")
     } catch {
-      notify.error("소셜 로그인으로 이동하지 못했습니다.")
+      notify.error("GitHub 로그인으로 이동하지 못했습니다.")
     }
   }
 
@@ -74,88 +65,77 @@ export default function LoginDialog() {
     setTestLoginLoading(true)
 
     try {
-      const result = await signIn("test-login", {
-        redirect: false,
-      })
+      const result = await signIn("test-login", { redirect: false })
 
       if (result?.error) throw new Error("테스트 로그인에 실패했습니다.")
 
+      clearAuthScopedQueries(queryClient)
+      await update()
+      await queryClient.invalidateQueries({ queryKey: queryKeys.auth.me })
       setLoginOpen(false)
       router.refresh()
       notify.success("테스트 계정으로 로그인되었습니다.", { id: toastId })
     } catch (error) {
-      notify.error(error instanceof Error ? error.message : "테스트 로그인에 실패했습니다.", {
-        id: toastId,
-      })
+      notify.error(
+        error instanceof Error
+          ? error.message
+          : "테스트 로그인에 실패했습니다.",
+        { id: toastId }
+      )
     } finally {
       setTestLoginLoading(false)
     }
   }
 
   return (
-    <>
-      <div className="flex items-center gap-2">
-        <Dialog open={loginOpen} onOpenChange={setLoginOpen}>
-          <DialogTrigger asChild>
-            <Button size="sm" variant="outline">
-              로그인
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-sm">
-            <DialogHeader>
-              <DialogTitle>로그인</DialogTitle>
-              <DialogDescription>소셜 계정으로 모임찾기를 시작하세요.</DialogDescription>
-            </DialogHeader>
-
-            <div className="grid gap-3">
-              <Button
-                variant="outline"
-                className="h-11 justify-start gap-3 px-4"
-                onClick={() => handleSocialLogin("google")}
-              >
-                <span className="flex size-6 items-center justify-center rounded-full bg-white shadow-xs ring-1 ring-border">
-                  <GoogleIcon className="size-4" />
-                </span>
-                Google로 로그인
-              </Button>
-              <Button
-                variant="outline"
-                className="h-11 justify-start gap-3 px-4"
-                onClick={() => handleSocialLogin("github")}
-              >
-                <span className="flex size-6 items-center justify-center rounded-full bg-foreground text-background">
-                  <GitHubIcon className="size-4" />
-                </span>
-                GitHub로 로그인
-              </Button>
-              <Button
-                type="button"
-                variant="secondary"
-                className="mt-1 h-10"
-                onClick={openOnboardingPreview}
-              >
-                온보딩 미리보기
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
-
-        <Button
-          size="sm"
-          variant="secondary"
-          onClick={handleTestLogin}
-          disabled={testLoginLoading}
-        >
-          {testLoginLoading ? "로그인 중" : "테스트 로그인"}
-        </Button>
-      </div>
-
-      <OnboardingDialog
-        open={onboardingPreviewOpen}
-        onOpenChange={setOnboardingPreviewOpen}
-        previewMode
-        showTrigger={false}
-      />
-    </>
+    <Dialog open={loginOpen} onOpenChange={setLoginOpen}>
+      {showTrigger ? (
+        <DialogTrigger asChild>
+          <Button size="sm" variant="outline">
+            로그인
+          </Button>
+        </DialogTrigger>
+      ) : null}
+      <DialogContent className="max-w-sm overflow-hidden p-0">
+        <div className="bg-linear-to-br from-slate-950 via-slate-900 to-slate-800 px-6 py-8 text-white">
+          <DialogHeader className="text-center sm:text-center">
+            <DialogTitle className="text-xl text-white">
+              모여<span className="text-[#1abcfe]">ON</span> 시작하기
+            </DialogTitle>
+            <DialogDescription className="text-slate-300">
+              개발자들과 모임을 만들고 협업을 시작해보세요.
+            </DialogDescription>
+          </DialogHeader>
+        </div>
+        <div className="space-y-3 px-6 pb-6 pt-5">
+          <Button
+            className="h-12 w-full gap-3 bg-[#24292f] text-white shadow-sm hover:bg-[#24292f]/90"
+            onClick={handleGitHubLogin}
+          >
+            <GitHubIcon className="size-5" />
+            GitHub로 계속하기
+          </Button>
+          <div className="flex items-center gap-3" aria-hidden="true">
+            <span className="h-px flex-1 bg-border" />
+            <span className="text-[11px] font-medium text-muted-foreground">
+              또는
+            </span>
+            <span className="h-px flex-1 bg-border" />
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            className="h-11 w-full"
+            onClick={handleTestLogin}
+            disabled={testLoginLoading}
+          >
+            {testLoginLoading ? "로그인 중..." : "테스트 계정으로 로그인"}
+          </Button>
+          <p className="text-center text-xs leading-5 text-muted-foreground">
+            로그인하면 서비스 이용약관과 개인정보 처리방침에 동의하게 됩니다.
+          </p>
+        </div>
+      </DialogContent>
+    </Dialog>
   )
 }

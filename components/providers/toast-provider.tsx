@@ -9,10 +9,6 @@ import { notify } from "@/lib/notify"
 const LOGIN_PROVIDER_STORAGE_KEY = "auth:login-provider"
 
 function getProviderLabel(provider: string | null) {
-  if (provider === "google") {
-    return "Google"
-  }
-
   if (provider === "github") {
     return "GitHub"
   }

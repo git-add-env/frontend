@@ -1,8 +1,9 @@
 "use client"
 
-import { useCallback, useEffect, useState } from "react"
+import { useState } from "react"
 
 import { Button } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
 import {
   Dialog,
   DialogContent,
@@ -10,63 +11,80 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import {
+  useCancelMembership,
+  useDeleteMeeting,
+  useMyMeetings,
+} from "@/hooks/mypage/use-my-meetings"
 import { ApiFetchError } from "@/lib/api/api-fetch"
-import { cancelMembership, deleteMeeting, fetchMyMeetings, type Meeting } from "@/lib/api/mypage"
 import { errorMessage } from "@/lib/api/error"
 
 import { EmptyOrError } from "./EmptyOrError"
+import { MeetingCardSkeletonGrid } from "./MeetingCardSkeleton"
 import { MeetingCard } from "./MeetingCard"
+
+type ConfirmAction = "cancel" | "delete"
 
 type ConfirmState = {
   meetingId: number
   title: string
-  action: "cancel" | "delete"
+  action: ConfirmAction
 } | null
 
 type MyMeetingsTabProps = {
   status: "recruiting" | "active"
 }
 
+// ⋯ 드롭다운 안의 액션 항목 — 전체폭 좌측정렬 버튼.
+function MenuItem({
+  children,
+  onClick,
+  danger,
+}: {
+  children: React.ReactNode
+  onClick: () => void
+  danger?: boolean
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "w-full rounded-md px-2.5 py-1.5 text-left text-sm transition-colors hover:bg-muted",
+        danger ? "text-destructive hover:bg-destructive/10" : "text-foreground",
+      )}
+    >
+      {children}
+    </button>
+  )
+}
+
 export function MyMeetingsTab({ status }: MyMeetingsTabProps) {
-  const [meetings, setMeetings] = useState<Meeting[] | null>(null)
-  const [error, setError] = useState<string | null>(null)
+  const { data: meetings, isError, isPending } = useMyMeetings(status)
   const [confirm, setConfirm] = useState<ConfirmState>(null)
   const [confirmError, setConfirmError] = useState<string | null>(null)
-  const [busy, setBusy] = useState(false)
 
-  const load = useCallback(() => {
-    fetchMyMeetings(status)
-      .then((res) => setMeetings(res.meetings))
-      .catch(() => setError("모임을 불러오지 못했습니다."))
-  }, [status])
-
-  useEffect(() => {
-    load()
-  }, [load])
+  const cancelMembership = useCancelMembership()
+  const deleteMeeting = useDeleteMeeting()
+  const busy = cancelMembership.isPending || deleteMeeting.isPending
 
   async function runConfirm() {
     if (!confirm) return
-    setBusy(true)
     setConfirmError(null)
+    const mutation = confirm.action === "cancel" ? cancelMembership : deleteMeeting
     try {
-      if (confirm.action === "cancel") {
-        await cancelMembership(confirm.meetingId)
-      } else {
-        await deleteMeeting(confirm.meetingId)
-      }
+      await mutation.mutateAsync(confirm.meetingId)
       setConfirm(null)
-      load()
     } catch (e) {
       setConfirmError(
         e instanceof ApiFetchError ? errorMessage(e) : "요청에 실패했습니다.",
       )
-    } finally {
-      setBusy(false)
     }
   }
 
-  if (error) return <EmptyOrError message={error} />
-  if (!meetings) return <EmptyOrError message="로딩 중..." />
+  if (isError) return <EmptyOrError message="모임을 불러오지 못했습니다." />
+  if (isPending || !meetings)
+    return <MeetingCardSkeletonGrid className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3" />
   if (meetings.length === 0)
     return (
       <EmptyOrError
@@ -78,55 +96,45 @@ export function MyMeetingsTab({ status }: MyMeetingsTabProps) {
 
   return (
     <>
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {meetings.map((meeting) => {
-          // TODO: 백엔드 MeetingSummary에 isLeader 추가되면 meeting.isLeader로 교체.
-          // (상세 DTO는 isLeader/isParticipant 사용) 현재 목록 응답엔 없어 임시로 모두 모임장 취급.
-          const isLeader = true
+          // 모집중: (모임장)삭제 / (멤버)참여취소. 활동중 종료는 대시보드에서 처리한다. ⋯ 메뉴에 들어간다.
+          let menuItem: React.ReactNode = null
+          if (meeting.isLeader && meeting.status === "RECRUITING") {
+            menuItem = (
+              <MenuItem
+                danger
+                onClick={() =>
+                  setConfirm({ meetingId: meeting.meetingId, title: meeting.title, action: "delete" })
+                }
+              >
+                삭제
+              </MenuItem>
+            )
+          } else if (!meeting.isLeader && meeting.status === "RECRUITING") {
+            menuItem = (
+              <MenuItem
+                danger
+                onClick={() =>
+                  setConfirm({ meetingId: meeting.meetingId, title: meeting.title, action: "cancel" })
+                }
+              >
+                참여 취소
+              </MenuItem>
+            )
+          }
+
           return (
             <MeetingCard
               key={meeting.meetingId}
               meeting={meeting}
-              footer={
-                <div className="mt-3 flex flex-wrap justify-end gap-2">
-                  {isLeader ? (
-                    // 모임장 액션(수정/삭제)은 모집중일 때만. 활동중/완료는 진행·종료된 모임이라 숨김.
-                    meeting.status === "RECRUITING" && (
-                      <>
-                        {/* TODO(MVP): 모임 정보 수정 페이지(/meetings/[id]/edit) 미구현으로 404 발생 → 임시 비활성화 */}
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={() =>
-                            setConfirm({
-                              meetingId: meeting.meetingId,
-                              title: meeting.title,
-                              action: "delete",
-                            })
-                          }
-                        >
-                          삭제
-                        </Button>
-                      </>
-                    )
-                  ) : (
-                    meeting.status === "RECRUITING" && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() =>
-                          setConfirm({
-                            meetingId: meeting.meetingId,
-                            title: meeting.title,
-                            action: "cancel",
-                          })
-                        }
-                      >
-                        참여 취소
-                      </Button>
-                    )
-                  )}
-                </div>
+              menu={menuItem}
+              // 모집중은 아직 모집 단계라 모집글 상세로, 활동중은 협업 공간인 대시보드로 보낸다.
+              // (⋯ 메뉴는 z-10으로 카드 링크 위에서 동작)
+              href={
+                meeting.status === "RECRUITING"
+                  ? `/meetings/${meeting.meetingId}`
+                  : `/dashboard?meetingId=${meeting.meetingId}`
               }
             />
           )
@@ -174,7 +182,11 @@ export function MyMeetingsTab({ status }: MyMeetingsTabProps) {
               onClick={runConfirm}
               disabled={busy}
             >
-              {busy ? "처리 중..." : confirm?.action === "delete" ? "삭제" : "참여 취소"}
+              {busy
+                ? "처리 중..."
+                : confirm?.action === "delete"
+                  ? "삭제"
+                  : "참여 취소"}
             </Button>
           </div>
         </DialogContent>

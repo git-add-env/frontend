@@ -24,7 +24,7 @@ export type ScheduleInput = {
 
 export function fetchSchedules(meetingId: number) {
   return apiClient<{ schedules: Schedule[] }>(
-    `/api/meetings/${meetingId}/schedules`,
+    `/api/meetings/${meetingId}/schedules`
   )
 }
 
@@ -38,19 +38,18 @@ export function createSchedule(meetingId: number, input: ScheduleInput) {
 export function updateSchedule(
   meetingId: number,
   scheduleId: number,
-  input: Partial<ScheduleInput>,
+  input: Partial<ScheduleInput>
 ) {
   return apiClient<Schedule>(
     `/api/meetings/${meetingId}/schedules/${scheduleId}`,
-    { method: "PATCH", body: JSON.stringify(input) },
+    { method: "PATCH", body: JSON.stringify(input) }
   )
 }
 
 export function deleteSchedule(meetingId: number, scheduleId: number) {
-  return apiClient<void>(
-    `/api/meetings/${meetingId}/schedules/${scheduleId}`,
-    { method: "DELETE" },
-  )
+  return apiClient<void>(`/api/meetings/${meetingId}/schedules/${scheduleId}`, {
+    method: "DELETE",
+  })
 }
 
 // ---- 공지 (DB-API-004~007) ----
@@ -69,7 +68,7 @@ export function fetchNotices(meetingId: number) {
 
 export function createNotice(
   meetingId: number,
-  input: { title: string; content: string },
+  input: { title: string; content: string }
 ) {
   return apiClient<Notice>(`/api/meetings/${meetingId}/notices`, {
     method: "POST",
@@ -80,7 +79,7 @@ export function createNotice(
 export function updateNotice(
   meetingId: number,
   noticeId: number,
-  input: Partial<{ title: string; content: string }>,
+  input: Partial<{ title: string; content: string }>
 ) {
   return apiClient<Notice>(`/api/meetings/${meetingId}/notices/${noticeId}`, {
     method: "PATCH",
@@ -105,13 +104,13 @@ export type Resource = {
 
 export function fetchResources(meetingId: number) {
   return apiClient<{ resources: Resource[] }>(
-    `/api/meetings/${meetingId}/resources`,
+    `/api/meetings/${meetingId}/resources`
   )
 }
 
 export function createResource(
   meetingId: number,
-  input: { title: string; url: string },
+  input: { title: string; url: string }
 ) {
   return apiClient<Resource>(`/api/meetings/${meetingId}/resources`, {
     method: "POST",
@@ -120,10 +119,9 @@ export function createResource(
 }
 
 export function deleteResource(meetingId: number, resourceId: number) {
-  return apiClient<void>(
-    `/api/meetings/${meetingId}/resources/${resourceId}`,
-    { method: "DELETE" },
-  )
+  return apiClient<void>(`/api/meetings/${meetingId}/resources/${resourceId}`, {
+    method: "DELETE",
+  })
 }
 
 // ---- 화상 회의 (DB-API-002~003) ----
@@ -134,14 +132,62 @@ export type MeetingRoom = {
   url: string
 }
 
+// 회의 진행 상태 (GET /conferences). "회의 없음"도 404가 아니라 200 + isActive:false.
+export type ConferenceStatus = {
+  conferenceId: number | null
+  isActive: boolean
+  roomId: string | null
+  participantCount: number
+  startedAt: string | null
+  startedBy: { userId: number; nickname: string } | null
+}
+
+export function fetchConferenceStatus(meetingId: number) {
+  return apiClient<ConferenceStatus>(`/api/meetings/${meetingId}/conferences`)
+}
+
 export function startMeeting(meetingId: number) {
-  return apiClient<MeetingRoom>(`/api/meetings/${meetingId}/meetings`, {
+  return apiClient<MeetingRoom>(`/api/meetings/${meetingId}/conferences`, {
     method: "POST",
   })
 }
 
 export function joinMeeting(meetingId: number) {
-  return apiClient<MeetingRoom>(`/api/meetings/${meetingId}/meetings/join`)
+  return apiClient<MeetingRoom>(`/api/meetings/${meetingId}/conferences/join`)
+}
+
+export type EndConferenceResult = {
+  conferenceId: number | null
+  meetingId: number
+  isActive: false
+  ended: boolean
+  endedAt: string | null
+  endedBy: { userId: number; nickname: string } | null
+}
+
+export type LeaveConferenceResult = {
+  conferenceId: number
+  meetingId: number
+  left: boolean
+  leftAt: string | null
+}
+
+export function endMeeting(meetingId: number) {
+  return apiClient<EndConferenceResult>(
+    `/api/meetings/${meetingId}/conferences`,
+    {
+      method: "DELETE",
+    }
+  )
+}
+
+export function leaveMeeting(meetingId: number) {
+  return apiClient<LeaveConferenceResult>(
+    `/api/meetings/${meetingId}/conferences/leave`,
+    {
+      method: "POST",
+    }
+  )
 }
 
 // ---- 멤버 프로필 (DB-API-016) ----
@@ -156,8 +202,11 @@ export type MemberProfile = {
   techStacks: string[]
 }
 
-export async function fetchMemberProfile(userId: number): Promise<MemberProfile> {
-  const res = await apiClient<{ user: MemberProfile }>(`/api/users/${userId}/profile`)
+export async function fetchMemberProfile(
+  userId: number
+): Promise<MemberProfile> {
+  const res = await apiClient<{ user: MemberProfile }>(
+    `/api/users/${userId}/profile`
+  )
   return res.user
 }
-

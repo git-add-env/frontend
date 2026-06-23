@@ -17,5 +17,7 @@ declare module "next-auth/jwt" {
     onboardingRequired?: boolean
     authError?: string
     appUser?: AppUser
+    backendAuthCookieHeader?: string
+    backendAuthCookieNames?: string[]
   }
 }

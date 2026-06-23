@@ -19,7 +19,9 @@ export function ProfileAvatar({
   const initial = nickname?.trim().charAt(0).toUpperCase() || "?"
   return (
     <Avatar className={className}>
-      {profileImage && <AvatarImage src={profileImage} alt={nickname ?? ""} />}
+      {/* src를 조건부로 빼면 radix가 loadingStatus를 'loaded'로 남겨 폴백이 안 뜬다.
+         항상 렌더하고 src만 토글 → 이미지 없으면 자동으로 이니셜 폴백 표시. */}
+      <AvatarImage src={profileImage ?? undefined} alt={nickname ?? ""} />
       <AvatarFallback className={fallbackClassName}>{initial}</AvatarFallback>
     </Avatar>
   )
