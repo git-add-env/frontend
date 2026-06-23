@@ -29,6 +29,7 @@ import {
 
 import { Calendars } from "@/components/common/Calendars"
 import { Button } from "@/components/ui/button"
+import { TechStackBadge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { MEETING_CATEGORY_OPTIONS } from "@/constants/meeting-form"
@@ -546,15 +547,13 @@ function MeetingCreateForm({ initialForm, isEditMode, meetingId }: MeetingCreate
             <div className="space-y-3">
               <div className="flex flex-wrap gap-2">
                 {form.techStacks.map((stack) => (
-                  <button
+                  <TechStackBadge
                     key={stack}
-                    type="button"
-                    onClick={() => handleRemoveTechStack(stack)}
-                    className="rounded-full bg-blue-50 px-3 py-1 text-sm font-medium text-blue-500"
-                    title={`${stack} 삭제`}
+                    onRemove={() => handleRemoveTechStack(stack)}
+                    removeLabel={`${stack} 삭제`}
                   >
-                    # {stack} ×
-                  </button>
+                    {stack}
+                  </TechStackBadge>
                 ))}
               </div>
               <TechStackPicker
