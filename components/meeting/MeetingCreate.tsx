@@ -27,6 +27,7 @@ import {
   Users,
 } from "lucide-react"
 
+import { Calendars } from "@/components/common/Calendars"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
@@ -519,13 +520,11 @@ function MeetingCreateForm({ initialForm, isEditMode, meetingId }: MeetingCreate
               />
             </Field>
             <Field label="모집 마감일" required>
-              <Input
-                type="date"
+              <DatePickerField
                 value={form.deadline}
-                onChange={(event: ChangeEvent<HTMLInputElement>) =>
-                  updateField("deadline", event.target.value)
-                }
-                className="h-16 rounded-lg border-[#c3c6d7] bg-white text-base"
+                onChange={(value) => updateField("deadline", value)}
+                placeholder="모집 마감일 선택"
+                className="h-16"
               />
             </Field>
           </div>
@@ -588,13 +587,10 @@ function MeetingCreateForm({ initialForm, isEditMode, meetingId }: MeetingCreate
         <FormSection id="schedule" number={3} title="진행 정보">
           <div className="grid gap-6 md:grid-cols-3">
             <Field label="시작 예정일" required>
-              <Input
-                type="date"
+              <DatePickerField
                 value={form.startDate}
-                onChange={(event: ChangeEvent<HTMLInputElement>) =>
-                  updateField("startDate", event.target.value)
-                }
-                className="h-14 rounded-lg border-[#c3c6d7] bg-white text-base"
+                onChange={(value) => updateField("startDate", value)}
+                placeholder="시작 예정일 선택"
               />
             </Field>
             <Field label="예상 기간" required>
@@ -858,6 +854,46 @@ type PositionSelectProps = {
   options: readonly string[]
   disabledOptions: string[]
   onChange: (value: string) => void
+}
+
+type DatePickerFieldProps = {
+  value: string
+  onChange: (value: string) => void
+  placeholder: string
+  className?: string
+}
+
+function DatePickerField({ value, onChange, placeholder, className }: DatePickerFieldProps) {
+  const [open, setOpen] = useState(false)
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          className={cn(
+            "flex h-14 w-full items-center gap-3 rounded-lg border border-[#c3c6d7] bg-white px-4 text-left text-base outline-none transition hover:border-blue-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20",
+            value ? "text-[#191c1e]" : "text-[#737686]",
+            className,
+          )}
+        >
+          <CalendarDays className="size-4 shrink-0 text-[#565e74]" aria-hidden="true" />
+          <span>{value || placeholder}</span>
+        </button>
+      </PopoverTrigger>
+      <PopoverContent align="start" className="w-auto p-0">
+        <Calendars
+          selected={parseDateValue(value)}
+          onSelect={(date) => {
+            if (date) {
+              onChange(formatDateValue(date))
+            }
+            setOpen(false)
+          }}
+        />
+      </PopoverContent>
+    </Popover>
+  )
 }
 
 function PositionSelect({ value, options, disabledOptions, onChange }: PositionSelectProps) {
@@ -1152,6 +1188,28 @@ function getDateInputValue(value?: string | null) {
   }
 
   return value.slice(0, 10)
+}
+
+function parseDateValue(value: string) {
+  if (!value) {
+    return undefined
+  }
+
+  const [year, month, day] = value.split("-").map(Number)
+
+  if (!year || !month || !day) {
+    return undefined
+  }
+
+  return new Date(year, month - 1, day)
+}
+
+function formatDateValue(date: Date) {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, "0")
+  const day = String(date.getDate()).padStart(2, "0")
+
+  return `${year}-${month}-${day}`
 }
 
 function getStableId() {
