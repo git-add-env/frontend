@@ -126,11 +126,13 @@ export function NoticeList({ meetingId, isLeader, onSelect }: NoticeListProps) {
                   placeholder="제목"
                   className="h-9 w-full rounded-md border bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 />
-                <div className="mt-1 flex items-center justify-between pr-1 text-xs">
-                  <span role="alert" className="text-destructive">
-                    {!title.trim() ? "제목을 입력해주세요." : ""}
-                  </span>
-                  <span className="text-muted-foreground tabular-nums">
+                <div className="mt-1 flex items-center gap-2 pr-1 text-xs">
+                  {!title.trim() && (
+                    <span role="alert" className="text-destructive">
+                      제목을 입력해주세요.
+                    </span>
+                  )}
+                  <span className="ml-auto text-muted-foreground tabular-nums">
                     {title.length}/{TITLE_MAX}
                   </span>
                 </div>
@@ -145,11 +147,13 @@ export function NoticeList({ meetingId, isLeader, onSelect }: NoticeListProps) {
                   rows={5}
                   className="w-full rounded-md border bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 />
-                <div className="mt-1 flex items-center justify-between pr-1 text-xs">
-                  <span role="alert" className="text-destructive">
-                    {title.trim() && !content.trim() ? "내용을 입력해주세요." : ""}
-                  </span>
-                  <span className="text-muted-foreground tabular-nums">
+                <div className="mt-1 flex items-center gap-2 pr-1 text-xs">
+                  {title.trim() && !content.trim() && (
+                    <span role="alert" className="text-destructive">
+                      내용을 입력해주세요.
+                    </span>
+                  )}
+                  <span className="ml-auto text-muted-foreground tabular-nums">
                     {content.length}/{CONTENT_MAX}
                   </span>
                 </div>

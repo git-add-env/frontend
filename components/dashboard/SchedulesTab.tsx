@@ -152,14 +152,17 @@ export function SchedulesTab({ meetingId, isLeader }: SchedulesTabProps) {
                 // maxLength는 한글 IME에서 1자 초과될 수 있어 onChange에서 잘라 보강.
                 onChange={(e) => setTitle(e.target.value.slice(0, TITLE_MAX))}
                 maxLength={TITLE_MAX}
+                aria-label="일정 제목"
                 placeholder="일정 제목"
                 className="h-9 w-full rounded-md border bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
               />
-              <div className="mt-1 flex items-center justify-between pr-1 text-xs">
-                <span role="alert" className="text-destructive">
-                  {!title.trim() ? "일정 제목을 입력해주세요." : ""}
-                </span>
-                <span className="text-muted-foreground tabular-nums">
+              <div className="mt-1 flex items-center gap-2 pr-1 text-xs">
+                {!title.trim() && (
+                  <span role="alert" className="text-destructive">
+                    일정 제목을 입력해주세요.
+                  </span>
+                )}
+                <span className="ml-auto text-muted-foreground tabular-nums">
                   {title.length}/{TITLE_MAX}
                 </span>
               </div>
@@ -206,6 +209,7 @@ export function SchedulesTab({ meetingId, isLeader }: SchedulesTabProps) {
             <input
               value={description}
               onChange={(e) => setDescription(e.target.value)}
+              aria-label="일정 설명"
               placeholder="설명 (선택)"
               className="h-9 rounded-md border bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
             />
