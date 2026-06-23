@@ -50,7 +50,7 @@ export default function Header() {
   }
 
   return (
-    <header className="sticky top-0 z-50 border-b bg-background/90 backdrop-blur">
+    <header className="sticky top-0 z-50 border-b bg-background">
       <div className="mx-auto flex h-18 w-full max-w-[1280px] items-center justify-between px-6">
         {/* 왼쪽: 로고 + 내비게이션 */}
         <div className="flex items-center gap-8">
@@ -81,8 +81,8 @@ export default function Header() {
                     key={item.href}
                     href={item.href}
                     className={cn(
-                      "rounded-md px-3 py-2 font-semibold text-muted-foreground transition-colors hover:text-[#1abcfe]",
-                      isActive && "text-foreground"
+                      "rounded-md px-3 py-2 font-semibold transition-colors hover:text-[#1abcfe]",
+                      isActive && "text-[#1abcfe]"
                     )}
                   >
                     {item.label}
