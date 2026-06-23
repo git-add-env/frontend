@@ -113,10 +113,10 @@ export function VideoConferenceBanner({
   }
 
   return (
-    <div className="rounded-2xl border border-border bg-card p-6">
+    <div className="flex min-h-28 flex-col justify-center rounded-2xl border border-blue-100 bg-blue-50 p-6 shadow-md">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="flex size-10 items-center justify-center rounded-full bg-accent">
+          <div className="flex size-10 items-center justify-center rounded-full bg-white text-blue-500">
             <Video className="size-5" />
           </div>
           <div className="min-w-0">

@@ -17,6 +17,10 @@ import { formatMeetingDate } from "@/lib/date"
 
 import { EmptyState, ListSkeleton } from "./DashboardStates"
 
+// 공지 제목·내용 최대 길이
+const TITLE_MAX = 50
+const CONTENT_MAX = 500
+
 type NoticeListProps = {
   meetingId: number
   isLeader: boolean
@@ -111,29 +115,49 @@ export function NoticeList({ meetingId, isLeader, onSelect }: NoticeListProps) {
             <DialogHeader>
               <DialogTitle>공지 작성</DialogTitle>
             </DialogHeader>
-            <div className="flex flex-col gap-2">
-              <input
-                value={title}
-                maxLength={50}
-                onChange={(e) => setTitle(e.target.value)}
-                aria-label="공지 제목"
-                placeholder="제목 (최대 50자)"
-                className="h-9 rounded-md border bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              />
-              <textarea
-                value={content}
-                maxLength={500}
-                onChange={(e) => setContent(e.target.value)}
-                aria-label="공지 내용"
-                placeholder="내용 (최대 500자)"
-                rows={5}
-                className="rounded-md border bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              />
-              {!canSubmit && (
-                <p className="text-xs text-muted-foreground">
-                  {!title.trim() ? "제목을 입력해주세요." : "내용을 입력해주세요."}
-                </p>
-              )}
+            <div className="flex flex-col gap-3">
+              <div>
+                <input
+                  value={title}
+                  // maxLength는 한글 IME에서 1자 초과될 수 있어 onChange에서 잘라 보강.
+                  onChange={(e) => setTitle(e.target.value.slice(0, TITLE_MAX))}
+                  maxLength={TITLE_MAX}
+                  aria-label="공지 제목"
+                  placeholder="제목"
+                  className="h-9 w-full rounded-md border bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                />
+                <div className="mt-1 flex items-center gap-2 pr-1 text-xs">
+                  {!title.trim() && (
+                    <span role="alert" className="text-destructive">
+                      제목을 입력해주세요.
+                    </span>
+                  )}
+                  <span className="ml-auto text-muted-foreground tabular-nums">
+                    {title.length}/{TITLE_MAX}
+                  </span>
+                </div>
+              </div>
+              <div>
+                <textarea
+                  value={content}
+                  onChange={(e) => setContent(e.target.value.slice(0, CONTENT_MAX))}
+                  maxLength={CONTENT_MAX}
+                  aria-label="공지 내용"
+                  placeholder="내용"
+                  rows={5}
+                  className="w-full rounded-md border bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                />
+                <div className="mt-1 flex items-center gap-2 pr-1 text-xs">
+                  {title.trim() && !content.trim() && (
+                    <span role="alert" className="text-destructive">
+                      내용을 입력해주세요.
+                    </span>
+                  )}
+                  <span className="ml-auto text-muted-foreground tabular-nums">
+                    {content.length}/{CONTENT_MAX}
+                  </span>
+                </div>
+              </div>
               {error && <p className="text-xs text-destructive">{error}</p>}
               <div className="flex justify-end gap-2">
                 <Button size="sm" variant="outline" onClick={() => changeAdding(false)}>
