@@ -2,7 +2,7 @@
 
 import { useQueryClient } from "@tanstack/react-query"
 import { Bell, Calendar, Check, CheckCheck, Clock, Video, X } from "lucide-react"
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { queryKeys } from "@/hooks/api/query-keys"
@@ -23,6 +23,26 @@ const TYPE_ICON: Record<NotificationType, typeof Bell> = {
   BOOKMARK_DEADLINE: Clock,
   MEETING_CANCELLED: X,
   MEETING_COMPLETED: CheckCheck,
+}
+
+// 읽지 않은 알림 표시 점. 마운트 시 핑을 5초만 보여주고 정적 점으로 고정한다.
+// 부모가 key={unreadCount}로 렌더 → 새로고침·새 알림 수신 때마다 리마운트되어 핑이 다시 돈다.
+function UnreadDot() {
+  const [pinging, setPinging] = useState(true)
+  useEffect(() => {
+    const timer = setTimeout(() => setPinging(false), 5000)
+    return () => clearTimeout(timer)
+  }, [])
+
+  return (
+    <span className="absolute right-2 top-2 flex size-3 items-center justify-center">
+      {pinging && (
+        <span className="absolute inline-flex size-full animate-ping rounded-full bg-[#1abcfe] motion-reduce:animate-none" />
+      )}
+      <span className="relative inline-flex size-2 rounded-full bg-[#1abcfe] ring-2 ring-background" />
+      <span className="sr-only">읽지 않은 알림 있음</span>
+    </span>
+  )
 }
 
 // NT-001~005: 알림 팝오버 + SSE 실시간 수신 + 토스트 + 전체 읽음.
@@ -130,17 +150,15 @@ export function NotificationBell() {
   return (
     <Popover>
       <PopoverTrigger
-        className="relative inline-flex size-10 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+        className={cn(
+          "relative inline-flex size-10 items-center justify-center rounded-full text-muted-foreground transition-colors hover:text-accent-foreground",
+          // 읽지 않은 알림이 있으면 아이콘 색만 hover 색으로 상시 적용해 강조(배경 없음).
+          unreadCount > 0 && "text-accent-foreground",
+        )}
         aria-label="알림"
       >
         <Bell className="size-5" />
-        {unreadCount > 0 && (
-          <span className="absolute right-2 top-2 flex size-3 items-center justify-center">
-            <span className="absolute inline-flex size-full animate-ping rounded-full bg-[#1abcfe] opacity-75 motion-reduce:animate-none" />
-            <span className="relative inline-flex size-2 rounded-full bg-[#1abcfe] ring-2 ring-background" />
-            <span className="sr-only">읽지 않은 알림 있음</span>
-          </span>
-        )}
+        {unreadCount > 0 && <UnreadDot key={unreadCount} />}
       </PopoverTrigger>
 
       <PopoverContent className="w-80 p-0">
@@ -183,7 +201,7 @@ export function NotificationBell() {
                         <Icon className="size-4" />
                       </span>
                       <span className="flex flex-1 flex-col gap-0.5">
-                        <span className="text-sm leading-snug">{notification.message}</span>
+                        <span className="text-base leading-snug">{notification.message}</span>
                         <span className="text-xs text-muted-foreground">
                           {formatTime(notification.createdAt)}
                         </span>
