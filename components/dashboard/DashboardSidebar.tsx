@@ -164,12 +164,11 @@ export function DashboardSidebar({
             >
               {sectioned.map(({ status, label, accentClass, items }) => (
                 <section key={status} className="flex flex-col gap-1">
-                  {/* 섹션 헤더: 왼쪽 세로 컬러 바 + 라벨 + 구분선 + 개수 */}
-                  <div className="flex items-center gap-2 px-3 py-1">
-                    <span className={cn("h-4 w-1 shrink-0 rounded-full", accentClass)} />
-                    <span className="shrink-0 text-[13px] font-bold text-foreground">{label}</span>
-                    <span className="h-px flex-1 bg-border" />
-                    <span className="shrink-0 text-xs font-bold text-muted-foreground">{items.length}</span>
+                  {/* 섹션 헤더: 배경 없이 상태 점 + 라벨 + 오른쪽 개수 배지(데스크탑은 배경 블록 제거) */}
+                  <div className="flex items-center gap-2 px-3 py-2 text-xs font-bold text-muted-foreground">
+                    <span className={cn("size-2 shrink-0 rounded-full", accentClass)} />
+                    {label}
+                    <CountBadge count={items.length} className="ml-auto" />
                   </div>
 
                   {items.length === 0 ? (
@@ -234,6 +233,52 @@ function MeetingThumb({
         </div>
       )}
     </div>
+  )
+}
+
+// 모임 항목의 공통 비주얼: 썸네일 + (제목 + 모임장 왕관) + 카테고리·인원 메타.
+// 데스크탑 사이드바와 모바일 드롭다운이 동일한 카드 모양을 쓰도록 추출(디자인 통일).
+// 바깥(선택 배경·드래그 핸들·체크 아이콘)은 각 컨텍스트가 감싼다.
+function MeetingCardBody({
+  meeting,
+  thumbClassName,
+}: {
+  meeting: Meeting
+  thumbClassName?: string
+}) {
+  const { currentCount, totalCount } = meeting.recruitSummary
+  return (
+    <>
+      <MeetingThumb meeting={meeting} className={cn("size-10", thumbClassName)} />
+      <span className="min-w-0 flex-1">
+        <span className="flex min-w-0 items-center gap-1.5">
+          <span className="truncate text-sm font-bold text-foreground">{meeting.title}</span>
+          {meeting.isLeader && (
+            <span className="flex size-4 shrink-0 items-center justify-center rounded-full bg-yellow-100 text-yellow-500">
+              <Crown className="size-3" />
+            </span>
+          )}
+        </span>
+        <span className="mt-0.5 block truncate text-xs text-muted-foreground">
+          {CATEGORY_LABEL[meeting.category] ?? meeting.category} ·{" "}
+          {currentCount}/{totalCount}명
+        </span>
+      </span>
+    </>
+  )
+}
+
+// 섹션 개수 배지: 동그란 pill 안에 숫자. 데스크탑·모바일 섹션 헤더 공통.
+function CountBadge({ count, className }: { count: number; className?: string }) {
+  return (
+    <span
+      className={cn(
+        "flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-muted px-1.5 text-xs font-bold text-muted-foreground",
+        className,
+      )}
+    >
+      {count}
+    </span>
   )
 }
 
@@ -318,7 +363,7 @@ function MobileMeetingDropdown({
                   className={cn("size-2 shrink-0 rounded-full", section.accentClass)}
                 />
                 {section.label}
-                <span className="ml-auto">{section.items.length}</span>
+                <CountBadge count={section.items.length} className="ml-auto" />
               </div>
               {section.items.length === 0 ? (
                 <p className="border-t border-border px-4 py-3 text-xs text-muted-foreground/70">
@@ -340,17 +385,7 @@ function MobileMeetingDropdown({
                         isActive ? "bg-blue-50" : "hover:bg-muted/40",
                       )}
                     >
-                      <MeetingThumb meeting={group} className="size-10" />
-                      <span className="min-w-0 flex-1">
-                        <span className="truncate text-sm font-bold">
-                          {group.title}
-                        </span>
-                        <span className="mt-0.5 block truncate text-xs text-muted-foreground">
-                          {CATEGORY_LABEL[group.category] ?? group.category} ·{" "}
-                          {group.recruitSummary.currentCount}/
-                          {group.recruitSummary.totalCount}명
-                        </span>
-                      </span>
+                      <MeetingCardBody meeting={group} />
                       {isActive && (
                         <Check className="size-4 shrink-0 text-blue-500" />
                       )}
@@ -376,7 +411,6 @@ function SortableItem({ group, isActive, onSelect }: SortableItemProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: group.meetingId,
   })
-  const { currentCount, totalCount } = group.recruitSummary
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -389,8 +423,8 @@ function SortableItem({ group, isActive, onSelect }: SortableItemProps) {
       style={style}
       className={cn(
         "group flex items-center rounded-lg transition-colors",
-        // 선택: 테두리/그림자 없이 연한 하늘색 배경으로 표시(hover는 배경 대신 제목 굵기로 강조).
-        isActive && "bg-blue-50",
+        // 선택: 테두리/그림자 없이 연한 하늘색 배경. 비선택은 hover 시 옅은 배경(모바일과 통일).
+        isActive ? "bg-blue-50" : "hover:bg-muted/40",
         // 드래그 중인 항목은 위로 떠오르고 반투명.
         isDragging && "z-10 opacity-60",
       )}
@@ -413,35 +447,9 @@ function SortableItem({ group, isActive, onSelect }: SortableItemProps) {
         type="button"
         onClick={() => onSelect(group.meetingId)}
         title={group.title}
-        className="flex min-w-0 flex-1 flex-col gap-1 py-2 pr-3 text-left"
+        className="flex min-w-0 flex-1 items-center gap-3 py-2 pr-3 text-left"
       >
-        {/* 제목 줄: 이름(말줄임) + 우측에 모임장 왕관 아이콘. 전체 이름은 title 속성으로 호버 시 노출 */}
-        <span className="flex min-w-0 items-center gap-2">
-          <span
-            className={cn(
-              "truncate text-sm font-semibold text-foreground group-hover:font-bold",
-              isActive && "font-bold",
-            )}
-          >
-            {group.title}
-          </span>
-          {group.isLeader && (
-            <span className="ml-auto flex size-4 shrink-0 items-center justify-center rounded-full bg-yellow-100 text-yellow-500">
-              <Crown className="size-3" />
-            </span>
-          )}
-        </span>
-        <span
-          className={cn(
-            "flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground group-hover:font-bold",
-            isActive && "font-bold",
-          )}
-        >
-          <span className="shrink-0">{CATEGORY_LABEL[group.category] ?? group.category}</span>
-          <span className="shrink-0">
-            · {currentCount}/{totalCount}명
-          </span>
-        </span>
+        <MeetingCardBody meeting={group} />
       </button>
     </div>
   )
