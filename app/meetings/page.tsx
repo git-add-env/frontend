@@ -11,12 +11,16 @@ import MeetingCard, { type Meeting } from "@/components/common/MeetingCard"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { CATEGORY_LABEL } from "@/constants/category"
-import { useMeetingBookmarkMutation } from "@/hooks/api/use-meeting-bookmark"
+import {
+  useMeetingBookmarkMutation,
+  useMeetingBookmarkState,
+} from "@/hooks/api/use-meeting-bookmark"
 import { queryKeys } from "@/hooks/api/query-keys"
 import { ApiFetchError } from "@/lib/api/api-fetch"
 import { errorMessage } from "@/lib/api/error"
 import {
   fetchMeetings,
+  normalizeMeetingPositions,
   type MeetingListParams,
   type MeetingSummary,
 } from "@/lib/api/meetings"
@@ -51,7 +55,6 @@ export default function MeetingsPage() {
   const [loginDialogOpen, setLoginDialogOpen] = useState(false)
   const loadMoreRef = useRef<HTMLDivElement | null>(null)
   const { status: authStatus } = useSession()
-  const bookmarkMutation = useMeetingBookmarkMutation()
   const isAuthenticated = authStatus === "authenticated"
 
   const categories = ["전체", "프로젝트", "해커톤", "공모전"]
@@ -121,48 +124,31 @@ export default function MeetingsPage() {
     return () => observer.disconnect()
   }, [fetchNextPage, hasNextPage, isFetchingNextPage])
 
-  function handleBookmarkToggle(meetingId: string, bookmarked: boolean) {
-    if (!isAuthenticated) {
-      notify.info("로그인이 필요한 서비스입니다.")
-      setLoginDialogOpen(true)
-      return
-    }
+  function handleUnauthenticatedBookmark() {
+    notify.info("로그인이 필요한 서비스입니다.")
+    setLoginDialogOpen(true)
+  }
 
-    const parsedMeetingId = Number(meetingId)
-
-    if (!Number.isFinite(parsedMeetingId)) {
-      notify.error("북마크를 처리할 수 없습니다.")
-      return
-    }
-
-    bookmarkMutation.mutate(
-      { meetingId: parsedMeetingId, bookmarked },
-      {
-        onSuccess: () => {
-          setBookmarkOverrides((prev) => ({
-            scope: bookmarkOverrideScope,
-            values: {
-              ...(prev.scope === bookmarkOverrideScope ? prev.values : {}),
-              [meetingId]: bookmarked,
-            },
-          }))
-        },
-        onError: (error) => {
-          notify.error(
-            error instanceof ApiFetchError
-              ? errorMessage(error)
-              : "북마크 변경에 실패했습니다.",
-          )
-        },
+  function handleBookmarkSuccess(meetingId: string, bookmarked: boolean) {
+    setBookmarkOverrides((prev) => ({
+      scope: bookmarkOverrideScope,
+      values: {
+        ...(prev.scope === bookmarkOverrideScope ? prev.values : {}),
+        [meetingId]: bookmarked,
       },
-    )
+    }))
+  }
+
+  function handleBookmarkError(error: ApiFetchError) {
+    notify.error(errorMessage(error))
+  }
+
+  function handleBookmarkUnavailable() {
+    notify.error("북마크를 처리할 수 없습니다.")
   }
 
   function handleCreateMeetingClick(event: MouseEvent<HTMLAnchorElement>) {
-    if (isAuthenticated) {
-      return
-    }
-
+    if (isAuthenticated) return
     event.preventDefault()
     notify.info("로그인이 필요한 서비스입니다.")
     setLoginDialogOpen(true)
@@ -170,16 +156,8 @@ export default function MeetingsPage() {
 
   return (
     <main className="min-h-screen bg-[#f7f9fb]">
-      <div className="mx-auto flex w-full max-w-[1280px] flex-col gap-18 px-6 py-10">
+      <div className="mx-auto flex w-full max-w-[1280px] flex-col gap-18 px-6 pb-0 pt-10">
         <section className="flex flex-col gap-6">
-          {/* <div>
-            <h1 className="text-[32px] font-medium leading-10 tracking-normal text-[#191c1e]">
-              함께 성장할 팀원을 찾아보세요
-            </h1>
-            <p className="mt-1 text-lg leading-7 text-[#434655]">
-              당신의 열정을 함께 나눌 프로젝트와 동료들이 기다리고 있습니다.
-            </p>
-          </div> */}
 
           <div className="flex flex-col gap-6 rounded-xl border-0 bg-white p-6 shadow-md">
             <div className="flex flex-col gap-3 sm:flex-row">
@@ -200,7 +178,7 @@ export default function MeetingsPage() {
               </div>
               <Button
                 type="button"
-                className="h-12 rounded-lg bg-[#1abcfe] px-8 text-base font-medium text-white hover:bg-[#0eaeea] sm:w-32"
+                className="h-12 rounded-lg bg-[#1abcfe] px-8 text-base font-semibold text-white hover:bg-[#0eaeea] sm:w-32"
               >
                 검색
               </Button>
@@ -272,11 +250,14 @@ export default function MeetingsPage() {
                     scopedBookmarkOverrides[meeting.id] ?? meeting.isBookmarked
 
                   return (
-                    <MeetingCard
+                    <MeetingListCard
                       key={meeting.id}
                       meeting={{ ...meeting, isBookmarked }}
-                      onBookmarkToggle={handleBookmarkToggle}
-                      bookmarkDisabled={bookmarkMutation.isPending}
+                      isAuthenticated={isAuthenticated}
+                      onUnauthenticatedBookmark={handleUnauthenticatedBookmark}
+                      onBookmarkSuccess={handleBookmarkSuccess}
+                      onBookmarkError={handleBookmarkError}
+                      onBookmarkUnavailable={handleBookmarkUnavailable}
                     />
                   )
                 })}
@@ -291,22 +272,24 @@ export default function MeetingsPage() {
 
           {isFetchingNextPage || (isFetching && !isLoading) ? <LoadingState /> : null}
         </section>
-      </div>
 
-      <Button
-        asChild
-        size="lg"
-        className="fixed bottom-6 right-6 z-40 h-14 rounded-full bg-blue-600 px-5 text-base text-white shadow-lg hover:bg-blue-700 sm:bottom-8 sm:right-[max(2rem,calc((100vw-1280px)/2+1.5rem))]"
-      >
-        <Link
-          href="/meetings/create"
-          aria-label="모임 만들기"
-          onClick={handleCreateMeetingClick}
-        >
-          <Plus className="size-5" aria-hidden="true" />
-          <span className="hidden sm:inline">모임 만들기</span>
-        </Link>
-      </Button>
+        <div className="sticky bottom-6 z-40 flex justify-end pb-10 sm:bottom-8">
+          <Button
+            asChild
+            size="lg"
+            className="h-14 rounded-full bg-blue-600 px-5 text-base text-white shadow-lg hover:bg-blue-700"
+          >
+            <Link
+              href="/meetings/create"
+              aria-label="모임 만들기"
+              onClick={handleCreateMeetingClick}
+            >
+              <Plus className="size-5" aria-hidden="true" />
+              <span className="hidden sm:inline">모임 만들기</span>
+            </Link>
+          </Button>
+        </div>
+      </div>
       <LoginDialog
         open={loginDialogOpen}
         onOpenChange={setLoginDialogOpen}
@@ -334,7 +317,69 @@ function getMeetingListParams(
   }
 }
 
+type MeetingListCardProps = {
+  meeting: Meeting
+  isAuthenticated: boolean
+  onUnauthenticatedBookmark: () => void
+  onBookmarkSuccess: (meetingId: string, bookmarked: boolean) => void
+  onBookmarkError: (error: ApiFetchError) => void
+  onBookmarkUnavailable: () => void
+}
+
+function MeetingListCard({
+  meeting,
+  isAuthenticated,
+  onUnauthenticatedBookmark,
+  onBookmarkSuccess,
+  onBookmarkError,
+  onBookmarkUnavailable,
+}: MeetingListCardProps) {
+  const bookmarkMutation = useMeetingBookmarkMutation()
+  const meetingId = Number(meeting.id)
+  const bookmarked = useMeetingBookmarkState(
+    Number.isFinite(meetingId) ? meetingId : undefined,
+    meeting.isBookmarked,
+  )
+
+  function handleBookmarkToggle(_meetingId: string, nextBookmarked: boolean) {
+    if (!isAuthenticated) {
+      onUnauthenticatedBookmark()
+      return
+    }
+
+    if (!Number.isFinite(meetingId)) {
+      onBookmarkUnavailable()
+      return
+    }
+
+    bookmarkMutation.mutate(
+      { meetingId, bookmarked: nextBookmarked },
+      {
+        onSuccess: () => onBookmarkSuccess(meeting.id, nextBookmarked),
+        onError: onBookmarkError,
+      },
+    )
+  }
+
+  return (
+    <MeetingCard
+      meeting={{ ...meeting, isBookmarked: bookmarked }}
+      onBookmarkToggle={handleBookmarkToggle}
+      bookmarkDisabled={bookmarkMutation.isPending}
+    />
+  )
+}
+
 function mapMeetingSummaryToCardMeeting(meeting: MeetingSummary): Meeting {
+  const positions = normalizeMeetingPositions(meeting.positions)
+  const recruitSummary = positions.reduce(
+    (summary, position) => ({
+      currentCount: summary.currentCount + position.currentCount,
+      totalCount: summary.totalCount + position.recruitCount,
+    }),
+    { currentCount: 0, totalCount: 0 },
+  )
+
   return {
     id: String(meeting.meetingId),
     title: meeting.title,
@@ -343,10 +388,10 @@ function mapMeetingSummaryToCardMeeting(meeting: MeetingSummary): Meeting {
     deadlineDate: meeting.deadline,
     status: getCardStatus(meeting.status),
     category: CATEGORY_LABEL[meeting.category] ?? meeting.category,
-    memberCount: meeting.recruitSummary.currentCount,
-    maxMembers: meeting.recruitSummary.totalCount,
+    memberCount: recruitSummary.currentCount,
+    maxMembers: recruitSummary.totalCount,
     techStacks: meeting.techStacks,
-    jobs: meeting.positions.map((position) => ({
+    jobs: positions.map((position) => ({
       job: position.name,
       current: position.currentCount,
       max: position.recruitCount,

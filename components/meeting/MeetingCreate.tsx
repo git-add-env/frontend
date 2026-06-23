@@ -625,7 +625,7 @@ function MeetingCreateForm({ initialForm, isEditMode, meetingId }: MeetingCreate
               disabled={!canAddPosition}
               className={cn(
                 "inline-flex items-center gap-1 text-base font-medium transition",
-                canAddPosition ? "text-blue-500" : "cursor-not-allowed text-[#737686]",
+                canAddPosition ? "text-blue-500" : "cursor-default text-[#737686]",
               )}
             >
               <Plus className="size-4" aria-hidden="true" />
@@ -900,14 +900,14 @@ function PositionSelect({ value, options, disabledOptions, onChange }: PositionS
                 key={option}
                 type="button"
                 onClick={() => handleSelect(option)}
-                disabled={isDisabled}
                 aria-disabled={isDisabled}
+                tabIndex={isDisabled ? -1 : undefined}
                 className={cn(
                   "flex h-11 w-full items-center justify-between gap-3 rounded-md px-3 text-left text-sm transition",
                   isSelected
                     ? "bg-blue-50 font-medium text-blue-500"
                     : isDisabled
-                      ? "cursor-not-allowed bg-[#f7f9fb] text-[#9ca3af]"
+                      ? "cursor-default bg-[#f7f9fb] text-[#9ca3af]"
                     : "text-[#434655] hover:bg-[#f7f9fb] hover:text-[#191c1e]",
                 )}
               >
