@@ -576,7 +576,7 @@ function MeetingCreateForm({ initialForm, isEditMode, meetingId }: MeetingCreate
         </div>
 
         <FormSection id="basic-info" title="기본 정보">
-          <Field label="모임 카테고리" required>
+          <Field label="모임 카테고리" required asGroup>
             <PillControl
               value={form.category}
               options={MEETING_CATEGORY_OPTIONS}
