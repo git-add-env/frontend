@@ -96,7 +96,7 @@ export function MeetingCardImage({
           bookmarked={isBookmarked}
           onToggle={onBookmarkToggle}
           disabled={bookmarkDisabled}
-          className="absolute right-4 top-4 z-20 size-9 bg-white/80 p-2 shadow-sm backdrop-blur-md hover:bg-white"
+          className="absolute right-4 top-4 z-20 size-9 p-2 shadow-sm"
         />
       ) : null}
     </div>

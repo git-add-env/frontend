@@ -224,7 +224,7 @@ export function SchedulesTab({ meetingId, isLeader }: SchedulesTabProps) {
             <div className="flex justify-end gap-2">
               <Button
                 size="sm"
-                variant="ghost"
+                variant="outline"
                 onClick={cancelAdd}
                 disabled={createSchedule.isPending}
               >
@@ -234,6 +234,7 @@ export function SchedulesTab({ meetingId, isLeader }: SchedulesTabProps) {
                 size="sm"
                 onClick={add}
                 disabled={!canSubmit || createSchedule.isPending}
+                className="bg-blue-500 text-white hover:bg-blue-600"
               >
                 {createSchedule.isPending ? "등록 중..." : "등록"}
               </Button>

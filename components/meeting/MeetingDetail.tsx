@@ -12,7 +12,6 @@ import {
   ChevronLeft,
   Clock3,
   Crown,
-  LoaderCircle,
   Pencil,
   Video,
 } from "lucide-react"
@@ -22,6 +21,7 @@ import LoginDialog from "@/components/common/LoginDialog"
 import { MeetingCardImage } from "@/components/common/MeetingCard"
 import { MeetingDeadlineBadge } from "@/components/common/MeetingDeadlineBadge"
 import MeetingRecommendationCarousel from "@/components/common/MeetingRecommendationCarousel"
+import { MeetingDetailSkeleton } from "@/components/meeting/MeetingSkeletons"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
   Badge,
@@ -323,7 +323,7 @@ function MemberRow({ member }: MemberRowProps) {
           <p className="truncate text-sm font-medium tracking-normal text-[#191c1e]">
             {member.name}
           </p>
-          {member.isLeader ? <HostBadge className="h-auto rounded px-2 py-0.5 text-[10px]" /> : null}
+          {member.isLeader ? <HostBadge className="h-auto px-2 py-0.5 text-[10px]" /> : null}
         </div>
         <p className="truncate text-xs text-[#434655]">{member.job}</p>
       </div>
@@ -526,7 +526,7 @@ export function MeetingDetail({ meetingId }: MeetingDetailProps) {
   }
 
   if (detailQuery.isLoading) {
-    return <LoadingState />
+    return <MeetingDetailSkeleton />
   }
 
   if (detailQuery.isError || !meeting) {
@@ -605,7 +605,7 @@ export function MeetingDetail({ meetingId }: MeetingDetailProps) {
                         bookmarked={displayedBookmarked}
                         onToggle={handleBookmarkToggle}
                         disabled={bookmarkMutation.isPending}
-                        className="size-9 bg-white/80 p-2 shadow-sm backdrop-blur-md hover:bg-white"
+                        className="size-9 p-2 shadow-sm"
                       />
                     </div>
                     <h1 className="max-w-xl text-2xl font-bold leading-8 tracking-normal text-[#191c1e] sm:text-[28px] sm:leading-9">
@@ -842,14 +842,3 @@ function formatDisplayDate(date: string | null | undefined) {
   return `${year}.${month}.${day}`
 }
 
-function LoadingState() {
-  return (
-    <div className="flex flex-col items-center justify-center gap-2 py-20 text-[#565e74]">
-      <LoaderCircle
-        className="size-5 animate-spin text-[#004ac6]"
-        aria-hidden="true"
-      />
-      <span className="text-base font-medium">모임 상세 정보를 불러오는 중...</span>
-    </div>
-  )
-}

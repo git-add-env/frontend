@@ -136,7 +136,7 @@ export function DashboardSidebar({
 
       {/* 데스크탑(lg+): 좌측 고정 사이드바 */}
       <aside className="hidden w-64 shrink-0 lg:block">
-        <div className="sticky top-20 flex flex-col gap-4 rounded-lg border border-border p-2 pt-4">
+        <div className="sticky top-20 flex flex-col gap-4 rounded-lg border border-border bg-white p-2 pt-4">
           {groupsError && (
             <p className="px-3 py-2 text-xs text-destructive">
               참여중인 모임을 불러오지 못했습니다.
@@ -252,7 +252,9 @@ function MeetingCardBody({
       <MeetingThumb meeting={meeting} className={cn("size-10", thumbClassName)} />
       <span className="min-w-0 flex-1">
         <span className="flex min-w-0 items-center gap-1.5">
-          <span className="truncate text-sm font-bold text-foreground">{meeting.title}</span>
+          <span className="truncate text-sm font-medium text-muted-foreground transition-colors group-hover:font-semibold group-hover:text-foreground group-data-[active=true]:font-semibold group-data-[active=true]:text-foreground">
+            {meeting.title}
+          </span>
           {meeting.isLeader && (
             <span className="flex size-4 shrink-0 items-center justify-center rounded-full bg-yellow-100 text-yellow-500">
               <Crown className="size-3" />
@@ -376,12 +378,13 @@ function MobileMeetingDropdown({
                     <button
                       key={group.meetingId}
                       type="button"
+                      data-active={isActive}
                       onClick={() => {
                         onSelect(group.meetingId)
                         setOpen(false)
                       }}
                       className={cn(
-                        "flex w-full items-center gap-3 border-t border-border px-4 py-3 text-left transition-colors",
+                        "group flex w-full items-center gap-3 border-t border-border px-4 py-3 text-left transition-colors",
                         isActive ? "bg-blue-50" : "hover:bg-muted/40",
                       )}
                     >
@@ -421,6 +424,7 @@ function SortableItem({ group, isActive, onSelect }: SortableItemProps) {
     <div
       ref={setNodeRef}
       style={style}
+      data-active={isActive}
       className={cn(
         "group flex items-center rounded-lg transition-colors",
         // 선택: 테두리/그림자 없이 연한 하늘색 배경. 비선택은 hover 시 옅은 배경(모바일과 통일).

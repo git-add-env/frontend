@@ -97,6 +97,7 @@ export function ResourceCard({ meetingId, isLeader }: ResourceCardProps) {
             size="sm"
             onClick={add}
             disabled={!canSubmit || createResource.isPending}
+            className="bg-blue-500 text-white hover:bg-blue-600"
           >
             {createResource.isPending ? "추가 중..." : "추가"}
           </Button>

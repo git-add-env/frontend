@@ -201,7 +201,7 @@ export function LandingContent() {
             </span>
             비대면 협업을 위한 개발자 팀 매칭 &amp; 화상회의
           </div>
-          <h1>
+          <h1 className={cx("hero-title")}>
             모집부터 화상회의까지,
             <br />
             <span className={cx("grad-text")}>하나로</span>
@@ -304,9 +304,9 @@ export function LandingContent() {
                         모집 현황
                       </span>
                       <span className={cx("track")}>
-                        <i style={{ width: "13%" }} />
+                        <i style={{ width: "50%" }} />
                       </span>
-                      <span className={cx("num")}>1/8</span>
+                      <span className={cx("num")}>4/8</span>
                     </div>
                   </div>
                 </div>
@@ -337,9 +337,9 @@ export function LandingContent() {
                         모집 현황
                       </span>
                       <span className={cx("track")}>
-                        <i style={{ width: "50%" }} />
+                        <i style={{ width: "83%" }} />
                       </span>
-                      <span className={cx("num")}>3/6</span>
+                      <span className={cx("num")}>5/6</span>
                     </div>
                   </div>
                 </div>
@@ -552,12 +552,13 @@ export function LandingContent() {
                   <span className={cx("rpill")}>해커톤 · 공모전 · 프로젝트</span>
                   <h3 className={cx("rtitle")}>팀원 모집 — 함께 도전해요</h3>
                   <div className={cx("ttags")}>
-                    <span className={cx("ttag")}>#프로젝트</span>
-                    <span className={cx("ttag")}>#공모전</span>
+                    <span className={cx("ttag")}>#Next.js</span>
+                    <span className={cx("ttag")}>#React</span>
+                    <span className={cx("ttag")}>#Typescript</span>
                   </div>
                   <div className={cx("ptags")}>
-                    <span className={cx("ptag")}>개발</span>
-                    <span className={cx("ptag")}>기획/디자인</span>
+                    <span className={cx("ptag")}>프론트엔드</span>
+                    <span className={cx("ptag")}>백엔드</span>
                   </div>
                 </div>
                 <div className={cx("rfoot")}>
@@ -682,30 +683,6 @@ export function LandingContent() {
             <div className={cx("feat-visual reveal")} data-reveal>
               <div className={cx("vc-stage")} data-vc-stage>
                 <div className={cx("vc")}>
-                  <div className={cx("vc-topbar")}>
-                    <span className={cx("vc-pill")}>
-                      <MicOff />
-                      Microphone
-                      <ChevronDown className={cx("car")} />
-                    </span>
-                    <span className={cx("vc-pill")}>
-                      <VideoOff />
-                      Camera
-                      <ChevronDown className={cx("car")} />
-                    </span>
-                    <span className={cx("vc-pill")}>
-                      <MonitorUp />
-                      Share screen
-                    </span>
-                    <span className={cx("vc-pill")}>
-                      <MessageSquare />
-                      Chat
-                    </span>
-                    <span className={cx("vc-pill leave")}>
-                      <LogOut />
-                      Leave
-                    </span>
-                  </div>
                   <div className={cx("vc-grid")}>
                     {PARTICIPANTS.map((p) => (
                       <div
@@ -751,6 +728,30 @@ export function LandingContent() {
                       </div>
                     ))}
                   </div>
+                  <div className={cx("vc-topbar")}>
+                    <span className={cx("vc-pill")}>
+                      <MicOff />
+                      Microphone
+                      <ChevronDown className={cx("car")} />
+                    </span>
+                    <span className={cx("vc-pill")}>
+                      <VideoOff />
+                      Camera
+                      <ChevronDown className={cx("car")} />
+                    </span>
+                    <span className={cx("vc-pill")}>
+                      <MonitorUp />
+                      Share screen
+                    </span>
+                    <span className={cx("vc-pill")}>
+                      <MessageSquare />
+                      Chat
+                    </span>
+                    <span className={cx("vc-pill leave")}>
+                      <LogOut />
+                      Leave
+                    </span>
+                  </div>
                 </div>
                 <div className={cx("vc-join")}>
                   <button
@@ -765,6 +766,7 @@ export function LandingContent() {
                   </button>
                 </div>
               </div>
+              <p className={cx("vc-credit")}>영상은 AI로 제작했습니다.</p>
             </div>
             <div className={cx("dark-points reveal d1")} data-reveal>
               <div className={cx("dark-point")}>

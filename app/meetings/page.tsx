@@ -8,6 +8,7 @@ import { useSession } from "next-auth/react"
 
 import LoginDialog from "@/components/common/LoginDialog"
 import MeetingCard, { type Meeting } from "@/components/common/MeetingCard"
+import { MeetingListSkeleton } from "@/components/meeting/MeetingSkeletons"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { CATEGORY_LABEL } from "@/constants/category"
@@ -71,6 +72,7 @@ export default function MeetingsPage() {
     data,
     isError,
     isLoading,
+    isPending,
     isFetching,
     isFetchingNextPage,
     hasNextPage,
@@ -154,7 +156,7 @@ export default function MeetingsPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#f7f9fb]">
+    <main className="min-h-screen">
       <div className="mx-auto flex w-full max-w-[1280px] flex-col gap-18 px-6 pb-0 pt-10">
         <section className="flex flex-col gap-6">
 
@@ -239,8 +241,8 @@ export default function MeetingsPage() {
                 다시 불러오기
               </Button>
             </div>
-          ) : isLoading ? (
-            <LoadingState />
+          ) : isPending ? (
+            <MeetingListSkeleton />
           ) : meetings.length > 0 ? (
             <>
               <div className="grid gap-x-4 gap-y-9 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -300,7 +302,7 @@ export default function MeetingsPage() {
 
 // 명세서 v2의 모임찾기 API는 목데이터 대신 GET /api/meetings를 사용한다.
 // 검색어, 카테고리, 정렬은 클라이언트 필터링이 아니라 keyword/category/sort query param으로 전달된다.
-// 응답의 nextCursor/hasNext를 useInfiniteQuery에 연결해 6개씩 이어서 불러온다.
+// 응답의 nextCursor/hasNext를 useInfiniteQuery에 연결해 8개씩 이어서 불러온다(xl 4열 × 2행).
 function getMeetingListParams(
   searchQuery: string,
   selectedCategory: string,
@@ -309,7 +311,7 @@ function getMeetingListParams(
   const keyword = searchQuery.trim()
 
   return {
-    size: 6,
+    size: 8,
     category: CATEGORY_QUERY_VALUE[selectedCategory] ?? "ALL",
     sort: SORT_QUERY_VALUE[sortOrder] ?? "latest",
     ...(keyword ? { keyword } : {}),

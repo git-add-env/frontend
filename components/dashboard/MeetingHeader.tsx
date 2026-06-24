@@ -56,7 +56,7 @@ export function MeetingHeader({ group }: MeetingHeaderProps) {
             category={CATEGORY_LABEL[group.category] ?? group.category}
           />
           {group.isLeader && (
-            <HostBadge className="border-2 font-bold [&>svg]:stroke-[2.5]" />
+            <HostBadge />
           )}
         </div>
       )}

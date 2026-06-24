@@ -30,6 +30,7 @@ import {
 
 import { Calendars } from "@/components/common/Calendars"
 import MeetingCard, { type Meeting as MeetingCardPreview } from "@/components/common/MeetingCard"
+import { MeetingFormSkeleton } from "@/components/meeting/MeetingSkeletons"
 import { Button } from "@/components/ui/button"
 import { TechStackBadge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
@@ -205,12 +206,7 @@ export function MeetingCreate({ meetingId }: MeetingCreateProps) {
   })
 
   if (detailQuery.isLoading) {
-    return (
-      <div className="flex min-h-[420px] items-center justify-center rounded-xl border border-[#c3c6d7] bg-white">
-        <LoaderCircle className="size-6 animate-spin text-blue-400" aria-hidden="true" />
-        <span className="ml-2 text-sm text-[#565e74]">모임 정보를 불러오는 중입니다.</span>
-      </div>
-    )
+    return <MeetingFormSkeleton />
   }
 
   if (detailQuery.isError) {
@@ -257,10 +253,13 @@ function MeetingCreateForm({ initialForm, isEditMode, meetingId }: MeetingCreate
     form.positions.length < Math.min(ONBOARDING_JOB_OPTIONS.length, MEETING_POSITION_MAX_COUNT)
   const filteredTechStackOptions = useMemo(() => {
     const query = form.techStackInput.trim().toLowerCase()
-
-    return query
+    const list = query
       ? ONBOARDING_TECH_STACK_OPTIONS.filter((stack) => stack.toLowerCase().includes(query))
       : ONBOARDING_TECH_STACK_OPTIONS
+    // A-Z 정렬(대소문자 무시) — 목록에서 원하는 스택을 찾기 쉽게.
+    return [...list].sort((a, b) =>
+      a.localeCompare(b, undefined, { sensitivity: "base" }),
+    )
   }, [form.techStackInput])
 
   const mutation = useMutation({
@@ -690,7 +689,7 @@ function MeetingCreateForm({ initialForm, isEditMode, meetingId }: MeetingCreate
             />
           </Field>
 
-          <Field label="사용 기술 스택" required hint={`최대 ${MEETING_TECH_STACK_MAX_COUNT}개까지 선택 가능합니다.`}>
+          <Field label="사용 기술 스택" required asGroup hint={`최대 ${MEETING_TECH_STACK_MAX_COUNT}개까지 선택 가능합니다.`}>
             <div className="space-y-3">
               <div className="flex flex-wrap gap-2">
                 {form.techStacks.map((stack) => (
@@ -1088,6 +1087,9 @@ type FieldProps = {
   muted?: boolean
   className?: string
   hint?: string
+  // 칩 등 인터랙티브 요소가 여러 개인 필드는 label로 감싸면 빈 곳 클릭이
+  // 첫 번째 컨트롤(맨 앞 칩의 삭제 버튼)로 전달돼 칩이 지워진다. div로 렌더해 회피.
+  asGroup?: boolean
 }
 
 function Field({
@@ -1097,16 +1099,21 @@ function Field({
   muted = false,
   className,
   hint,
+  asGroup = false,
 }: FieldProps) {
+  const Wrapper = asGroup ? "div" : "label"
   return (
-    <label className={cn("flex flex-col gap-4", className)}>
+    <Wrapper
+      className={cn("flex flex-col gap-4", className)}
+      {...(asGroup ? { role: "group", "aria-label": label } : {})}
+    >
       <span className={cn("text-base font-medium", muted ? "text-[#565e74]" : "text-[#191c1e]")}>
         {label}
         {required ? <span className="ml-1 text-blue-500">*</span> : null}
         {hint ? <span className="ml-2 text-sm font-normal text-[#9ca3af]">({hint})</span> : null}
       </span>
       {children}
-    </label>
+    </Wrapper>
   )
 }
 
@@ -1135,7 +1142,10 @@ function TextInputWithCount({
         value={value}
         maxLength={maxLength}
         data-field={fieldPath}
-        onChange={(event: ChangeEvent<HTMLInputElement>) => onChange(event.target.value)}
+        // 네이티브 maxLength는 한글 IME 조합 입력에서 한 글자 초과될 수 있어 slice로 한 번 더 막는다.
+        onChange={(event: ChangeEvent<HTMLInputElement>) =>
+          onChange(event.target.value.slice(0, maxLength))
+        }
         placeholder={placeholder}
         aria-invalid={Boolean(error)}
         className={cn(
@@ -1174,7 +1184,10 @@ function TextareaWithCount({
         value={value}
         maxLength={maxLength}
         data-field={fieldPath}
-        onChange={(event: ChangeEvent<HTMLTextAreaElement>) => onChange(event.target.value)}
+        // 네이티브 maxLength는 한글 IME 조합 입력에서 한 글자 초과될 수 있어 slice로 한 번 더 막는다.
+        onChange={(event: ChangeEvent<HTMLTextAreaElement>) =>
+          onChange(event.target.value.slice(0, maxLength))
+        }
         placeholder={placeholder}
         aria-invalid={Boolean(error)}
         className={cn(

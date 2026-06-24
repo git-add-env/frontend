@@ -13,13 +13,13 @@ type ProfileViewProps = {
 // 보기 모드: 가로 배너형 — 아바타 + (이름·직군·경력) + 소개 + 이메일 + 기술스택, 우상단 수정 버튼.
 export function ProfileView({ profile, onEdit }: ProfileViewProps) {
   return (
-    <div className="rounded-2xl border border-border bg-card px-6 py-5">
+    <div className="rounded-2xl border border-border bg-[#1abcfe]/5 px-6 py-5">
       <div className="flex flex-col items-center gap-5 text-center md:flex-row md:items-center md:gap-7 md:text-left">
         <ProfileAvatar
           profileImage={profile.profileImage}
           nickname={profile.nickname}
           className="size-28"
-          fallbackClassName="text-4xl"
+          fallbackClassName="bg-[#1abcfe] text-4xl text-white"
         />
 
         <div className="min-w-0 flex-1">
