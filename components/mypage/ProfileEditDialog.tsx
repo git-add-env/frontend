@@ -3,6 +3,7 @@ import { useRef } from "react"
 import { ChevronDown, X } from "lucide-react"
 
 import { ProfileAvatar } from "@/components/common/ProfileAvatar"
+import { TechStackBadge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -234,20 +235,18 @@ export function ProfileEditDialog({
                 disabled={edit.submitting}
                 placeholder="기술 스택 검색"
               />
-              {/* 선택된 기술스택 — 검색/스크롤과 무관하게 항상 보이게 (X로 해제) */}
+              {/* 선택된 기술스택 — 검색/스크롤과 무관하게 항상 보이게 (X로 해제).
+                  칩 디자인은 모임 생성·수정 페이지와 동일한 TechStackBadge(#스타일)로 통일. */}
               {edit.techStacks.length > 0 && (
-                <div className="flex flex-wrap gap-1.5">
+                <div className="flex flex-wrap gap-2">
                   {edit.techStacks.map((skill) => (
-                    <button
+                    <TechStackBadge
                       key={skill}
-                      type="button"
-                      onClick={() => edit.toggleSkill(skill)}
-                      disabled={edit.submitting}
-                      className="inline-flex items-center gap-1 rounded-full bg-blue-500/10 px-2.5 py-1 text-xs font-medium text-blue-600 transition-colors hover:bg-blue-500/20 disabled:cursor-not-allowed disabled:opacity-50"
+                      onRemove={() => edit.toggleSkill(skill)}
+                      removeLabel={`${skill} 삭제`}
                     >
                       {skill}
-                      <X className="size-3" />
-                    </button>
+                    </TechStackBadge>
                   ))}
                 </div>
               )}
@@ -298,10 +297,14 @@ export function ProfileEditDialog({
         </div>
 
         <div className="flex justify-end gap-2 border-t px-6 py-4">
-          <Button variant="ghost" onClick={onCancel} disabled={edit.submitting}>
+          <Button variant="outline" onClick={onCancel} disabled={edit.submitting}>
             취소
           </Button>
-          <Button onClick={onSave} disabled={edit.submitting || !edit.canSave}>
+          <Button
+            onClick={onSave}
+            disabled={edit.submitting || !edit.canSave}
+            className="bg-blue-500 text-white hover:bg-blue-600"
+          >
             {edit.submitting ? "저장 중..." : "저장"}
           </Button>
         </div>

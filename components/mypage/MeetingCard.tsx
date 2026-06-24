@@ -6,14 +6,11 @@ import Link from "next/link"
 import {
   CheckCircle2,
   Crown,
-  FolderGit2,
   MoreHorizontal,
-  Trophy,
   Users,
-  Zap,
-  type LucideIcon,
 } from "lucide-react"
 
+import { CategoryThumbnailPlaceholder } from "@/components/common/CategoryThumbnailPlaceholder"
 import { MeetingDeadlineBadge } from "@/components/common/MeetingDeadlineBadge"
 import { CategoryBadge } from "@/components/ui/badge"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
@@ -36,18 +33,7 @@ type MeetingCardProps = {
   showDeadline?: boolean
 }
 
-// 카테고리별 썸네일 그라데이션 + 아이콘 (thumbnailUrl 없을 때의 플레이스홀더).
-const CATEGORY_THUMB: Record<string, { gradient: string; Icon: LucideIcon }> = {
-  PROJECT: { gradient: "from-indigo-500 to-violet-500", Icon: FolderGit2 },
-  HACKATHON: { gradient: "from-orange-500 to-pink-500", Icon: Zap },
-  CONTEST: { gradient: "from-teal-400 to-sky-500", Icon: Trophy },
-}
-
 function Thumbnail({ meeting }: { meeting: Meeting }) {
-  const { gradient, Icon } = CATEGORY_THUMB[meeting.category] ?? {
-    gradient: "from-slate-400 to-slate-500",
-    Icon: FolderGit2,
-  }
   return (
     <div className="relative size-32 shrink-0 self-start sm:w-full md:w-32">
       {meeting.thumbnailUrl ? (
@@ -59,14 +45,10 @@ function Thumbnail({ meeting }: { meeting: Meeting }) {
           className="h-full w-full rounded-xl object-cover"
         />
       ) : (
-        <div
-          className={cn(
-            "flex h-full w-full items-center justify-center rounded-xl bg-gradient-to-br text-white",
-            gradient,
-          )}
-        >
-          <Icon className="size-9" />
-        </div>
+        <CategoryThumbnailPlaceholder
+          category={meeting.category}
+          className="h-full w-full rounded-xl"
+        />
       )}
       {/* 모임장 표시: 썸네일 좌상단 아이콘 (모임장 배지 대체) */}
       {meeting.isLeader && (

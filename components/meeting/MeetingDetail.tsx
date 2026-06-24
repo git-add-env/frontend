@@ -12,7 +12,6 @@ import {
   ChevronLeft,
   Clock3,
   Crown,
-  LoaderCircle,
   Pencil,
   Video,
 } from "lucide-react"
@@ -22,6 +21,7 @@ import LoginDialog from "@/components/common/LoginDialog"
 import { MeetingCardImage } from "@/components/common/MeetingCard"
 import { MeetingDeadlineBadge } from "@/components/common/MeetingDeadlineBadge"
 import MeetingRecommendationCarousel from "@/components/common/MeetingRecommendationCarousel"
+import { MeetingDetailSkeleton } from "@/components/meeting/MeetingSkeletons"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
   Badge,
@@ -58,8 +58,6 @@ import {
 import { notify } from "@/lib/notify"
 import { cn } from "@/lib/utils"
 
-const FALLBACK_MEETING_IMAGE_URL = "https://images.unsplash.com/photo-1516321318423-f06f85e504b3"
-
 type MeetingDetailProps = {
   meetingId?: number
 }
@@ -90,7 +88,8 @@ type MeetingView = {
   startDate: string
   duration: string
   meetingSchedule: string
-  heroImage: string
+  imageCategory: string
+  heroImage: string | null
   description: string
   additionalNotice: string | null
   techStacks: string[]
@@ -324,7 +323,7 @@ function MemberRow({ member }: MemberRowProps) {
           <p className="truncate text-sm font-medium tracking-normal text-[#191c1e]">
             {member.name}
           </p>
-          {member.isLeader ? <HostBadge className="h-auto rounded px-2 py-0.5 text-[10px]" /> : null}
+          {member.isLeader ? <HostBadge className="h-auto px-2 py-0.5 text-[10px]" /> : null}
         </div>
         <p className="truncate text-xs text-[#434655]">{member.job}</p>
       </div>
@@ -527,7 +526,7 @@ export function MeetingDetail({ meetingId }: MeetingDetailProps) {
   }
 
   if (detailQuery.isLoading) {
-    return <LoadingState />
+    return <MeetingDetailSkeleton />
   }
 
   if (detailQuery.isError || !meeting) {
@@ -579,6 +578,7 @@ export function MeetingDetail({ meetingId }: MeetingDetailProps) {
             <CardContent className="p-0">
               <div className="relative flex flex-col xl:flex-row">
                 <MeetingCardImage
+                  category={meeting.imageCategory}
                   imageUrl={meeting.heroImage}
                   title={meeting.title}
                   sizes="(min-width: 1280px) 300px, (min-width: 1024px) 36vw, 100vw"
@@ -605,7 +605,7 @@ export function MeetingDetail({ meetingId }: MeetingDetailProps) {
                         bookmarked={displayedBookmarked}
                         onToggle={handleBookmarkToggle}
                         disabled={bookmarkMutation.isPending}
-                        className="size-9 bg-white/80 p-2 shadow-sm backdrop-blur-md hover:bg-white"
+                        className="size-9 p-2 shadow-sm"
                       />
                     </div>
                     <h1 className="max-w-xl text-2xl font-bold leading-8 tracking-normal text-[#191c1e] sm:text-[28px] sm:leading-9">
@@ -629,7 +629,7 @@ export function MeetingDetail({ meetingId }: MeetingDetailProps) {
           </Card>
 
           <Card className="rounded-xl border-0 bg-white shadow-md ring-0">
-            <CardContent className="space-y-4 p-5">
+            <CardContent className="space-y-4 px-5 py-3">
               <SectionTitle title="모임소개" />
               <div className="space-y-3 text-base leading-7 text-[#434655]">
                 {meeting.description.split("\n").map((paragraph, index) => (
@@ -641,7 +641,7 @@ export function MeetingDetail({ meetingId }: MeetingDetailProps) {
 
           {meeting.additionalNotice ? (
             <Card className="rounded-xl border-0 bg-white shadow-md ring-0">
-              <CardContent className="space-y-4 p-5">
+              <CardContent className="space-y-4 px-5 py-3">
                 <SectionTitle title="추가 안내" />
                 <div className="space-y-3 text-base leading-7 text-[#434655]">
                   {meeting.additionalNotice.split("\n").map((paragraph, index) => (
@@ -653,7 +653,7 @@ export function MeetingDetail({ meetingId }: MeetingDetailProps) {
           ) : null}
 
           <Card className="rounded-xl border-0 bg-white shadow-md ring-0">
-            <CardContent className="space-y-4 p-5">
+            <CardContent className="space-y-4 px-5 py-3">
               <SectionTitle title="상세 모집 요건" />
               <div className="space-y-3">
                 {meeting.positions.map((position) => (
@@ -667,7 +667,7 @@ export function MeetingDetail({ meetingId }: MeetingDetailProps) {
         <aside className="flex flex-col gap-6 lg:col-span-4">
           <div className="sticky top-6 flex flex-col gap-6">
             <Card className="rounded-xl border-0 bg-white shadow-md ring-0">
-              <CardContent className="space-y-4 p-5">
+              <CardContent className="space-y-4 px-5 py-3">
                 <h2 className="text-lg font-bold tracking-normal text-[#191c1e]">진행 정보</h2>
                 <div>
                   <InfoRow
@@ -704,7 +704,7 @@ export function MeetingDetail({ meetingId }: MeetingDetailProps) {
             </Card>
 
             <Card className="rounded-xl border-0 bg-white shadow-md ring-0">
-              <CardContent className="space-y-3 p-5">
+              <CardContent className="space-y-3 px-5 py-3">
                 <SectionTitle title="참여 멤버" />
                 <div className="space-y-2">
                   {showMembersLoading ? (
@@ -763,7 +763,8 @@ function mapMeetingDetailToView(meeting: MeetingDetailData, members: MeetingMemb
     startDate: formatDisplayDate(meeting.startDate),
     duration: meeting.expectedDuration ?? meeting.duration ?? "-",
     meetingSchedule: meeting.meetingSchedule ?? meeting.meetingType ?? "-",
-    heroImage: meeting.thumbnailUrl ?? FALLBACK_MEETING_IMAGE_URL,
+    imageCategory: meeting.category ?? "PROJECT",
+    heroImage: meeting.thumbnailUrl,
     description,
     additionalNotice: meeting.additionalNotice?.trim() || null,
     techStacks: meeting.techStacks ?? [],
@@ -841,14 +842,3 @@ function formatDisplayDate(date: string | null | undefined) {
   return `${year}.${month}.${day}`
 }
 
-function LoadingState() {
-  return (
-    <div className="flex flex-col items-center justify-center gap-2 py-20 text-[#565e74]">
-      <LoaderCircle
-        className="size-5 animate-spin text-[#004ac6]"
-        aria-hidden="true"
-      />
-      <span className="text-base font-medium">모임 상세 정보를 불러오는 중...</span>
-    </div>
-  )
-}

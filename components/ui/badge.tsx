@@ -1,7 +1,7 @@
 import * as React from "react"
 import { cva, type VariantProps } from "class-variance-authority"
 import { Slot } from "radix-ui"
-import { Crown, Users } from "lucide-react"
+import { Users, X } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 const badgeVariants = cva(
@@ -76,7 +76,6 @@ function HostBadge({
 }: Omit<React.ComponentProps<typeof Badge>, "variant" | "children">) {
   return (
     <Badge variant="host" className={className} {...props}>
-      <Crown />
       모임장
     </Badge>
   )
@@ -86,8 +85,13 @@ function HostBadge({
 function TechStackBadge({
   className,
   children,
+  onRemove,
+  removeLabel,
   ...props
-}: React.ComponentProps<typeof Badge>) {
+}: React.ComponentProps<typeof Badge> & {
+  onRemove?: () => void
+  removeLabel?: string
+}) {
   return (
     <Badge
       variant="muted"
@@ -97,7 +101,17 @@ function TechStackBadge({
       )}
       {...props}
     >
-      #{children}
+      <span>#{children}</span>
+      {onRemove ? (
+        <button
+          type="button"
+          onClick={onRemove}
+          aria-label={removeLabel ?? `${children} 삭제`}
+          className="-mr-1 inline-flex size-6 cursor-pointer items-center justify-center rounded-full transition hover:bg-[`#1abcfe`]/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[`#1abcfe`]/25"
+        >
+          <X className="size-3" aria-hidden="true" />
+        </button>
+      ) : null}
     </Badge>
   )
 }
@@ -183,9 +197,9 @@ function JobCountBadge({
 
 // 카테고리별 색상 (프로젝트/해커톤/공모전)
 const CATEGORY_BADGE_STYLES: Record<string, string> = {
-  프로젝트: "bg-indigo-500/10 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-400",
-  해커톤: "bg-orange-500/10 text-orange-600 dark:bg-orange-500/20 dark:text-orange-400",
-  공모전: "bg-teal-500/10 text-teal-600 dark:bg-teal-500/20 dark:text-teal-400",
+  프로젝트: "border-indigo-600 bg-indigo-500/10 text-indigo-600 dark:border-indigo-400 dark:bg-indigo-500/20 dark:text-indigo-400",
+  해커톤: "border-orange-600 bg-orange-500/10 text-orange-600 dark:border-orange-400 dark:bg-orange-500/20 dark:text-orange-400",
+  공모전: "border-teal-600 bg-teal-500/10 text-teal-600 dark:border-teal-400 dark:bg-teal-500/20 dark:text-teal-400",
 }
 
 // 카테고리 배지 — 카테고리명을 받아 카테고리별 색으로. 모르는 값이면 outline 폴백
@@ -200,7 +214,7 @@ function CategoryBadge({
   return (
     <Badge
       variant={style ? "muted" : "outline"}
-      className={cn("rounded-full border-border", style, className)}
+      className={cn("rounded-full", style, className)}
       {...props}
     >
       {category}
