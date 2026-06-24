@@ -34,13 +34,16 @@ function MeetingListCardSkeleton() {
 // 모임 찾기 목록 그리드 스켈레톤. 그리드 className은 실제 목록과 동일하게 맞춘다.
 export function MeetingListSkeleton({ count = 8 }: { count?: number }) {
   return (
-    <div
-      className="grid gap-x-4 gap-y-9 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
-      aria-hidden="true"
-    >
-      {Array.from({ length: count }).map((_, i) => (
-        <MeetingListCardSkeleton key={i} />
-      ))}
+    <div role="status" aria-live="polite">
+      <span className="sr-only">모임 목록을 불러오는 중입니다.</span>
+      <div
+        className="grid gap-x-4 gap-y-9 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+        aria-hidden="true"
+      >
+        {Array.from({ length: count }).map((_, i) => (
+          <MeetingListCardSkeleton key={i} />
+        ))}
+      </div>
     </div>
   )
 }
@@ -63,11 +66,13 @@ function DetailSectionCardSkeleton({ lines = 3 }: { lines?: number }) {
 
 export function MeetingDetailSkeleton() {
   return (
-    <article className="flex flex-col gap-6" aria-hidden="true">
-      <div className="flex items-center justify-between gap-4">
-        <Skeleton className="size-10 rounded-full" />
-        <Skeleton className="size-10 rounded-full" />
-      </div>
+    <div role="status" aria-live="polite">
+      <span className="sr-only">모임 상세 정보를 불러오는 중입니다.</span>
+      <article className="flex flex-col gap-6" aria-hidden="true">
+        <div className="flex items-center justify-between gap-4">
+          <Skeleton className="size-10 rounded-full" />
+          <Skeleton className="size-10 rounded-full" />
+        </div>
 
       <div className="grid gap-6 lg:grid-cols-12">
         {/* 본문 */}
@@ -126,7 +131,8 @@ export function MeetingDetailSkeleton() {
           </Card>
         </aside>
       </div>
-    </article>
+      </article>
+    </div>
   )
 }
 
@@ -159,21 +165,24 @@ function FormSectionSkeleton({ fields = 3 }: { fields?: number }) {
 
 export function MeetingFormSkeleton() {
   return (
-    <div
-      className="flex gap-6 lg:items-start lg:gap-10 xl:gap-12"
-      aria-hidden="true"
-    >
-      <aside className="hidden w-[256px] shrink-0 lg:sticky lg:top-24 lg:block lg:self-start">
-        <div className="w-full space-y-4">
-          <Skeleton className="h-64 w-full rounded-xl" />
-          <Skeleton className="h-72 w-full rounded-xl" />
-        </div>
-      </aside>
+    <div role="status" aria-live="polite">
+      <span className="sr-only">모임 정보를 불러오는 중입니다.</span>
+      <div
+        className="flex gap-6 lg:items-start lg:gap-10 xl:gap-12"
+        aria-hidden="true"
+      >
+        <aside className="hidden w-[256px] shrink-0 lg:sticky lg:top-24 lg:block lg:self-start">
+          <div className="w-full space-y-4">
+            <Skeleton className="h-64 w-full rounded-xl" />
+            <Skeleton className="h-72 w-full rounded-xl" />
+          </div>
+        </aside>
 
-      <div className="min-w-0 flex-1 space-y-10">
-        <FormSectionSkeleton fields={3} />
-        <FormSectionSkeleton fields={3} />
-        <FormSectionSkeleton fields={2} />
+        <div className="min-w-0 flex-1 space-y-10">
+          <FormSectionSkeleton fields={3} />
+          <FormSectionSkeleton fields={3} />
+          <FormSectionSkeleton fields={2} />
+        </div>
       </div>
     </div>
   )

@@ -140,8 +140,8 @@
 
 /* ---------- 추가 모션: 히어로 강조어 펄스 + 모집 게이지 채우기 ---------- */
 /* 히어로 headline — 처음 로드 시 한 번만. 작게 시작 → 커짐 → 살짝 작아짐(바운스) → 정착 */
-.hero-title { transform-origin: center; animation: heroIntro 1.35s ease-in-out both; }
-@keyframes heroIntro {
+.hero-title { transform-origin: center; animation: hero-intro 1.35s ease-in-out both; }
+@keyframes hero-intro {
   0%   { transform: scale(0.86); }
   50%  { transform: scale(1.04); }
   74%  { transform: scale(0.98); }
@@ -149,13 +149,13 @@
 }
 
 /* 모집 현황 바 게이지 — width는 인라인, scaleX(0→1)로 왼쪽부터 채움 */
-@keyframes fillBar { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes fill-bar { from { transform: scaleX(0); } to { transform: scaleX(1); } }
 .recruit .track i, .rcard .rfoot .track i { transform-origin: left center; }
 /* 히어로 mock 바: 로드 시 채워짐 */
-.mk-body .recruit .track i { animation: fillBar 1.15s cubic-bezier(0.22,1,0.22,1) 0.35s both; }
+.mk-body .recruit .track i { animation: fill-bar 1.15s cubic-bezier(0.22,1,0.22,1) 0.35s both; }
 /* 모임 카드 바: 화면에 들어올 때(reveal) 채워짐 */
 .reveal .rcard .rfoot .track i { transform: scaleX(0); }
-.reveal.in .rcard .rfoot .track i { animation: fillBar 1.15s cubic-bezier(0.22,1,0.22,1) 0.25s both; }
+.reveal.in .rcard .rfoot .track i { animation: fill-bar 1.15s cubic-bezier(0.22,1,0.22,1) 0.25s both; }
 
 /* floating callouts */
 .float { position: absolute; z-index: 3; background: #fff; border-radius: 14px; box-shadow: var(--shadow-md); border: 1px solid var(--line); padding: 12px 15px; display: flex; align-items: center; gap: 11px; }
