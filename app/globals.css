@@ -519,6 +519,8 @@
 }
 
 :root {
+  /* 다크모드 미지원 — 브라우저·OS 다크 설정과 무관하게 네이티브 UI도 라이트로 렌더 */
+  color-scheme: light;
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);

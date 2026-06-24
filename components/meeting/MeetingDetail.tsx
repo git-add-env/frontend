@@ -726,7 +726,7 @@ export function MeetingDetail({ meetingId }: MeetingDetailProps) {
       </div>
 
       <section className="pt-8">
-        <MeetingRecommendationCarousel />
+        <MeetingRecommendationCarousel currentMeetingId={meetingId} />
       </section>
 
       <JoinMeetingDialog
