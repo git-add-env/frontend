@@ -151,7 +151,7 @@ export function NotificationBell() {
     <Popover>
       <PopoverTrigger
         className={cn(
-          "relative inline-flex size-10 items-center justify-center rounded-full text-muted-foreground transition-colors hover:text-accent-foreground",
+          "relative inline-flex size-10 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground",
           // 읽지 않은 알림이 있으면 아이콘 색만 hover 색으로 상시 적용해 강조(배경 없음).
           unreadCount > 0 && "text-accent-foreground",
         )}
@@ -161,7 +161,7 @@ export function NotificationBell() {
         {unreadCount > 0 && <UnreadDot key={unreadCount} />}
       </PopoverTrigger>
 
-      <PopoverContent className="w-80 p-0">
+      <PopoverContent className="w-72 p-0">
         <div className="flex items-center justify-between border-b border-border px-3 py-2">
           <span className="text-sm font-semibold">알림</span>
           <button

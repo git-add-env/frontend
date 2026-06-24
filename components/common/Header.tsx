@@ -4,10 +4,10 @@ import Link from "next/link"
 import { signOut, useSession } from "next-auth/react"
 import { usePathname, useRouter } from "next/navigation"
 import { useQueryClient } from "@tanstack/react-query"
-import { User } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import LoginDialog from "@/components/common/LoginDialog"
+import { ProfileAvatar } from "@/components/common/ProfileAvatar"
 import { NotificationBell } from "@/components/common/NotificationBell"
 import OnboardingDialog from "@/components/common/OnboardingDialog"
 import { useSyncAuthUser } from "@/hooks/use-sync-auth-user"
@@ -25,9 +25,12 @@ const navigationItems = [
 export default function Header() {
   const pathname = usePathname()
   const router = useRouter()
-  const { status } = useSession()
+  const { data: session, status } = useSession()
   const queryClient = useQueryClient()
   const clearUser = useAuthStore((state) => state.clearUser)
+  // 아바타는 store user 대신 session.user를 쓴다 — session은 signOut 전까지 유지되므로
+  // 로그아웃 때 프로필만 먼저 사라지거나 "?" 폴백이 깜빡이지 않고, 묶음이 한 번에 전환된다.
+  const user = session?.user
 
   useSyncAuthUser()
 
@@ -104,9 +107,13 @@ export default function Header() {
               <Link
                 href="/mypage"
                 aria-label="마이페이지"
-                className="flex size-10 items-center justify-center rounded-full text-foreground transition-colors hover:bg-accent"
+                className="flex size-10 items-center justify-center rounded-full transition-transform duration-200 hover:scale-110"
               >
-                <User className="size-[18px]" />
+                <ProfileAvatar
+                  profileImage={user?.profileImage}
+                  nickname={user?.nickname}
+                  className="size-9"
+                />
               </Link>
               <Button size="sm" variant="outline" onClick={handleLogout}>
                 로그아웃

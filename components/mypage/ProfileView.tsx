@@ -19,7 +19,7 @@ export function ProfileView({ profile, onEdit }: ProfileViewProps) {
           profileImage={profile.profileImage}
           nickname={profile.nickname}
           className="size-28"
-          fallbackClassName="bg-[#1abcfe] text-4xl text-white"
+          fallbackClassName="text-4xl"
         />
 
         <div className="min-w-0 flex-1">
