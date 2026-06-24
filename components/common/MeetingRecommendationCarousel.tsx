@@ -24,14 +24,16 @@ function formatDeadline(deadline: string) {
   return `${date.getMonth() + 1}월 ${date.getDate()}일 마감`
 }
 
-export default function MeetingRecommendationCarousel({
-  className,
-  currentMeetingId,
-}: {
+type MeetingRecommendationCarouselProps = {
   className?: string
   // 현재 보고 있는 모임은 추천에서 제외한다.
   currentMeetingId?: number
-}) {
+}
+
+export function MeetingRecommendationCarousel({
+  className,
+  currentMeetingId,
+}: MeetingRecommendationCarouselProps) {
   const listRef = React.useRef<HTMLDivElement>(null)
 
   const { data } = useQuery({

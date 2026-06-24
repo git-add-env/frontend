@@ -20,7 +20,7 @@ import { BookMarkBtn } from "@/components/common/BookMarkBtn"
 import LoginDialog from "@/components/common/LoginDialog"
 import { MeetingCardImage } from "@/components/common/MeetingCard"
 import { MeetingDeadlineBadge } from "@/components/common/MeetingDeadlineBadge"
-import MeetingRecommendationCarousel from "@/components/common/MeetingRecommendationCarousel"
+import { MeetingRecommendationCarousel } from "@/components/common/MeetingRecommendationCarousel"
 import { MeetingDetailSkeleton } from "@/components/meeting/MeetingSkeletons"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
