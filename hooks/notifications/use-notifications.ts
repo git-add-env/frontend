@@ -24,9 +24,9 @@ export function useNotifications() {
   })
 }
 
-// 읽음 처리는 invalidate(재요청) 대신 낙관적 setQueryData로 isRead만 뒤집는다.
-// → 서버가 "안 읽은 것만" 주므로, 재요청하면 방금 읽은 알림이 사라진다.
-//   회색으로 남기는 UX 유지를 위해 캐시를 직접 갱신한다.
+// 읽음 처리는 invalidate(재요청) 대신 낙관적 setQueryData로 해당 알림을 목록에서 제거한다.
+// → 서버가 "안 읽은 것만" 주므로 캐시도 그에 맞춰 읽은 알림을 즉시 빼서,
+//   "읽으면 사라진다" UX를 유지한다(재조회 결과와도 일치).
 function patchCache(
   queryClient: ReturnType<typeof useQueryClient>,
   updater: (notifications: AppNotification[]) => AppNotification[],
@@ -52,7 +52,7 @@ export function useMarkNotificationRead() {
     onMutate: async (id) => {
       await queryClient.cancelQueries({ queryKey: queryKeys.notifications })
       const previous = patchCache(queryClient, (notifications) =>
-        notifications.map((n) => (n.id === id ? { ...n, isRead: true } : n)),
+        notifications.filter((n) => n.id !== id),
       )
       return { previous }
     },
@@ -72,9 +72,7 @@ export function useMarkAllNotificationsRead() {
     mutationFn: markAllNotificationsRead,
     onMutate: async () => {
       await queryClient.cancelQueries({ queryKey: queryKeys.notifications })
-      const previous = patchCache(queryClient, (notifications) =>
-        notifications.map((n) => ({ ...n, isRead: true })),
-      )
+      const previous = patchCache(queryClient, () => [])
       return { previous }
     },
     onError: (_error, _vars, context) => {
