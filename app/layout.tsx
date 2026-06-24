@@ -3,6 +3,7 @@ import { Geist_Mono, Inter } from "next/font/google"
 import "@livekit/components-styles"
 import "./globals.css"
 import Header from "@/components/common/Header"
+import { MainArea } from "@/components/common/MainArea"
 import { AuthProvider, AuthQuerySync } from "@/components/providers/auth-provider"
 import { QueryProvider } from "@/components/providers/query-provider"
 import { ToastProvider } from "@/components/providers/toast-provider"
@@ -36,7 +37,7 @@ export default function RootLayout({
               <ToastProvider>
                 <div className="flex min-h-svh flex-col">
                   <Header />
-                  <main className="flex-1">{children}</main>
+                  <MainArea>{children}</MainArea>
                   <Footer />
                 </div>
               </ToastProvider>

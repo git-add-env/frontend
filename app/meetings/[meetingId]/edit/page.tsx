@@ -17,7 +17,7 @@ export default async function MeetingEditPage({ params }: MeetingEditPageProps) 
   }
 
   return (
-    <main className="min-h-screen bg-[#f7f9fb] py-10">
+    <main className="min-h-screen py-10">
       <div className="mx-auto w-full max-w-[1280px] px-6">
         <MeetingCreate meetingId={parsedMeetingId} />
       </div>

@@ -167,6 +167,7 @@ export function NoticeList({ meetingId, isLeader, onSelect }: NoticeListProps) {
                   size="sm"
                   onClick={add}
                   disabled={!canSubmit || createNotice.isPending}
+                  className="bg-blue-500 text-white hover:bg-blue-600"
                 >
                   {createNotice.isPending ? "등록 중..." : "등록"}
                 </Button>

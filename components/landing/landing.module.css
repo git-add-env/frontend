@@ -48,6 +48,8 @@
   margin: 0; font-family: var(--font-sans); color: var(--ink); background: var(--bg);
   -webkit-font-smoothing: antialiased; text-rendering: optimizelegibility;
   font-feature-settings: "kern" 1; letter-spacing: -0.011em;
+  /* 전체 단어(어절) 기준 줄바꿈 — 한글이 단어 중간에서 끊기지 않게 */
+  word-break: keep-all; overflow-wrap: break-word;
 }
 .page :where(a) { color: inherit; text-decoration: none; }
 .page img { max-width: 100%; display: block; }
@@ -135,6 +137,25 @@
 .recruit .track { flex: 1; min-width: 40px; height: 8px; border-radius: var(--r-pill); background: rgba(20,32,46,0.10); overflow: hidden; }
 .recruit .track i { display: block; height: 100%; border-radius: var(--r-pill); background: var(--ink); }
 .recruit .num { font-size: 13px; font-weight: 700; color: var(--ink-2); white-space: nowrap; }
+
+/* ---------- 추가 모션: 히어로 강조어 펄스 + 모집 게이지 채우기 ---------- */
+/* 히어로 headline — 처음 로드 시 한 번만. 작게 시작 → 커짐 → 살짝 작아짐(바운스) → 정착 */
+.hero-title { transform-origin: center; animation: heroIntro 1.35s ease-in-out both; }
+@keyframes heroIntro {
+  0%   { transform: scale(0.86); }
+  50%  { transform: scale(1.04); }
+  74%  { transform: scale(0.98); }
+  100% { transform: scale(1); }
+}
+
+/* 모집 현황 바 게이지 — width는 인라인, scaleX(0→1)로 왼쪽부터 채움 */
+@keyframes fillBar { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+.recruit .track i, .rcard .rfoot .track i { transform-origin: left center; }
+/* 히어로 mock 바: 로드 시 채워짐 */
+.mk-body .recruit .track i { animation: fillBar 1.15s cubic-bezier(0.22,1,0.22,1) 0.35s both; }
+/* 모임 카드 바: 화면에 들어올 때(reveal) 채워짐 */
+.reveal .rcard .rfoot .track i { transform: scaleX(0); }
+.reveal.in .rcard .rfoot .track i { animation: fillBar 1.15s cubic-bezier(0.22,1,0.22,1) 0.25s both; }
 
 /* floating callouts */
 .float { position: absolute; z-index: 3; background: #fff; border-radius: 14px; box-shadow: var(--shadow-md); border: 1px solid var(--line); padding: 12px 15px; display: flex; align-items: center; gap: 11px; }
@@ -229,10 +250,12 @@
 .row-item .when { font-size: 12px; color: var(--ink-3); white-space: nowrap; font-weight: 500; }
 
 /* dashboard tabs mock for feature 2 */
-.dash-tabs { display: flex; gap: 22px; padding: 0 18px; border-bottom: 1px solid var(--line); }
-.dash-tabs b { font-size: 14px; font-weight: 600; color: var(--ink-3); padding: 14px 2px; border-bottom: 2.5px solid transparent; margin-bottom: -1px; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+/* 실제 DashboardTabs 디자인: 양끝 둥근(inset) 브랜드색 밑줄 막대 + medium→semibold */
+.dash-tabs { display: flex; gap: 4px; padding: 0 6px; border-bottom: 1px solid var(--line); }
+.dash-tabs b { position: relative; font-size: 14px; font-weight: 500; color: var(--ink-3); padding: 10px 16px; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
 .dash-tabs b .ct { font-size: 11px; font-weight: 700; min-width: 17px; height: 17px; padding: 0 5px; border-radius: 999px; background: rgba(20,32,46,0.06); color: var(--ink-3); display: inline-flex; align-items: center; justify-content: center; }
-.dash-tabs b.active { color: var(--ink); border-bottom-color: var(--on); }
+.dash-tabs b.active { color: var(--ink); font-weight: 600; }
+.dash-tabs b.active::after { content: ""; position: absolute; left: 12px; right: 12px; bottom: -1px; height: 3px; border-radius: 999px; background: var(--on); }
 .dash-tabs b.active .ct { background: rgba(26,188,254,0.14); color: var(--on-deep); }
 .notice { display: flex; align-items: center; gap: 14px; padding: 16px 18px; border-radius: 14px; border: 1px solid var(--line); }
 .notice .ni { width: 44px; height: 44px; border-radius: 13px; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; background: var(--bg-wash); color: var(--ink-3); box-shadow: inset 0 0 0 1px var(--line); } .notice .ni svg { width: 20px; height: 20px; stroke-width: 1.7; }
@@ -260,12 +283,15 @@
 
 /* video-call window — real implementation (top pill bar + 3×2 grid) */
 .vc { background: #0A0A0C; border-radius: var(--r-lg); box-shadow: var(--shadow-lg), var(--glow-on); border: 1px solid rgba(255,255,255,0.07); overflow: hidden; padding: 16px; }
-.vc-topbar { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 10px; padding: 4px 0 16px; }
+/* 컨트롤 바는 그리드 하단에 배치 — 위쪽 간격을 둔다 */
+.vc-topbar { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 10px; padding: 16px 0 4px; }
 .vc-pill { display: inline-flex; align-items: center; gap: 8px; padding: 9px 14px; border-radius: 11px; background: #16171B; border: 1px solid rgba(255,255,255,0.12); color: #E8EAED; font-size: 13.5px; font-weight: 500; white-space: nowrap; }
 .vc-pill svg { width: 16px; height: 16px; }
 .vc-pill .car { width: 13px; height: 13px; color: rgba(255,255,255,0.45); margin-left: 1px; }
 .vc-pill.leave { color: #FF5B5B; border-color: rgba(255,91,91,0.42); }
 .vc-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+/* 영상 하단 우측 AI 제작 안내 — 작고 은은하게 */
+.vc-credit { margin: 10px 4px 0 0; text-align: right; font-size: 12px; font-weight: 500; color: var(--dk-ink2); letter-spacing: -0.01em; }
 .vc-tile { position: relative; aspect-ratio: 16/10; border-radius: 12px; overflow: hidden; background: #202024; display: flex; align-items: center; justify-content: center; }
 .vc-tile.cam { background:
   radial-gradient(120% 95% at 76% 30%, rgba(255,210,150,0.34), transparent 50%),
@@ -323,6 +349,7 @@
 @media (prefers-reduced-motion: reduce) {
   .reveal { opacity: 1; transform: none; transition: none; }
   .node, .hero-kicker .live i::after, .vc-bar .rec i, .vc-tile.spk::after, .vc-tile.speaking, .vc-cursor { animation: none !important; }
+  .hero-title, .recruit .track i, .rcard .rfoot .track i, .reveal .rcard .rfoot .track i { animation: none !important; transform: none !important; }
 }
 
 /* responsive */
@@ -331,7 +358,7 @@
   .feature, .dark-feature { grid-template-columns: 1fr; gap: 36px; }
   .feature.flip .feat-text { order: 0; }
   .feature + .feature { margin-top: 64px; }
-  .dash-tabs { gap: 16px; }
+  .dash-tabs { gap: 2px; padding: 0 2px; }
   .vc-grid { grid-template-columns: repeat(2, 1fr); }
   .section { padding: 66px 0; }
   .nodes { display: none; }
