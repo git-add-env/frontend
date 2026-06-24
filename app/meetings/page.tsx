@@ -45,6 +45,9 @@ type BookmarkOverridesState = {
 }
 
 export default function MeetingsPage() {
+  // 입력값(searchInput)은 즉시 갱신하되, 실제 검색어(searchQuery, 쿼리키)는
+  // 입력이 멈춘 뒤 디바운스로 커밋한다 → 타이핑마다 API가 호출되던 문제 해결(실시간 유지).
+  const [searchInput, setSearchInput] = useState("")
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedCategory, setSelectedCategory] = useState("전체")
   const [sortOrder, setSortOrder] = useState("최신순")
@@ -56,6 +59,13 @@ export default function MeetingsPage() {
   const loadMoreRef = useRef<HTMLDivElement | null>(null)
   const { status: authStatus } = useSession()
   const isAuthenticated = authStatus === "authenticated"
+
+  // 입력이 멈추면 400ms 뒤 검색어를 커밋한다(디바운스). 빠르게 타이핑하면 매번 타이머가
+  // 리셋돼 마지막 입력만 1번 호출된다.
+  useEffect(() => {
+    const timer = setTimeout(() => setSearchQuery(searchInput), 400)
+    return () => clearTimeout(timer)
+  }, [searchInput])
 
   const categories = ["전체", "프로젝트", "해커톤", "공모전"]
   const listParams = useMemo(
@@ -170,15 +180,21 @@ export default function MeetingsPage() {
                 <Input
                   type="text"
                   placeholder="기술 스택, 프로젝트명 등으로 검색"
-                  value={searchQuery}
+                  value={searchInput}
                   onChange={(event: ChangeEvent<HTMLInputElement>) =>
-                    setSearchQuery(event.target.value)
+                    setSearchInput(event.target.value)
                   }
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") {
+                      setSearchQuery(searchInput)
+                    }
+                  }}
                   className="h-12 rounded-lg border-[#c3c6d7] bg-[#f7f9fb] pl-11 text-base text-[#191c1e] placeholder:text-[#6b7280]"
                 />
               </div>
               <Button
                 type="button"
+                onClick={() => setSearchQuery(searchInput)}
                 className="h-12 rounded-lg bg-[#1abcfe] px-8 text-base font-semibold text-white hover:bg-[#0eaeea] sm:w-32"
               >
                 검색
