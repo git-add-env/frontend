@@ -1,13 +1,13 @@
 "use client"
 
 import * as React from "react"
-import Link from "next/link"
 import { useQuery } from "@tanstack/react-query"
-import { CalendarDays, ChevronLeft, ChevronRight, UsersRound } from "lucide-react"
+import { ChevronLeft, ChevronRight } from "lucide-react"
 
-import { MeetingCardImage } from "@/components/common/MeetingCard"
+import MeetingCard, {
+  mapMeetingSummaryToCardMeeting,
+} from "@/components/common/MeetingCard"
 import { Button } from "@/components/ui/button"
-import { CATEGORY_LABEL } from "@/constants/category"
 import { queryKeys } from "@/hooks/api/query-keys"
 import { fetchMeetings } from "@/lib/api/meetings"
 import { cn } from "@/lib/utils"
@@ -15,14 +15,6 @@ import { cn } from "@/lib/utils"
 // 인기순(sort=popular)으로 정렬된 실제 모임을 API에서 받아 추천으로 보여준다.
 const RECOMMEND_FETCH_SIZE = 12
 const RECOMMEND_DISPLAY_COUNT = 8
-
-function formatDeadline(deadline: string) {
-  const date = new Date(deadline)
-  if (Number.isNaN(date.getTime())) {
-    return deadline
-  }
-  return `${date.getMonth() + 1}월 ${date.getDate()}일 마감`
-}
 
 type MeetingRecommendationCarouselProps = {
   className?: string
@@ -104,45 +96,17 @@ export function MeetingRecommendationCarousel({
         className="flex snap-x gap-4 overflow-x-auto scroll-smooth pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
         {meetings.map((meeting) => (
-          <article
+          <div
             key={meeting.meetingId}
             data-meeting-card
             className="w-[260px] shrink-0 snap-start md:w-[280px]"
           >
-            <Link
-              href={`/meetings/${meeting.meetingId}`}
-              className="flex h-full flex-col overflow-hidden rounded-lg border border-border bg-card text-card-foreground shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
-            >
-              <MeetingCardImage
-                imageUrl={meeting.thumbnailUrl}
-                category={meeting.category}
-                title={meeting.title}
-                showBookmark={false}
-                className="relative aspect-[4/3] w-full overflow-hidden bg-[#e6e8ea]"
-                sizes="(min-width: 768px) 280px, 260px"
-              />
-              <div className="flex min-h-44 flex-1 flex-col justify-between p-4">
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="rounded-md bg-secondary px-2 py-1 text-xs font-medium text-secondary-foreground">
-                      {CATEGORY_LABEL[meeting.category] ?? meeting.category}
-                    </span>
-                    <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                      <UsersRound className="size-3.5" />
-                      {meeting.recruitSummary.currentCount}명
-                    </span>
-                  </div>
-                  <h3 className="line-clamp-2 text-base font-semibold leading-snug">
-                    {meeting.title}
-                  </h3>
-                </div>
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <CalendarDays className="size-4" />
-                  <span>{formatDeadline(meeting.deadline)}</span>
-                </div>
-              </div>
-            </Link>
-          </article>
+            {/* 모임찾기 목록과 동일한 카드. 추천에선 북마크 버튼은 숨긴다. */}
+            <MeetingCard
+              meeting={mapMeetingSummaryToCardMeeting(meeting)}
+              showBookmark={false}
+            />
+          </div>
         ))}
       </div>
     </section>
