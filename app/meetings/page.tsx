@@ -7,11 +7,13 @@ import { ChevronDown, LoaderCircle, Plus, Search } from "lucide-react"
 import { useSession } from "next-auth/react"
 
 import LoginDialog from "@/components/common/LoginDialog"
-import MeetingCard, { type Meeting } from "@/components/common/MeetingCard"
+import MeetingCard, {
+  mapMeetingSummaryToCardMeeting,
+  type Meeting,
+} from "@/components/common/MeetingCard"
 import { MeetingListSkeleton } from "@/components/meeting/MeetingSkeletons"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { CATEGORY_LABEL } from "@/constants/category"
 import {
   useMeetingBookmarkMutation,
   useMeetingBookmarkState,
@@ -21,9 +23,7 @@ import { ApiFetchError } from "@/lib/api/api-fetch"
 import { errorMessage } from "@/lib/api/error"
 import {
   fetchMeetings,
-  normalizeMeetingPositions,
   type MeetingListParams,
-  type MeetingSummary,
 } from "@/lib/api/meetings"
 import { notify } from "@/lib/notify"
 
@@ -385,65 +385,6 @@ function MeetingListCard({
       bookmarkDisabled={bookmarkMutation.isPending}
     />
   )
-}
-
-function mapMeetingSummaryToCardMeeting(meeting: MeetingSummary): Meeting {
-  const positions = normalizeMeetingPositions(meeting.positions)
-  const recruitSummary = positions.reduce(
-    (summary, position) => ({
-      currentCount: summary.currentCount + position.currentCount,
-      totalCount: summary.totalCount + position.recruitCount,
-    }),
-    { currentCount: 0, totalCount: 0 },
-  )
-
-  return {
-    id: String(meeting.meetingId),
-    title: meeting.title,
-    date: formatDisplayDate(meeting.deadline),
-    deadline: formatDisplayDate(meeting.deadline),
-    deadlineDate: meeting.deadline,
-    status: getCardStatus(meeting.status),
-    category: CATEGORY_LABEL[meeting.category] ?? meeting.category,
-    memberCount: recruitSummary.currentCount,
-    maxMembers: recruitSummary.totalCount,
-    techStacks: meeting.techStacks,
-    jobs: positions.map((position) => ({
-      job: position.name,
-      current: position.currentCount,
-      max: position.recruitCount,
-    })),
-    imageCategory: meeting.category,
-    imageUrl: meeting.thumbnailUrl,
-    isBookmarked: meeting.isBookmarked,
-    isClosingToday: meeting.isDeadlineToday,
-  }
-}
-
-function getCardStatus(status: string | undefined): Meeting["status"] {
-  if (status === "COMPLETED") {
-    return "마감"
-  }
-
-  if (status === "ACTIVE") {
-    return "개설확정"
-  }
-
-  return "모집중"
-}
-
-function formatDisplayDate(date: string) {
-  const parsedDate = new Date(date)
-
-  if (Number.isNaN(parsedDate.getTime())) {
-    return date
-  }
-
-  const year = parsedDate.getFullYear()
-  const month = String(parsedDate.getMonth() + 1).padStart(2, "0")
-  const day = String(parsedDate.getDate()).padStart(2, "0")
-
-  return `${year}.${month}.${day}`
 }
 
 function LoadingState() {

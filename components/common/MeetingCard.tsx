@@ -14,6 +14,8 @@ import {
   TechStackBadges,
 } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
+import { CATEGORY_LABEL } from "@/constants/category"
+import { normalizeMeetingPositions, type MeetingSummary } from "@/lib/api/meetings"
 
 export type Meeting = {
   id: string
@@ -201,4 +203,64 @@ export default function MeetingCard({
       </CardContent>
     </Card>
   )
+}
+
+// 백엔드 MeetingSummary → MeetingCard용 Meeting 매핑. 모임찾기 목록과 추천 캐러셀이 공유한다.
+export function mapMeetingSummaryToCardMeeting(meeting: MeetingSummary): Meeting {
+  const positions = normalizeMeetingPositions(meeting.positions)
+  const recruitSummary = positions.reduce(
+    (summary, position) => ({
+      currentCount: summary.currentCount + position.currentCount,
+      totalCount: summary.totalCount + position.recruitCount,
+    }),
+    { currentCount: 0, totalCount: 0 },
+  )
+
+  return {
+    id: String(meeting.meetingId),
+    title: meeting.title,
+    date: formatDisplayDate(meeting.deadline),
+    deadline: formatDisplayDate(meeting.deadline),
+    deadlineDate: meeting.deadline,
+    status: getCardStatus(meeting.status),
+    category: CATEGORY_LABEL[meeting.category] ?? meeting.category,
+    memberCount: recruitSummary.currentCount,
+    maxMembers: recruitSummary.totalCount,
+    techStacks: meeting.techStacks,
+    jobs: positions.map((position) => ({
+      job: position.name,
+      current: position.currentCount,
+      max: position.recruitCount,
+    })),
+    imageCategory: meeting.category,
+    imageUrl: meeting.thumbnailUrl,
+    isBookmarked: meeting.isBookmarked,
+    isClosingToday: meeting.isDeadlineToday,
+  }
+}
+
+function getCardStatus(status: string | undefined): Meeting["status"] {
+  if (status === "COMPLETED") {
+    return "마감"
+  }
+
+  if (status === "ACTIVE") {
+    return "개설확정"
+  }
+
+  return "모집중"
+}
+
+function formatDisplayDate(date: string) {
+  const parsedDate = new Date(date)
+
+  if (Number.isNaN(parsedDate.getTime())) {
+    return date
+  }
+
+  const year = parsedDate.getFullYear()
+  const month = String(parsedDate.getMonth() + 1).padStart(2, "0")
+  const day = String(parsedDate.getDate()).padStart(2, "0")
+
+  return `${year}.${month}.${day}`
 }
