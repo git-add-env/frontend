@@ -293,6 +293,18 @@ function MeetingCreateForm({ initialForm, isEditMode, meetingId }: MeetingCreate
     }
 
     function updateActiveSection() {
+      // 페이지 맨 아래에선 마지막 섹션의 top이 활성 기준선(SECTION_SCROLL_OFFSET)까지
+      // 올라오지 못해 활성이 안 잡힌다 → 바닥에 닿으면 마지막 섹션을 강제 활성.
+      const scrolledToBottom =
+        window.innerHeight + window.scrollY >=
+        document.documentElement.scrollHeight - 2
+
+      if (scrolledToBottom) {
+        const lastId = sections[sections.length - 1].id as SectionId
+        setActiveSectionId((prev) => (prev === lastId ? prev : lastId))
+        return
+      }
+
       const currentSection = sections.reduce<HTMLElement | null>((current, section) => {
         const sectionTop = section.getBoundingClientRect().top
 
@@ -576,7 +588,7 @@ function MeetingCreateForm({ initialForm, isEditMode, meetingId }: MeetingCreate
         </div>
 
         <FormSection id="basic-info" title="기본 정보">
-          <Field label="모임 카테고리" required>
+          <Field label="모임 카테고리" required asGroup>
             <PillControl
               value={form.category}
               options={MEETING_CATEGORY_OPTIONS}
