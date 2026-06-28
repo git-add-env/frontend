@@ -144,9 +144,35 @@ export function LandingContent() {
       so.observe(stage)
     }
 
+    // 영상 지연 로드: 다크 섹션 영상은 화면 밖이라 초기에 받을 필요가 없다.
+    // 뷰포트 400px 앞에서 data-src → src로 옮겨 그때 처음 로드한다(전송량을 스크롤 시점으로 미룸).
+    // 400px 여유분 덕에 사용자가 도달하기 전에 로드가 끝나 빈 화면 없이 바로 재생된다.
+    const videos = Array.from(
+      document.querySelectorAll<HTMLVideoElement>("video[data-src]"),
+    )
+    const vo = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((e) => {
+          if (!e.isIntersecting) return
+          const video = e.target as HTMLVideoElement
+          const src = video.dataset.src
+          if (src) {
+            video.src = src
+            delete video.dataset.src
+            // autoPlay+muted라 src 주입 시 자동 재생되지만, 일부 브라우저 대비 명시 호출.
+            video.play().catch(() => {})
+          }
+          vo.unobserve(video)
+        })
+      },
+      { rootMargin: "400px 0px" },
+    )
+    videos.forEach((el) => vo.observe(el))
+
     return () => {
       io.disconnect()
       so?.disconnect()
+      vo.disconnect()
       btn?.removeEventListener("click", start)
       timers.forEach(clearTimeout)
       // 진입 시점 값으로 원복 (다른 페이지의 스크롤 복원 정책 보존)
@@ -703,7 +729,11 @@ export function LandingContent() {
                         {p.videoSrc ? (
                           <video
                             className={cx("feed")}
-                            src={p.videoSrc}
+                            // 지연 로드: src 대신 data-src에 담아 두고, 타일이 뷰포트에
+                            // 들어올 때만 src를 주입한다(아래 useEffect). preload="none"으로
+                            // 초기 전송량에서 영상을 완전히 제외 → 다크 섹션까지 스크롤해야 로드.
+                            data-src={p.videoSrc}
+                            preload="none"
                             autoPlay
                             muted
                             loop
